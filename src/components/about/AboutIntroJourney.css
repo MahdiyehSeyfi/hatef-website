@@ -1,0 +1,664 @@
+.about-journey {
+  --about-header-height: 92px;
+  --scene-duration: 720ms;
+
+  position: relative;
+  height: calc(100vh - var(--about-header-height));
+  min-height: 680px;
+  overflow: hidden;
+  outline: none;
+  background-color: #fafafa;
+  overscroll-behavior-y: auto;
+  isolation: isolate;
+}
+
+.about-journey:focus-visible {
+  outline: none;
+}
+
+.about-journey--transitioning {
+  cursor: progress;
+}
+
+/* =========================
+   پس‌زمینه هندسی
+========================= */
+
+.about-journey__background {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.about-journey__background::before,
+.about-journey__background::after,
+.about-journey__background span {
+  position: absolute;
+  width: 540px;
+  height: 540px;
+  content: "";
+  border: 1px solid rgba(26, 54, 93, 0.035);
+  transform: rotate(45deg);
+}
+
+.about-journey__background::before {
+  top: -430px;
+  left: 18%;
+}
+
+.about-journey__background::after {
+  right: 6%;
+  bottom: -470px;
+}
+
+.about-journey__background span:nth-child(1) {
+  top: 25%;
+  left: -430px;
+}
+
+.about-journey__background span:nth-child(2) {
+  top: -330px;
+  right: -190px;
+}
+
+.about-journey__background span:nth-child(3) {
+  bottom: -430px;
+  left: 42%;
+}
+
+/* =========================
+   چیدمان اصلی
+========================= */
+
+.about-journey__layout {
+  width: min(calc(100% - 120px), 1580px);
+  height: 100%;
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 54%)
+    minmax(460px, 46%);
+
+  margin-inline: auto;
+  direction: ltr;
+}
+
+/* =========================
+   بخش تصاویر سمت چپ
+========================= */
+
+.about-journey__visual {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.about-journey__visual-glow {
+  position: absolute;
+  top: 51%;
+  left: 50%;
+  width: 540px;
+  height: 390px;
+  border-radius: 50%;
+  opacity: 0.55;
+
+  background: radial-gradient(
+    circle,
+    rgba(0, 173, 234, 0.08),
+    rgba(1, 210, 201, 0.025) 50%,
+    transparent 74%
+  );
+
+  filter: blur(30px);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.about-journey__visual-item {
+  position: absolute;
+  inset: 55px 42px 55px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin: 0;
+  opacity: 0;
+  filter: blur(3px);
+
+  transform: translate3d(0, 14px, 0) scale(0.975);
+
+  transition:
+    opacity 310ms ease,
+    filter 180ms ease,
+    transform var(--scene-duration) cubic-bezier(0.16, 1, 0.3, 1);
+
+  pointer-events: none;
+  will-change: opacity, filter, transform;
+}
+
+.about-journey__visual-item--before {
+  transform: translate3d(-12px, -8px, 0) scale(1.012);
+}
+
+.about-journey__visual-item--after {
+  transform: translate3d(12px, 13px, 0) scale(0.975);
+}
+
+.about-journey__visual-item--active {
+  z-index: 2;
+  opacity: 1;
+  filter: blur(0);
+
+  transform: translate3d(0, 0, 0) scale(1);
+
+  pointer-events: auto;
+}
+
+.about-journey__visual-item img {
+  width: min(76%, 610px);
+  max-height: calc(100vh - 225px);
+  display: block;
+  object-fit: contain;
+
+  filter: drop-shadow(0 22px 28px rgba(15, 36, 61, 0.075));
+
+  user-select: none;
+  pointer-events: none;
+}
+
+/* =========================
+   متن سمت راست
+========================= */
+
+.about-journey__content {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+
+  direction: rtl;
+}
+
+.about-journey__content-card {
+  width: 100%;
+  padding: 22px 10px 45px 42px;
+}
+
+/* متن‌های توضیحی */
+
+.about-journey__supporting-text {
+  transition:
+    opacity 230ms ease,
+    filter 230ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.about-journey__supporting-text--visible {
+  opacity: 1;
+  filter: blur(0);
+  transform: translate3d(0, 0, 0);
+}
+
+.about-journey__supporting-text--leaving {
+  opacity: 0;
+  filter: blur(4px);
+  transform: translate3d(16px, 7px, 0);
+}
+
+/* برچسب بالای تیتر */
+
+.about-journey__eyebrow {
+  min-height: 31px;
+  display: inline-flex;
+  align-items: center;
+
+  margin-bottom: 16px;
+  padding: 4px 14px;
+
+  border: 1px solid rgba(1, 210, 201, 0.24);
+  border-radius: 20px;
+
+  color: #078c86;
+  background-color: rgba(1, 210, 201, 0.08);
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* =========================
+   تیتر تایپ و حذف‌شونده
+========================= */
+
+.about-journey__title {
+  min-height: 98px;
+  display: flex;
+  align-items: center;
+
+  margin: 0 0 12px;
+
+  color: var(--color-black);
+
+  font-size: clamp(37px, 3vw, 57px);
+  font-weight: 900;
+  line-height: 1.45;
+  direction: rtl;
+}
+
+.about-journey__title > span {
+  display: inline;
+}
+
+.about-journey__typing-cursor {
+  width: 3px;
+  height: 0.95em;
+
+  display: inline-block;
+  flex: 0 0 auto;
+
+  margin-right: 5px;
+  border-radius: 2px;
+
+  background-color: var(--color-secondary);
+
+  animation: about-cursor-blink 650ms step-end infinite;
+}
+
+.about-journey__typing-cursor--deleting {
+  background-color: var(--color-accent);
+}
+
+.about-journey__typing-cursor--typing {
+  background-color: var(--color-secondary);
+}
+
+.about-journey__typing-cursor--complete {
+  animation-iteration-count: 3;
+}
+
+/* =========================
+   زیرتیتر و پاراگراف‌ها
+========================= */
+
+.about-journey__subtitle {
+  position: relative;
+
+  margin: 0 0 22px;
+  padding-right: 22px;
+
+  color: var(--color-primary);
+
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 2;
+}
+
+.about-journey__subtitle::before {
+  position: absolute;
+  top: 15px;
+  right: 0;
+
+  width: 8px;
+  height: 8px;
+
+  content: "";
+  border-radius: 50%;
+
+  background-color: var(--color-accent);
+
+  box-shadow: 0 0 0 6px rgba(1, 210, 201, 0.1);
+}
+
+.about-journey__paragraphs {
+  max-width: 630px;
+}
+
+.about-journey__paragraphs p {
+  margin: 0 0 12px;
+
+  color: #4b555f;
+
+  font-size: 14px;
+  line-height: 2.3;
+  text-align: justify;
+}
+
+.about-journey__counter {
+  width: 126px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  margin-top: 27px;
+
+  direction: ltr;
+  color: #959da6;
+
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+}
+
+.about-journey__counter i {
+  height: 1px;
+  flex: 1;
+  background-color: #cfd5da;
+}
+
+/* =========================
+   دایره‌های اسلاید
+========================= */
+
+.about-journey__navigation {
+  position: absolute;
+  z-index: 10;
+
+  top: 50%;
+  left: 24px;
+
+  width: 230px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 19px;
+
+  transform: translateY(-50%);
+}
+
+.about-journey__navigation-item {
+  position: relative;
+
+  width: 100%;
+  min-height: 28px;
+
+  display: block;
+
+  padding: 0;
+  border: 0;
+
+  color: #929ca6;
+  background-color: transparent;
+
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.about-journey__navigation-item:disabled {
+  cursor: wait;
+}
+
+/*
+ * دایره‌ها همیشه روی یک محور ثابت می‌مانند.
+ */
+.about-journey__navigation-item > span {
+  position: absolute;
+
+  top: 50%;
+  left: 45px;
+
+  width: 10px;
+  height: 10px;
+
+  border: 3px solid #fafafa;
+  border-radius: 50%;
+
+  background-color: #c8ced4;
+
+  box-shadow: 0 0 0 1px #c8ced4;
+
+  transform: translate(-50%, -50%);
+
+  transition:
+    width 230ms ease,
+    height 230ms ease,
+    background-color 230ms ease,
+    box-shadow 230ms ease,
+    transform 230ms ease;
+}
+
+/*
+ * متن به دایره نزدیک‌تر شده است.
+ * متن‌های طولانی حداکثر در دو خط نمایش داده می‌شوند.
+ */
+.about-journey__navigation-item small {
+  position: absolute;
+  top: 50%;
+  left: 58px;
+
+  width: 145px;
+  max-height: 42px;
+
+  display: -webkit-box;
+  overflow: hidden;
+
+  opacity: 0;
+  visibility: hidden;
+
+  color: #7d8791;
+
+  direction: rtl;
+  text-align: left;
+  white-space: normal;
+
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.75;
+
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+
+  transform: translate3d(-4px, -50%, 0);
+
+  transition:
+    opacity 210ms ease,
+    visibility 210ms ease,
+    color 210ms ease,
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.about-journey__navigation-item:hover small,
+.about-journey__navigation-item--active small {
+  opacity: 1;
+  visibility: visible;
+
+  color: var(--color-primary);
+
+  transform: translate3d(0, -50%, 0);
+}
+
+.about-journey__navigation-item:hover > span {
+  background-color: var(--color-secondary);
+
+  box-shadow:
+    0 0 0 1px var(--color-secondary),
+    0 0 0 5px rgba(0, 173, 234, 0.08);
+
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+.about-journey__navigation-item--active > span {
+  width: 15px;
+  height: 15px;
+
+  background-color: var(--color-accent);
+
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    0 0 0 7px rgba(1, 210, 201, 0.11);
+
+  transform: translate(-50%, -50%);
+}
+
+/* =========================
+   راهنمای اسکرول
+========================= */
+
+.about-journey__scroll-hint {
+  position: absolute;
+  z-index: 9;
+
+  right: 50%;
+  bottom: 18px;
+
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  color: #8f979f;
+  font-size: 10px;
+
+  transform: translateX(50%);
+}
+
+.about-journey__scroll-hint i {
+  position: relative;
+
+  width: 22px;
+  height: 35px;
+
+  border: 1px solid #bfc6cc;
+  border-radius: 13px;
+}
+
+.about-journey__scroll-hint i::after {
+  position: absolute;
+
+  top: 7px;
+  left: 50%;
+
+  width: 3px;
+  height: 6px;
+
+  content: "";
+  border-radius: 3px;
+
+  background-color: var(--color-accent);
+
+  transform: translateX(-50%);
+
+  animation: about-scroll-wheel 1.7s ease-in-out infinite;
+}
+
+/* =========================
+   نوار پیشرفت
+========================= */
+
+.about-journey__progress {
+  position: absolute;
+  z-index: 9;
+
+  right: 0;
+  bottom: 0;
+  left: 0;
+
+  height: 3px;
+  overflow: hidden;
+
+  background-color: rgba(26, 54, 93, 0.07);
+}
+
+.about-journey__progress span {
+  height: 100%;
+  display: block;
+
+  background: linear-gradient(
+    90deg,
+    var(--color-secondary),
+    var(--color-accent)
+  );
+
+  transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* =========================
+   انیمیشن‌ها
+========================= */
+
+@keyframes about-cursor-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes about-scroll-wheel {
+  0% {
+    opacity: 0;
+
+    transform: translate(-50%, -2px);
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+
+    transform: translate(-50%, 10px);
+  }
+}
+
+/* =========================
+   نمایشگرهای دسکتاپ کوچک‌تر
+========================= */
+
+@media (max-width: 1450px) {
+  .about-journey__layout {
+    width: calc(100% - 90px);
+
+    grid-template-columns:
+      minmax(0, 52%)
+      minmax(440px, 48%);
+  }
+
+  .about-journey__visual-item img {
+    width: min(74%, 560px);
+  }
+
+  .about-journey__title {
+    font-size: clamp(34px, 2.8vw, 50px);
+  }
+
+  .about-journey__navigation {
+    left: 18px;
+    width: 210px;
+  }
+
+  .about-journey__navigation-item > span {
+    left: 40px;
+  }
+
+  .about-journey__navigation-item small {
+    left: 53px;
+    width: 138px;
+    font-size: 9px;
+  }
+}
+
+/* =========================
+   کاهش موشن سیستم
+========================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .about-journey__visual-item,
+  .about-journey__supporting-text,
+  .about-journey__progress span {
+    transition: none;
+  }
+
+  .about-journey__typing-cursor,
+  .about-journey__scroll-hint i::after {
+    animation: none;
+  }
+}

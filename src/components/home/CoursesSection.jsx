@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
+
 import bannerImage from "../../assets/images/banner.png";
+
 import "./CoursesSection.css";
 
 const courses = [
@@ -94,10 +97,20 @@ function SliderArrow({ direction }) {
   );
 }
 
+function getCoursePath(courseId) {
+  return `/courses/course-${courseId}`;
+}
+
 function CourseCard({ course }) {
+  const coursePath = getCoursePath(course.id);
+
   return (
     <article className="course-card">
-      <a href="#course-details" className="course-card__image-wrapper">
+      <Link
+        to={coursePath}
+        className="course-card__image-wrapper"
+        aria-label={`مشاهده ${course.title}`}
+      >
         <img
           className="course-card__image"
           src={bannerImage}
@@ -105,12 +118,12 @@ function CourseCard({ course }) {
         />
 
         <span className="course-card__status">{course.status}</span>
-      </a>
+      </Link>
 
       <div className="course-card__content">
-        <a href="#course-details" className="course-card__title">
+        <Link to={coursePath} className="course-card__title">
           {course.title}
-        </a>
+        </Link>
 
         <dl className="course-card__details">
           <div>
@@ -129,9 +142,9 @@ function CourseCard({ course }) {
           </div>
         </dl>
 
-        <a href="#course-details" className="course-card__button">
+        <Link to={coursePath} className="course-card__button">
           مشاهده دوره
-        </a>
+        </Link>
       </div>
     </article>
   );
@@ -207,10 +220,14 @@ function CoursesSection() {
   };
 
   useEffect(() => {
+    if (isMoving) {
+      return undefined;
+    }
+
     const timer = window.setTimeout(() => {
-      if (!isMoving) {
-        showNextPage();
-      }
+      setTransitionEnabled(true);
+      setIsMoving(true);
+      setTrackIndex((currentTrackIndex) => currentTrackIndex + 1);
     }, 8000);
 
     return () => {
@@ -231,6 +248,7 @@ function CoursesSection() {
               type="button"
               className="courses-section__arrow"
               onClick={showPreviousPage}
+              disabled={isMoving}
               aria-label="اسلاید قبلی دوره‌ها"
             >
               <SliderArrow direction="previous" />
@@ -251,6 +269,7 @@ function CoursesSection() {
                       isActive ? "courses-section__dot--active" : ""
                     }`}
                     onClick={() => showSelectedPage(pageIndex)}
+                    disabled={isMoving}
                     aria-label={`نمایش اسلاید ${pageIndex + 1}`}
                     aria-current={isActive ? "true" : undefined}
                   />
@@ -262,6 +281,7 @@ function CoursesSection() {
               type="button"
               className="courses-section__arrow"
               onClick={showNextPage}
+              disabled={isMoving}
               aria-label="اسلاید بعدی دوره‌ها"
             >
               <SliderArrow direction="next" />
@@ -298,10 +318,10 @@ function CoursesSection() {
         </div>
 
         <div className="courses-section__footer">
-          <a href="#all-courses" className="courses-section__view-all">
+          <Link to="/courses/all" className="courses-section__view-all">
             مشاهده همه
             <span aria-hidden="true">←</span>
-          </a>
+          </Link>
         </div>
       </div>
     </section>

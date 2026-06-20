@@ -1,31 +1,70 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router";
+
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 import searchIcon from "../../assets/icons/search.svg";
+
 import "./Header.css";
 
 const navigationItems = [
   {
     label: "درباره ما",
-    href: "#about",
+    href: "/about",
     children: [
-      { label: "ماموریت و چشم‌انداز", href: "#mission" },
-      { label: "تاریخچه", href: "#history" },
-      { label: "چارت سازمانی", href: "#organization-chart" },
-      { label: "افراد و مدیران", href: "#managers" },
-      { label: "سند راهبردی", href: "#strategy" },
+      {
+        label: "ماموریت و چشم‌انداز",
+        href: "/about#mission",
+      },
+      {
+        label: "تاریخچه",
+        href: "/about#history",
+      },
+      {
+        label: "چارت سازمانی",
+        href: "/about#organization",
+      },
+      {
+        label: "افراد و مدیران",
+        href: "/about#people-managers",
+      },
+      {
+        label: "سند راهبردی",
+        href: "/about#strategic-document",
+      },
     ],
   },
   {
     label: "حمایت پژوهشی",
     href: "#research-support",
     children: [
-      { label: "محورهای سال جاری", href: "#current-fields" },
-      { label: "فراخوان‌ها", href: "#calls" },
-      { label: "شرایط احراز", href: "#requirements" },
-      { label: "راهنمای ثبت‌نام", href: "#registration-guide" },
-      { label: "شیوه‌نامه تدوین پروپوزال", href: "#proposal-guide" },
-      { label: "نظام داوری", href: "#review-system" },
-      { label: "معیارهای ارزیابی", href: "#evaluation-criteria" },
+      {
+        label: "محورهای سال جاری",
+        href: "#current-fields",
+      },
+      {
+        label: "فراخوان‌ها",
+        href: "#calls",
+      },
+      {
+        label: "شرایط احراز",
+        href: "#requirements",
+      },
+      {
+        label: "راهنمای ثبت‌نام",
+        href: "#registration-guide",
+      },
+      {
+        label: "شیوه‌نامه تدوین پروپوزال",
+        href: "#proposal-guide",
+      },
+      {
+        label: "نظام داوری",
+        href: "#review-system",
+      },
+      {
+        label: "معیارهای ارزیابی",
+        href: "#evaluation-criteria",
+      },
     ],
   },
   {
@@ -46,23 +85,44 @@ const navigationItems = [
           },
         ],
       },
-      { label: "مزایای همکاری", href: "#collaboration-benefits" },
+      {
+        label: "مزایای همکاری",
+        href: "#collaboration-benefits",
+      },
       {
         label: "دستاوردها و پروژه‌های موفق",
         href: "#successful-projects",
       },
-      { label: "نحوه همکاری", href: "#collaboration-process" },
-      { label: "همکاران تجاری ما", href: "#commercial-partners" },
-      { label: "چارچوب‌های همکاری", href: "#collaboration-frameworks" },
-      { label: "ارتباط جهت مشارکت", href: "#participation-contact" },
+      {
+        label: "نحوه همکاری",
+        href: "#collaboration-process",
+      },
+      {
+        label: "همکاران تجاری ما",
+        href: "#commercial-partners",
+      },
+      {
+        label: "چارچوب‌های همکاری",
+        href: "#collaboration-frameworks",
+      },
+      {
+        label: "ارتباط جهت مشارکت",
+        href: "#participation-contact",
+      },
     ],
   },
   {
     label: "خدمات ما",
     href: "#services",
     children: [
-      { label: "راهبری و هدایت فناور", href: "#technology-guidance" },
-      { label: "خدمات مشاوره", href: "#consulting" },
+      {
+        label: "راهبری و هدایت فناور",
+        href: "#technology-guidance",
+      },
+      {
+        label: "خدمات مشاوره",
+        href: "#consulting",
+      },
       {
         label: "نقشه راه تجاری‌سازی",
         href: "#commercialization-roadmap",
@@ -71,47 +131,177 @@ const navigationItems = [
   },
   {
     label: "رویدادها",
-    href: "#events",
+    href: "/events",
     children: [
-      { label: "رویدادها", href: "#events-list" },
-      { label: "دوره‌های توانمندسازی", href: "#courses" },
+      {
+        label: "رویدادها",
+        href: "/events/all",
+      },
+      {
+        label: "دوره‌های توانمندسازی",
+        href: "/courses/all",
+      },
     ],
   },
   {
     label: "اخبار",
-    href: "#news",
+    href: "/news",
   },
   {
     label: "مستندات",
-    href: "#documents",
+    href: "/documents/forms",
     children: [
-      { label: "فرم‌ها", href: "#forms" },
-      { label: "آیین‌نامه‌ها", href: "#regulations" },
-      { label: "قالب‌ها", href: "#templates" },
+      {
+        label: "فرم‌ها",
+        href: "/documents/forms",
+      },
+      {
+        label: "آیین‌نامه‌ها",
+        href: "/documents/regulations",
+      },
+      {
+        label: "قالب‌ها",
+        href: "/documents/templates",
+      },
     ],
   },
   {
     label: "تماس با ما",
-    href: "#contact",
+    href: "/contact",
   },
 ];
 
 const searchItems = [
-  { label: "درباره ما", href: "#about" },
-  { label: "ماموریت و چشم‌انداز", href: "#mission" },
-  { label: "حمایت پژوهشی", href: "#research-support" },
-  { label: "محورهای سال جاری", href: "#current-fields" },
-  { label: "فراخوان‌ها", href: "#calls" },
-  { label: "همکاری‌های تجاری", href: "#business" },
-  { label: "فرصت‌های همکاری", href: "#collaboration-opportunities" },
-  { label: "خدمات ما", href: "#services" },
-  { label: "رویدادها", href: "#events" },
-  { label: "دوره‌های توانمندسازی", href: "#courses" },
-  { label: "اخبار", href: "#news" },
-  { label: "دستاوردهای هاتف", href: "#achievements" },
-  { label: "مستندات", href: "#documents" },
-  { label: "تماس با ما", href: "#contact" },
+  {
+    label: "درباره ما",
+    href: "/about",
+  },
+  {
+    label: "ماموریت و چشم‌انداز",
+    href: "/about#mission",
+  },
+  {
+    label: "تاریخچه هاتف",
+    href: "/about#history",
+  },
+  {
+    label: "چارت سازمانی",
+    href: "/about#organization",
+  },
+  {
+    label: "افراد و مدیران",
+    href: "/about#people-managers",
+  },
+  {
+    label: "سند راهبردی",
+    href: "/about#strategic-document",
+  },
+  {
+    label: "حمایت پژوهشی",
+    href: "#research-support",
+  },
+  {
+    label: "محورهای سال جاری",
+    href: "#current-fields",
+  },
+  {
+    label: "فراخوان‌ها",
+    href: "#calls",
+  },
+  {
+    label: "همکاری‌های تجاری",
+    href: "#business",
+  },
+  {
+    label: "فرصت‌های همکاری",
+    href: "#collaboration-opportunities",
+  },
+  {
+    label: "خدمات ما",
+    href: "#services",
+  },
+  {
+    label: "رویدادها",
+    href: "/events",
+  },
+  {
+    label: "دوره‌های توانمندسازی",
+    href: "/courses/all",
+  },
+  {
+    label: "اخبار",
+    href: "/news",
+  },
+  {
+    label: "دستاوردهای هاتف",
+    href: "#achievements",
+  },
+  {
+    label: "مستندات",
+    href: "/documents/forms",
+  },
+  {
+    label: "تماس با ما",
+    href: "/contact",
+  },
 ];
+
+function scrollInsideAboutPage(href) {
+  if (!href.startsWith("/about") || window.location.pathname !== "/about") {
+    return;
+  }
+
+  const hashIndex = href.indexOf("#");
+
+  window.requestAnimationFrame(() => {
+    if (hashIndex === -1) {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+
+      return;
+    }
+
+    const sectionId = decodeURIComponent(href.slice(hashIndex + 1));
+
+    const targetElement = document.getElementById(sectionId);
+
+    targetElement?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  });
+}
+
+function SmartLink({ href, className, children, onClick, ...restProps }) {
+  const isRouterLink = href.startsWith("/");
+
+  const handleClick = (event) => {
+    scrollInsideAboutPage(href);
+
+    onClick?.(event);
+  };
+
+  if (isRouterLink) {
+    return (
+      <Link
+        to={href}
+        className={className}
+        onClick={handleClick}
+        {...restProps}
+      >
+        {children}
+      </Link>
+    );
+  }
+
+  return (
+    <a href={href} className={className} onClick={handleClick} {...restProps}>
+      {children}
+    </a>
+  );
+}
 
 function NavigationItem({ item, nested = false }) {
   const hasChildren = Boolean(item.children?.length);
@@ -122,7 +312,7 @@ function NavigationItem({ item, nested = false }) {
         nested ? "site-header__submenu-item" : "site-header__menu-item"
       }
     >
-      <a
+      <SmartLink
         href={item.href}
         className={
           nested ? "site-header__submenu-link" : "site-header__menu-link"
@@ -136,7 +326,7 @@ function NavigationItem({ item, nested = false }) {
         {nested && hasChildren && (
           <span className="site-header__submenu-arrow">‹</span>
         )}
-      </a>
+      </SmartLink>
 
       {hasChildren && (
         <ul className="site-header__submenu">
@@ -150,7 +340,10 @@ function NavigationItem({ item, nested = false }) {
 }
 
 function Header() {
+  const navigate = useNavigate();
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
 
   const normalizedQuery = searchQuery.trim();
@@ -166,6 +359,16 @@ function Header() {
     setSearchQuery("");
   };
 
+  const navigateToResult = (href) => {
+    if (href.startsWith("/")) {
+      navigate(href);
+
+      scrollInsideAboutPage(href);
+    } else {
+      window.location.hash = href;
+    }
+  };
+
   const handleSearchSubmit = (event) => {
     event.preventDefault();
 
@@ -173,7 +376,8 @@ function Header() {
       return;
     }
 
-    window.location.hash = searchResults[0].href;
+    navigateToResult(searchResults[0].href);
+
     closeSearch();
   };
 
@@ -185,9 +389,9 @@ function Header() {
     <>
       <header className="site-header">
         <div className="container site-header__inner">
-          <a href="/" className="site-header__logo" aria-label="صفحه اصلی">
+          <Link to="/" className="site-header__logo" aria-label="صفحه اصلی">
             <img src={universityLogo} alt="لوگوی دانشگاه تهران" />
-          </a>
+          </Link>
 
           <nav className="site-header__navigation" aria-label="منوی اصلی">
             <ul className="site-header__menu">
@@ -253,15 +457,16 @@ function Header() {
             <div className="site-search__results">
               {searchResults.length > 0 ? (
                 searchResults.map((result) => (
-                  <a
+                  <SmartLink
                     key={`${result.label}-${result.href}`}
                     href={result.href}
                     onClick={handleResultClick}
                     className="site-search__result"
                   >
                     <span className="site-search__result-dot" />
+
                     <span>{result.label}</span>
-                  </a>
+                  </SmartLink>
                 ))
               ) : (
                 <p className="site-search__empty">

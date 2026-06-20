@@ -40,7 +40,7 @@ function NewsSection() {
 
         <div className="news-section__content">
           <article className="featured-news">
-            <a href="#featured-news-details" className="featured-news__media">
+            <a href="/news/1" className="featured-news__media">
               <img
                 className="featured-news__image"
                 src={bannerImage}
@@ -65,7 +65,7 @@ function NewsSection() {
               {newsItems.map((item) => (
                 <article className="news-list-item" key={item.id}>
                   <a
-                    href="#news-details"
+                    href={`/news/${item.id}`}
                     className="news-list-item__image-link"
                   >
                     <img
@@ -76,7 +76,10 @@ function NewsSection() {
                   </a>
 
                   <div className="news-list-item__content">
-                    <a href="#news-details" className="news-list-item__title">
+                    <a
+                      href={`/news/${item.id}`}
+                      className="news-list-item__title"
+                    >
                       {item.title}
                     </a>
 
@@ -85,7 +88,10 @@ function NewsSection() {
                     <div className="news-list-item__meta">
                       <span>{item.date}</span>
 
-                      <a href="#news-details" className="news-list-item__more">
+                      <a
+                        href={`/news/${item.id}`}
+                        className="news-list-item__more"
+                      >
                         ادامه مطلب
                         <span aria-hidden="true">←</span>
                       </a>
@@ -96,7 +102,7 @@ function NewsSection() {
             </div>
 
             <div className="news-section__footer">
-              <a href="#all-news" className="news-section__view-all">
+              <a href="/news" className="news-section__view-all">
                 مشاهده همه
                 <span aria-hidden="true">←</span>
               </a>

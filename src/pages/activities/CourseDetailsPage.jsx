@@ -1,0 +1,690 @@
+import { useEffect, useState } from "react";
+import { Link, Navigate, useParams } from "react-router";
+
+import ActivitiesCarousel from "../../components/activities/ActivitiesCarousel";
+import ExpandableArticle from "../../components/activities/ExpandableArticle";
+
+import { courseItems, getCourseById } from "../../data/activitiesData";
+
+import facebookIcon from "../../assets/icons/contact/facebook.svg";
+import instagramIcon from "../../assets/icons/contact/instagram.svg";
+import telegramIcon from "../../assets/icons/contact/telegram.svg";
+import twitterIcon from "../../assets/icons/contact/twitter.svg";
+import whatsappIcon from "../../assets/icons/contact/whatsapp.svg";
+
+import "./CourseDetailsPage.css";
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle
+        cx="12"
+        cy="12"
+        r="8.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M12 7.5V12l3 2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect
+        x="3.5"
+        y="5"
+        width="17"
+        height="15"
+        rx="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M7 3v4M17 3v4M3.5 9h17"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function LocationIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 21s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <circle
+        cx="12"
+        cy="9"
+        r="2.3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+    </svg>
+  );
+}
+
+function LevelIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M5 19V13M12 19V9M19 19V5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle
+        cx="9"
+        cy="8"
+        r="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M3.5 19c.3-4 2.2-6 5.5-6s5.2 2 5.5 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+      <path
+        d="M15 6.2a2.7 2.7 0 0 1 0 5.2M16.5 13.3c2.5.5 3.8 2.4 4 5.7"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="m6 12.5 4 4L18 8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const courseMeta = [
+  {
+    id: 1,
+    title: "مدت دوره",
+    value: "۶ هفته",
+    Icon: ClockIcon,
+  },
+  {
+    id: 2,
+    title: "تاریخ برگزاری",
+    value: "۱۴۰۵/۰۵/۰۵",
+    Icon: CalendarIcon,
+  },
+  {
+    id: 3,
+    title: "نوع برگزاری",
+    value: "حضوری",
+    Icon: LocationIcon,
+  },
+  {
+    id: 4,
+    title: "سطح دوره",
+    value: "پیشرفته",
+    Icon: LevelIcon,
+  },
+  {
+    id: 5,
+    title: "ظرفیت دوره",
+    value: "۲۰ نفر",
+    Icon: UsersIcon,
+  },
+];
+
+const learningOutcomes = [
+  {
+    id: 1,
+    title: "طراحی برنامه مدیریت سبز",
+    description:
+      "توانایی طراحی یک برنامه اجرایی برای کاهش مصرف منابع و افزایش بهره‌وری.",
+    available: true,
+  },
+  {
+    id: 2,
+    title: "تحلیل شاخص‌های زیست‌محیطی",
+    description: "آشنایی با روش‌های تحلیل داده‌های محیطی و شاخص‌های پایداری.",
+    available: true,
+  },
+  {
+    id: 3,
+    title: "مدیریت پروژه‌های فناورانه",
+    description: "یادگیری برنامه‌ریزی، کنترل و ارزیابی پروژه‌های فناورانه.",
+    available: true,
+  },
+  {
+    id: 4,
+    title: "تدوین مدل اجرایی",
+    description: "تبدیل یافته‌های آموزشی به یک مدل عملیاتی و قابل اجرا.",
+    available: false,
+  },
+];
+
+const courseModules = [
+  {
+    id: 1,
+    title: "بخش اول: مبانی و اصول مدیریت سبز",
+    content:
+      "در این بخش، مفاهیم پایه توسعه پایدار، مدیریت منابع، کاهش مصرف انرژی و نقش سازمان‌ها در حفاظت از محیط زیست بررسی می‌شود.",
+  },
+  {
+    id: 2,
+    title: "بخش دوم: طراحی و ارزیابی برنامه اجرایی",
+    content:
+      "شرکت‌کنندگان با تدوین شاخص‌ها، تعیین اهداف قابل اندازه‌گیری، طراحی برنامه عملیاتی و روش‌های ارزیابی عملکرد آشنا می‌شوند.",
+  },
+  {
+    id: 3,
+    title: "بخش سوم: پروژه پایانی و ارائه",
+    content:
+      "در پایان دوره، هر شرکت‌کننده یک پروژه کاربردی متناسب با نیاز سازمان یا مجموعه خود طراحی و ارائه خواهد کرد.",
+  },
+];
+
+const courseBenefits = [
+  {
+    id: 1,
+    title: "محتوای کاربردی",
+    description:
+      "مطالب دوره براساس نیازهای واقعی محیط‌های دانشگاهی و صنعتی طراحی شده‌اند.",
+  },
+  {
+    id: 2,
+    title: "مدرس متخصص",
+    description:
+      "آموزش توسط مدرسان دارای تجربه دانشگاهی و اجرایی ارائه می‌شود.",
+  },
+  {
+    id: 3,
+    title: "پروژه عملی",
+    description: "در طول دوره یک پروژه واقعی و قابل استفاده تدوین می‌کنید.",
+  },
+  {
+    id: 4,
+    title: "گواهی پایان دوره",
+    description: "پس از تکمیل دوره و پروژه نهایی، گواهی شرکت صادر می‌شود.",
+  },
+  {
+    id: 5,
+    title: "شبکه‌سازی حرفه‌ای",
+    description:
+      "فرصتی برای ارتباط با پژوهشگران، مدیران و فعالان فناوری فراهم می‌شود.",
+  },
+];
+
+const frequentlyAskedQuestions = [
+  {
+    id: 1,
+    title: "آیا برای شرکت در دوره پیش‌نیاز خاصی وجود دارد؟",
+    content:
+      "آشنایی اولیه با مدیریت و مفاهیم توسعه پایدار مفید است، اما الزامی نیست.",
+  },
+  {
+    id: 2,
+    title: "آیا جلسات دوره ضبط می‌شوند؟",
+    content:
+      "دسترسی به فایل جلسات براساس شرایط ثبت‌نام و قوانین برگزاری دوره تعیین می‌شود.",
+  },
+  {
+    id: 3,
+    title: "گواهی دوره چگونه صادر می‌شود؟",
+    content:
+      "شرکت منظم در جلسات و تحویل پروژه پایانی برای دریافت گواهی الزامی است.",
+  },
+];
+
+const articleParagraphs = [
+  "توانمندسازی پژوهشگران و فعالان فناوری یکی از مهم‌ترین مسیرهای توسعه اقتصاد دانش‌بنیان است. دوره‌های هاتف با تمرکز بر مهارت‌های کاربردی، مدیریت فناوری و ارتباط دانشگاه و صنعت طراحی شده‌اند.",
+  "در این برنامه آموزشی، شرکت‌کنندگان علاوه بر یادگیری مفاهیم نظری، با تمرین‌ها و پروژه‌های واقعی روبه‌رو می‌شوند تا بتوانند دانش به‌دست‌آمده را در محیط کاری خود اجرا کنند.",
+  "محتوای دوره‌ها با همکاری مدرسان دانشگاهی، مدیران اجرایی و متخصصان صنایع تدوین می‌شود و متناسب با تغییرات فناوری به‌روزرسانی خواهد شد.",
+];
+
+const socialLinks = [
+  {
+    id: 1,
+    label: "فیسبوک",
+    icon: facebookIcon,
+  },
+  {
+    id: 2,
+    label: "واتساپ",
+    icon: whatsappIcon,
+  },
+  {
+    id: 3,
+    label: "توییتر",
+    icon: twitterIcon,
+  },
+  {
+    id: 4,
+    label: "اینستاگرام",
+    icon: instagramIcon,
+  },
+  {
+    id: 5,
+    label: "تلگرام",
+    icon: telegramIcon,
+  },
+];
+
+function CourseDetailsPage() {
+  const { courseId } = useParams();
+
+  const course = getCourseById(courseId);
+
+  const [openModule, setOpenModule] = useState(0);
+  const [openQuestion, setOpenQuestion] = useState(null);
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }, [courseId]);
+
+  if (!course) {
+    return <Navigate to="/courses/all" replace />;
+  }
+
+  const relatedCourses = courseItems
+    .filter((item) => item.id !== course.id)
+    .slice(0, 8);
+
+  return (
+    <div className="course-details-page">
+      <section className="course-details-hero">
+        <div className="course-details-page__container">
+          <nav className="course-details__breadcrumb" aria-label="مسیر صفحه">
+            <Link to="/">صفحه اصلی</Link>
+            <span>/</span>
+            <Link to="/courses/all">دوره‌های توانمندسازی</Link>
+            <span>/</span>
+            <span>{course.title}</span>
+          </nav>
+
+          <div className="course-details-hero__grid">
+            <div className="course-details-hero__media">
+              <img src={course.image} alt={course.title} />
+
+              <div className="course-details-hero__badges">
+                <span>در حال ثبت‌نام</span>
+                <span>{course.startDate}</span>
+              </div>
+            </div>
+
+            <div className="course-details-hero__content">
+              <span className="course-details-hero__eyebrow">
+                دوره تخصصی هاتف
+              </span>
+
+              <h1>{course.title}</h1>
+
+              <p>
+                این دوره با هدف توسعه مهارت‌های کاربردی در حوزه مدیریت فناوری،
+                توسعه پایدار و تجاری‌سازی دستاوردهای دانشگاهی طراحی شده است.
+              </p>
+
+              <p>
+                شرکت‌کنندگان در طول دوره با تمرین‌های عملی، مطالعات موردی و
+                پروژه‌های واقعی آشنا خواهند شد.
+              </p>
+
+              <a
+                href="#course-registration"
+                className="course-details-hero__button"
+              >
+                شرکت در این دوره
+              </a>
+            </div>
+          </div>
+
+          <div className="course-details-meta">
+            {courseMeta.map(({ id, title, value, Icon }) => (
+              <article className="course-details-meta__item" key={id}>
+                <span className="course-details-meta__icon">
+                  <Icon />
+                </span>
+
+                <div>
+                  <h2>{title}</h2>
+                  <p>{value}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="course-details-content">
+        <div className="course-details-page__container">
+          <div className="course-details-content__grid">
+            <aside className="course-details-sidebar">
+              <div
+                className="course-registration-card"
+                id="course-registration"
+              >
+                <div className="course-registration-card__header">
+                  <span>در حال ثبت‌نام</span>
+                  <span>ظرفیت محدود</span>
+                </div>
+
+                <h2>{course.title}</h2>
+
+                <dl className="course-registration-card__details">
+                  <div>
+                    <dt>مدرس دوره:</dt>
+                    <dd>{course.instructor}</dd>
+                  </div>
+
+                  <div>
+                    <dt>مدت دوره:</dt>
+                    <dd>۱۲۰ ساعت</dd>
+                  </div>
+
+                  <div>
+                    <dt>نوع دوره:</dt>
+                    <dd>تخصصی و پیشرفته</dd>
+                  </div>
+
+                  <div>
+                    <dt>تاریخ ثبت‌نام:</dt>
+                    <dd>{course.startDate}</dd>
+                  </div>
+
+                  <div>
+                    <dt>زمان برگزاری:</dt>
+                    <dd>یکشنبه و سه‌شنبه، ساعت ۱۰:۳۰</dd>
+                  </div>
+
+                  <div>
+                    <dt>محل برگزاری:</dt>
+                    <dd>دانشگاه تهران، دانشکده مدیریت</dd>
+                  </div>
+                </dl>
+
+                <div className="course-registration-card__audience">
+                  <h3>مناسب برای:</h3>
+
+                  <div>
+                    <span>
+                      <CheckIcon />
+                      مدیران
+                    </span>
+                    <span>
+                      <CheckIcon />
+                      پژوهشگران
+                    </span>
+                    <span>
+                      <CheckIcon />
+                      دانشجویان
+                    </span>
+                    <span>
+                      <CheckIcon />
+                      فعالان فناوری
+                    </span>
+                  </div>
+                </div>
+
+                <a
+                  href="#register-form"
+                  className="course-registration-card__button"
+                >
+                  شرکت در این دوره
+                </a>
+              </div>
+
+              <div className="course-details-share">
+                <span>به اشتراک‌گذاری این دوره:</span>
+
+                <div>
+                  {socialLinks.map((social) => (
+                    <a
+                      key={social.id}
+                      href="#share-course"
+                      aria-label={social.label}
+                    >
+                      <img src={social.icon} alt="" aria-hidden="true" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </aside>
+
+            <main className="course-details-article">
+              <section className="course-content-section">
+                <span className="course-content-section__eyebrow">
+                  معرفی دوره
+                </span>
+
+                <h2>محورهای پژوهشی سال جاری</h2>
+
+                <p>
+                  این دوره بر موضوعات کاربردی مدیریت سبز، بهینه‌سازی منابع،
+                  توسعه فناوری‌های دوستدار محیط زیست و طراحی راهکارهای قابل اجرا
+                  تمرکز دارد.
+                </p>
+
+                <p>
+                  شرکت‌کنندگان می‌آموزند چگونه یک مسئله واقعی را تحلیل کرده و
+                  برای آن برنامه‌ای مرحله‌بندی‌شده، قابل سنجش و اجرایی تدوین
+                  کنند.
+                </p>
+              </section>
+
+              <section className="course-content-section">
+                <span className="course-content-section__eyebrow">
+                  دستاوردهای آموزشی
+                </span>
+
+                <h2>در این دوره چه می‌آموزید؟</h2>
+
+                <div className="course-learning-outcomes">
+                  {learningOutcomes.map((outcome) => (
+                    <article
+                      className="course-learning-outcome"
+                      key={outcome.id}
+                    >
+                      <span
+                        className={`course-learning-outcome__icon ${
+                          outcome.available
+                            ? ""
+                            : "course-learning-outcome__icon--unavailable"
+                        }`}
+                      >
+                        <CheckIcon />
+                      </span>
+
+                      <div>
+                        <h3>{outcome.title}</h3>
+                        <p>{outcome.description}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="course-content-section">
+                <span className="course-content-section__eyebrow">
+                  برنامه آموزشی
+                </span>
+
+                <h2>سرفصل‌های دوره</h2>
+
+                <div className="course-modules">
+                  {courseModules.map((module, index) => {
+                    const isOpen = openModule === index;
+
+                    return (
+                      <article
+                        className={`course-module ${
+                          isOpen ? "course-module--open" : ""
+                        }`}
+                        key={module.id}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setOpenModule(isOpen ? null : index)}
+                          aria-expanded={isOpen}
+                        >
+                          <span>{module.title}</span>
+                          <i aria-hidden="true">{isOpen ? "−" : "+"}</i>
+                        </button>
+
+                        <div className="course-module__content">
+                          <p>{module.content}</p>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="course-content-section">
+                <span className="course-content-section__eyebrow">
+                  تیم آموزشی
+                </span>
+
+                <h2>مدرسان دوره</h2>
+
+                <div className="course-instructors">
+                  <article className="course-instructor">
+                    <span className="course-instructor__avatar">م س</span>
+
+                    <div>
+                      <h3>مهدیه سیفی</h3>
+                      <p>مدرس مدیریت فناوری و توسعه پایدار</p>
+                    </div>
+                  </article>
+
+                  <article className="course-instructor">
+                    <span className="course-instructor__avatar">ع ر</span>
+
+                    <div>
+                      <h3>علی رضایی</h3>
+                      <p>مشاور تجاری‌سازی و مدیریت پروژه</p>
+                    </div>
+                  </article>
+                </div>
+              </section>
+
+              <section className="course-content-section">
+                <span className="course-content-section__eyebrow">
+                  مزایای شرکت
+                </span>
+
+                <h2>چرا در این دوره شرکت کنیم؟</h2>
+
+                <div className="course-benefits">
+                  {courseBenefits.map((benefit) => (
+                    <article className="course-benefit" key={benefit.id}>
+                      <span>
+                        <CheckIcon />
+                      </span>
+
+                      <h3>{benefit.title}</h3>
+                      <p>{benefit.description}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="course-content-section">
+                <span className="course-content-section__eyebrow">
+                  پرسش‌های متداول
+                </span>
+
+                <h2>سؤالات متداول دوره</h2>
+
+                <div className="course-faq">
+                  {frequentlyAskedQuestions.map((question, index) => {
+                    const isOpen = openQuestion === index;
+
+                    return (
+                      <article
+                        className={`course-faq__item ${
+                          isOpen ? "course-faq__item--open" : ""
+                        }`}
+                        key={question.id}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setOpenQuestion(isOpen ? null : index)}
+                          aria-expanded={isOpen}
+                        >
+                          <span>{question.title}</span>
+                          <i aria-hidden="true">{isOpen ? "−" : "+"}</i>
+                        </button>
+
+                        <div className="course-faq__answer">
+                          <p>{question.content}</p>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            </main>
+          </div>
+        </div>
+      </section>
+
+      <section className="course-related-section">
+        <div className="course-details-page__container">
+          <ActivitiesCarousel
+            key={`related-${course.id}`}
+            title="دیگر دوره‌های هاتف"
+            items={relatedCourses}
+            viewAllPath="/courses/all"
+          />
+        </div>
+      </section>
+
+      <ExpandableArticle
+        title="درباره دوره‌های توانمندسازی هاتف"
+        paragraphs={articleParagraphs}
+      />
+    </div>
+  );
+}
+
+export default CourseDetailsPage;

@@ -1,0 +1,169 @@
+.about-statistics-section {
+  width: 100%;
+  padding: 42px 0 48px;
+
+  background-color: #ffffff;
+}
+
+.about-statistics-section__container {
+  width: min(calc(100% - 120px), 1440px);
+
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  margin-inline: auto;
+
+  direction: rtl;
+}
+
+/* هر ستون آمار */
+
+.about-statistics-section__item {
+  position: relative;
+
+  min-width: 0;
+  min-height: 190px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+
+  padding: 27px 28px;
+
+  outline: none;
+
+  text-align: center;
+
+  cursor: default;
+}
+
+/* عدد و عنوان */
+
+.about-statistics-section__main {
+  width: 100%;
+
+  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.about-statistics-section__value {
+  display: block;
+
+  margin-bottom: 18px;
+
+  color: #292d31;
+
+  font-family: inherit;
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1;
+
+  font-variant-numeric: tabular-nums;
+
+  transition:
+    color 260ms ease,
+    transform 320ms ease;
+}
+
+.about-statistics-section__title {
+  margin: 0;
+
+  color: #111111;
+
+  font-family: inherit;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.8;
+
+  transition:
+    color 260ms ease,
+    transform 320ms ease;
+}
+
+/* توضیح مخفی در حالت عادی */
+
+.about-statistics-section__description {
+  position: absolute;
+
+  top: 128px;
+  right: 26px;
+  left: 26px;
+
+  max-width: 300px;
+
+  margin: 0 auto;
+
+  visibility: hidden;
+  opacity: 0;
+
+  color: #303030;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.9;
+
+  transform: translateY(10px);
+
+  transition:
+    visibility 250ms ease,
+    opacity 250ms ease,
+    transform 350ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* حالت هاور */
+
+.about-statistics-section__item:hover .about-statistics-section__main,
+.about-statistics-section__item:focus-visible .about-statistics-section__main {
+  transform: translateY(-13px);
+}
+
+.about-statistics-section__item:hover .about-statistics-section__value,
+.about-statistics-section__item:focus-visible .about-statistics-section__value {
+  color: var(--color-secondary, #00adea);
+}
+
+.about-statistics-section__item:hover .about-statistics-section__title,
+.about-statistics-section__item:focus-visible .about-statistics-section__title {
+  color: var(--color-secondary, #00adea);
+}
+
+.about-statistics-section__item:hover .about-statistics-section__description,
+.about-statistics-section__item:focus-visible
+  .about-statistics-section__description {
+  visibility: visible;
+  opacity: 1;
+
+  transform: translateY(0);
+}
+
+/* دسکتاپ‌های کوچک‌تر */
+
+@media (max-width: 1450px) {
+  .about-statistics-section__container {
+    width: min(calc(100% - 90px), 1320px);
+  }
+
+  .about-statistics-section__value {
+    font-size: 46px;
+  }
+
+  .about-statistics-section__title {
+    font-size: 17px;
+  }
+
+  .about-statistics-section__description {
+    right: 18px;
+    left: 18px;
+
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-statistics-section__main,
+  .about-statistics-section__value,
+  .about-statistics-section__title,
+  .about-statistics-section__description {
+    transition: none;
+  }
+}

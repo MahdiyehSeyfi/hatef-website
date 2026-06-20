@@ -1,0 +1,255 @@
+.about-organization {
+  --organization-primary: var(--color-primary, #1a365d);
+
+  --organization-secondary: var(--color-secondary, #00adea);
+
+  --organization-accent: var(--color-accent, #01d2c9);
+
+  width: 100%;
+  padding: 0 0 76px;
+
+  scroll-margin-top: 110px;
+
+  background-color: #ffffff;
+}
+
+.about-organization__heading {
+  min-height: 128px;
+
+  display: grid;
+  grid-template-columns:
+    minmax(80px, 1fr)
+    auto
+    minmax(80px, 1fr);
+
+  align-items: center;
+  gap: 38px;
+
+  padding-inline: 4%;
+}
+
+.about-organization__heading h2 {
+  margin: 0;
+
+  color: #111111;
+
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.5;
+
+  white-space: nowrap;
+}
+
+.about-organization__heading > span {
+  width: 100%;
+  height: 1px;
+
+  background-color: #edf0f2;
+}
+
+.about-organization__container {
+  width: min(calc(100% - 120px), 1440px);
+
+  margin-inline: auto;
+}
+
+.about-organization__layout {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    260px;
+
+  gap: 72px;
+  align-items: start;
+
+  direction: ltr;
+}
+
+/* بنر کاملاً ثابت و بدون هاور */
+
+.about-organization__visual {
+  width: 100%;
+  height: 500px;
+
+  overflow: hidden;
+
+  background-color: #fafafa;
+}
+
+.about-organization__visual img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+}
+
+/* پیوندهای دسترسی سریع */
+
+.about-organization__navigation {
+  width: 100%;
+
+  padding-top: 4px;
+
+  direction: rtl;
+}
+
+.about-organization__navigation-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  margin-bottom: 24px;
+}
+
+.about-organization__navigation-heading span {
+  width: 8px;
+  height: 8px;
+
+  flex: 0 0 auto;
+
+  border-radius: 50%;
+
+  background-color: var(--organization-accent);
+}
+
+.about-organization__navigation-heading h3 {
+  margin: 0;
+
+  color: #171d22;
+
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.7;
+}
+
+.about-organization__links {
+  display: grid;
+  gap: 14px;
+}
+
+.about-organization__link {
+  position: relative;
+
+  min-height: 54px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+
+  padding: 8px 18px;
+
+  overflow: hidden;
+
+  border: 1px solid #b8c2d0;
+
+  color: #202b35;
+  background-color: #ffffff;
+
+  text-decoration: none;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  transition:
+    color 230ms ease,
+    border-color 230ms ease,
+    background-color 230ms ease,
+    transform 230ms ease,
+    box-shadow 230ms ease;
+}
+
+.about-organization__link::before {
+  position: absolute;
+
+  top: 0;
+  right: 0;
+  bottom: 0;
+
+  width: 4px;
+
+  content: "";
+
+  background: linear-gradient(
+    to bottom,
+    var(--organization-secondary),
+    var(--organization-accent)
+  );
+
+  transform: scaleY(0);
+
+  transition: transform 250ms ease;
+}
+
+.about-organization__link span,
+.about-organization__link i {
+  position: relative;
+  z-index: 1;
+}
+
+.about-organization__link i {
+  color: #87929d;
+
+  font-size: 17px;
+  font-style: normal;
+
+  opacity: 0;
+
+  transform: translateX(7px);
+
+  transition:
+    color 230ms ease,
+    opacity 230ms ease,
+    transform 230ms ease;
+}
+
+.about-organization__link:hover {
+  border-color: var(--organization-accent);
+
+  color: var(--organization-primary);
+
+  background-color: rgba(1, 210, 201, 0.035);
+
+  box-shadow: 0 10px 25px rgba(20, 44, 74, 0.08);
+
+  transform: translateX(-4px);
+}
+
+.about-organization__link:hover::before {
+  transform: scaleY(1);
+}
+
+.about-organization__link:hover i {
+  color: var(--organization-accent);
+
+  opacity: 1;
+
+  transform: translateX(0);
+}
+
+@media (max-width: 1450px) {
+  .about-organization__container {
+    width: min(calc(100% - 90px), 1320px);
+  }
+
+  .about-organization__layout {
+    grid-template-columns:
+      minmax(0, 1fr)
+      235px;
+
+    gap: 54px;
+  }
+
+  .about-organization__visual {
+    height: 445px;
+  }
+
+  .about-organization__link {
+    min-height: 50px;
+
+    font-size: 13px;
+  }
+}

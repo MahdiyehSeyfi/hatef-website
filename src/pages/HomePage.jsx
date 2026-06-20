@@ -1,5 +1,3 @@
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
 import HeroSlider from "../components/home/HeroSlider";
 import SupportPlansSection from "../components/home/SupportPlansSection";
 import NewsSection from "../components/home/NewsSection";
@@ -9,20 +7,14 @@ import CoursesSection from "../components/home/CoursesSection";
 
 function HomePage() {
   return (
-    <>
-      <Header />
-
-      <main className="home-page__main">
-        <HeroSlider />
-        <SupportPlansSection />
-        <NewsSection />
-        <AchievementsSection />
-        <PartnersSection />
-        <CoursesSection />
-      </main>
-
-      <Footer />
-    </>
+    <div className="home-page">
+      <HeroSlider />
+      <SupportPlansSection />
+      <NewsSection />
+      <AchievementsSection />
+      <PartnersSection />
+      <CoursesSection />
+    </div>
   );
 }
 

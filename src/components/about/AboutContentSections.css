@@ -1,0 +1,389 @@
+.about-content-sections {
+  --about-primary: var(--color-primary, #1a365d);
+
+  --about-secondary: var(--color-secondary, #00adea);
+
+  --about-accent: var(--color-accent, #01d2c9);
+
+  --about-surface: #fafafa;
+  --about-border: #e5eaee;
+  --about-text: #202b35;
+  --about-muted: #68737c;
+
+  width: 100%;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.about-section {
+  scroll-margin-top: 100px;
+}
+
+.about-content-container {
+  width: min(calc(100% - 120px), 1440px);
+
+  margin-inline: auto;
+}
+
+/* =========================
+   عنوان‌های عمومی
+========================= */
+
+.about-section-label {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.about-section-label > span {
+  width: 8px;
+  height: 8px;
+
+  flex: 0 0 auto;
+
+  border-radius: 50%;
+
+  background-color: var(--about-accent);
+
+  box-shadow: 0 0 0 6px rgba(1, 210, 201, 0.09);
+}
+
+.about-section-label h2 {
+  margin: 0;
+
+  color: #101820;
+
+  font-size: 22px;
+  font-weight: 850;
+  line-height: 1.6;
+}
+
+.about-main-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  margin-bottom: 48px;
+}
+
+.about-main-heading h2 {
+  margin: 0;
+
+  color: var(--about-accent);
+
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.5;
+}
+
+.about-main-heading > span {
+  width: 58px;
+  height: 4px;
+
+  margin-top: 12px;
+
+  border-radius: 5px;
+
+  background: linear-gradient(
+    90deg,
+    var(--about-secondary),
+    var(--about-accent)
+  );
+}
+
+/* =========================
+   ماموریت و چشم‌انداز
+========================= */
+
+.about-mission {
+  padding: 76px 0 80px;
+  background-color: #ffffff;
+}
+
+.about-mission__grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 88px;
+}
+
+.about-mission__card {
+  position: relative;
+
+  padding: 32px 38px;
+
+  border: 1px solid #edf1f3;
+  border-radius: 5px;
+
+  background: linear-gradient(
+    145deg,
+    rgba(1, 210, 201, 0.03),
+    rgba(255, 255, 255, 0) 56%
+  );
+}
+
+.about-mission__card:first-child::after {
+  position: absolute;
+
+  top: 34px;
+  bottom: 34px;
+  left: -45px;
+
+  width: 1px;
+
+  content: "";
+
+  background-color: #e5eaee;
+}
+
+.about-mission__card .about-section-label {
+  margin-bottom: 24px;
+}
+
+.about-mission__card p {
+  margin: 0 0 13px;
+
+  color: #3d4851;
+
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 2.25;
+
+  text-align: justify;
+}
+
+/* =========================
+   مسیر رشد
+========================= */
+
+.about-growth {
+  padding: 68px 0 82px;
+
+  border-top: 1px solid #eef1f3;
+
+  background-color: #ffffff;
+}
+
+.about-growth__timeline {
+  position: relative;
+
+  height: 105px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  direction: rtl;
+}
+
+.about-growth__line {
+  position: absolute;
+
+  top: 29px;
+  right: 6%;
+  left: 6%;
+
+  height: 2px;
+
+  background-color: #e4e9ed;
+}
+
+.about-growth__stage {
+  position: relative;
+  z-index: 2;
+
+  width: 130px;
+
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+
+  padding: 0;
+  border: 0;
+
+  color: #8d969e;
+  background-color: transparent;
+
+  font-family: inherit;
+
+  cursor: pointer;
+}
+
+.about-growth__marker {
+  width: 30px;
+  height: 30px;
+
+  display: grid;
+  place-items: center;
+
+  border: 2px solid #d5dce1;
+  border-radius: 50%;
+
+  background-color: #ffffff;
+
+  transition:
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    transform 220ms ease;
+}
+
+.about-growth__marker i {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background-color: #c4ccd2;
+
+  transition:
+    width 220ms ease,
+    height 220ms ease,
+    background-color 220ms ease;
+}
+
+.about-growth__stage strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.about-growth__stage:hover .about-growth__marker {
+  border-color: var(--about-secondary);
+
+  transform: translateY(-2px);
+}
+
+.about-growth__stage--active {
+  color: var(--about-primary);
+}
+
+.about-growth__stage--active .about-growth__marker {
+  border-color: var(--about-secondary);
+
+  box-shadow: 0 0 0 7px rgba(0, 173, 234, 0.08);
+}
+
+.about-growth__stage--active .about-growth__marker i {
+  width: 12px;
+  height: 12px;
+
+  background-color: var(--about-secondary);
+}
+
+.about-growth__detail {
+  min-height: 142px;
+
+  display: grid;
+
+  grid-template-columns: 64px 1fr;
+
+  gap: 26px;
+  align-items: center;
+
+  margin-top: 12px;
+  padding: 26px 34px;
+
+  border: 1px solid #e6ebef;
+
+  background-color: #ffffff;
+
+  animation: about-growth-detail-enter 470ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.about-growth__detail-number {
+  align-self: stretch;
+
+  display: grid;
+  place-items: center;
+
+  border-left: 1px solid #e3e8ec;
+
+  color: var(--about-accent);
+
+  font-family: Arial, sans-serif;
+
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.about-growth__detail h3 {
+  margin: 0 0 10px;
+
+  color: #18222b;
+
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.about-growth__detail p {
+  margin: 0;
+
+  color: #616c75;
+
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 2.2;
+}
+
+/* =========================
+   انیمیشن‌ها
+========================= */
+
+@keyframes about-growth-detail-enter {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+
+    transform: translateY(0);
+  }
+}
+
+/* =========================
+   دسکتاپ کوچک‌تر
+========================= */
+
+@media (max-width: 1450px) {
+  .about-content-container {
+    width: min(calc(100% - 90px), 1320px);
+  }
+
+  .about-mission__grid {
+    gap: 64px;
+  }
+
+  .about-mission__card:first-child::after {
+    left: -33px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-growth__detail {
+    animation: none;
+  }
+
+  .about-growth__marker,
+  .about-growth__marker i {
+    transition: none;
+  }
+}
+
+#mission,
+#history,
+#achievements,
+#organization,
+#people-managers,
+#executive-manager,
+#steering-council,
+#scientific-committee,
+#department-managers,
+#strategic-document,
+#annual-reports {
+  scroll-margin-top: 115px;
+}

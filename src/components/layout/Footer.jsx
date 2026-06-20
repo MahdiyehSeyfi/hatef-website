@@ -3,14 +3,14 @@ import "./Footer.css";
 
 const firstLinks = [
   { label: "فراخوان‌ها", href: "#calls" },
-  { label: "آیین‌نامه‌ها", href: "#regulations" },
-  { label: "فرم‌ها", href: "#forms" },
+  { label: "آیین‌نامه‌ها", href: "/documents/regulations" },
+  { label: "فرم‌ها", href: "/documents/forms" },
   { label: "طرح‌های برگزیده", href: "#selected-projects" },
 ];
 
 const secondLinks = [
   { label: "درباره ما", href: "#about" },
-  { label: "تماس با ما", href: "#contact" },
+  { label: "تماس با ما", href: "/contact" },
 ];
 
 function InstagramIcon() {

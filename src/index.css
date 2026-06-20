@@ -70,3 +70,8 @@ p {
   );
   margin-inline: auto;
 }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 115px;
+}
