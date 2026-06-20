@@ -1,0 +1,20 @@
+:root {
+  --color-primary: #1a365d;
+  --color-secondary: #00adea;
+  --color-accent: #01d2c9;
+  --color-warning: #f9bd31;
+
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-background: #fafafa;
+  --color-border: #e5e7eb;
+  --color-text: #111827;
+  --color-muted: #6b7280;
+
+  --font-primary: "IRANSans", Tahoma, Arial, sans-serif;
+
+  --container-width: 1640px;
+  --container-padding: 32px;
+
+  --transition-normal: 300ms ease;
+}
