@@ -12,7 +12,7 @@ function HomePage() {
     <>
       <Header />
 
-      <main>
+      <main className="home-page__main">
         <HeroSlider />
         <SupportPlansSection />
         <NewsSection />

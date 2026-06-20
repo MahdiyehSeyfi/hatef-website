@@ -2,3 +2,7 @@
   width: 100%;
   min-height: 100vh;
 }
+
+.home-page__main {
+  padding-top: 96px;
+}

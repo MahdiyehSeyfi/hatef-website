@@ -9,21 +9,26 @@ const statistics = [
     id: 1,
     number: "+۱۲",
     label: "دانشکده‌های شرکت‌کرده",
+    description:
+      "دانشکده‌های مشارکت‌کننده در فراخوان‌ها، طرح‌ها و برنامه‌های توسعه فناوری هاتف",
   },
   {
     id: 2,
     number: "+۱۲",
     label: "دانشکده‌های شرکت‌کرده",
+    description: "مشارکت واحدهای دانشگاهی در اجرای پروژه‌های پژوهشی و فناورانه",
   },
   {
     id: 3,
     number: "+۱۲",
     label: "دانشکده‌های شرکت‌کرده",
+    description: "همکاری دانشکده‌ها برای توسعه راهکارهای نوآورانه و کاربردی",
   },
   {
     id: 4,
     number: "+۱۲",
     label: "دانشکده‌های شرکت‌کرده",
+    description: "حضور دانشکده‌های مختلف در مسیر ارتباط دانشگاه، صنعت و فناوری",
   },
 ];
 
@@ -64,7 +69,13 @@ function PartnersSection() {
                 {item.number}
               </strong>
 
-              <span className="partner-statistic__label">{item.label}</span>
+              <div className="partner-statistic__text">
+                <span className="partner-statistic__label">{item.label}</span>
+
+                <p className="partner-statistic__description">
+                  {item.description}
+                </p>
+              </div>
             </article>
           ))}
         </div>

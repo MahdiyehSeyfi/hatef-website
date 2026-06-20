@@ -1,159 +1,312 @@
 .hero-slider {
   position: relative;
   width: 100%;
-  height: clamp(650px, 49vw, 940px);
-  min-height: 650px;
+  height: 600px;
   overflow: hidden;
   color: var(--color-white);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+  background-color: #0d294d;
 }
 
-.hero-slider__shade {
+.hero-slider__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: hero-image-enter 750ms ease both;
+}
+
+.hero-slider__overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     90deg,
-    rgba(0, 0, 0, 0.08) 0%,
-    rgba(0, 0, 0, 0.02) 50%,
-    rgba(0, 0, 0, 0.12) 100%
+    rgba(4, 17, 35, 0.12),
+    rgba(4, 17, 35, 0.02) 45%,
+    rgba(4, 17, 35, 0.1)
   );
 }
 
 .hero-slider__content {
   position: relative;
-  z-index: 2;
-  width: min(
-    calc(100% - (2 * var(--container-padding))),
-    var(--container-width)
-  );
   height: 100%;
-  margin-inline: auto;
 }
 
+/*
+  خود پنل ثابت است.
+  دیگر روی این بخش key یا animation نداریم.
+*/
 .hero-slider__panel {
   position: absolute;
-  top: 13%;
-  right: 0;
+  right: 6%;
   bottom: 0;
-  width: min(760px, 46vw);
-  padding: clamp(52px, 5vw, 92px) clamp(45px, 4vw, 78px);
-  text-align: right;
-  background-color: rgba(16, 48, 88, 0.88);
+  width: 550px;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  padding: 44px 50px 36px;
+  background-color: rgba(10, 39, 79, 0.85);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+/*
+  فقط متن‌ها هنگام تغییر اسلاید دوباره ساخته
+  و متحرک می‌شوند.
+*/
+.hero-slider__copy {
+  flex: 0 0 auto;
+  min-height: 300px;
+}
+
+.hero-slider__title,
+.hero-slider__subtitle,
+.hero-slider__description p {
+  opacity: 0;
+  clip-path: inset(0 0 0 100%);
+  transform: translateX(22px);
+  will-change: opacity, clip-path, transform;
+  animation: hero-copy-reveal 680ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .hero-slider__title {
-  margin-bottom: 18px;
-  font-size: clamp(40px, 3.2vw, 64px);
-  font-weight: 900;
-  line-height: 1.25;
-  color: var(--color-secondary);
+  animation-delay: 40ms;
 }
 
 .hero-slider__subtitle {
-  margin-bottom: 56px;
-  font-size: clamp(26px, 2.1vw, 42px);
-  font-weight: 400;
-  line-height: 1.6;
+  animation-delay: 120ms;
+}
+
+.hero-slider__description p:nth-child(1) {
+  animation-delay: 200ms;
+}
+
+.hero-slider__description p:nth-child(2) {
+  animation-delay: 270ms;
+}
+
+.hero-slider__description p:nth-child(3) {
+  animation-delay: 340ms;
+}
+
+.hero-slider__title {
+  margin-bottom: 10px;
+  color: var(--color-secondary);
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.hero-slider__subtitle {
+  margin-bottom: 30px;
   color: var(--color-white);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.7;
 }
 
 .hero-slider__description {
-  margin-bottom: 62px;
+  margin-bottom: 32px;
 }
 
 .hero-slider__description p {
-  margin-bottom: 20px;
-  font-size: clamp(16px, 1.15vw, 22px);
+  margin-bottom: 10px;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 15px;
   font-weight: 400;
   line-height: 2;
 }
 
+/*
+  دکمه‌ها بیرون از hero-slider__copy هستند؛
+  بنابراین هنگام تغییر متن جابه‌جا یا بازسازی نمی‌شوند.
+*/
 .hero-slider__buttons {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(190px, 1fr));
-  gap: 38px;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 32px;
+  margin-top: 18px;
 }
 
 .hero-slider__button {
-  min-height: 66px;
-  display: flex;
+  width: 200px;
+  min-height: 48px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 24px;
-  border: 2px solid transparent;
-  font-size: 20px;
+  padding: 10px 24px;
+  border: 1px solid transparent;
+  font-size: 15px;
   font-weight: 500;
-  text-align: center;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.hero-slider__button:hover {
+  transform: translateY(-2px);
 }
 
 .hero-slider__button--primary {
   color: var(--color-white);
-  background-color: var(--color-secondary);
   border-color: var(--color-secondary);
+  background-color: var(--color-secondary);
+}
+
+.hero-slider__button--primary:hover {
+  border-color: #009ed6;
+  background-color: #009ed6;
 }
 
 .hero-slider__button--outline {
   color: var(--color-white);
-  background-color: transparent;
-  border-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.75);
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
-.hero-slider__controls {
+.hero-slider__button--outline:hover {
+  border-color: var(--color-white);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.hero-slider__navigation {
   position: absolute;
-  z-index: 3;
+  z-index: 4;
   top: 50%;
-  left: 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  color: var(--color-white);
+  background-color: rgba(12, 42, 77, 0.52);
+  backdrop-filter: blur(4px);
   transform: translateY(-50%);
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease,
+    border-color 180ms ease;
 }
 
-.hero-slider__arrow {
-  font-family: Arial, sans-serif;
-  font-size: 34px;
-  line-height: 1;
-  color: var(--color-white);
+.hero-slider__navigation:hover {
+  border-color: var(--color-secondary);
+  background-color: var(--color-secondary);
+  transform: translateY(-50%) scale(1.06);
+}
+
+.hero-slider__navigation--previous {
+  left: 34px;
+}
+
+.hero-slider__navigation--next {
+  right: 34px;
+}
+
+.hero-slider__arrow-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.hero-slider__arrow-icon--previous {
+  transform: rotate(180deg);
 }
 
 .hero-slider__dots {
+  position: absolute;
+  z-index: 4;
+  right: 50%;
+  bottom: 24px;
   display: flex;
-  flex-direction: column;
-  gap: 11px;
+  align-items: center;
+  gap: 9px;
+  transform: translateX(50%);
 }
 
 .hero-slider__dot {
-  width: 13px;
-  height: 13px;
-  display: block;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.75);
+  position: relative;
+  width: 9px;
+  height: 9px;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.65);
+  transition:
+    width 260ms ease,
+    background-color 260ms ease,
+    transform 260ms ease;
+}
+
+.hero-slider__dot:hover {
+  transform: scale(1.25);
 }
 
 .hero-slider__dot--active {
-  width: 16px;
-  height: 16px;
-  background-color: var(--color-accent);
+  width: 34px;
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
-@media (max-width: 1400px) {
-  .hero-slider__panel {
-    width: min(680px, 49vw);
-    padding: 54px 48px;
+.hero-slider__dot--active::after {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  content: "";
+  border-radius: inherit;
+  background-color: var(--color-accent);
+  transform-origin: right;
+  animation: hero-dot-progress 6s linear both;
+}
+
+@keyframes hero-image-enter {
+  from {
+    opacity: 0;
+    transform: scale(1.025);
   }
 
-  .hero-slider__subtitle {
-    margin-bottom: 35px;
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes hero-copy-reveal {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 0 100%);
+    transform: translateX(22px);
   }
 
-  .hero-slider__description {
-    margin-bottom: 38px;
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes hero-dot-progress {
+  from {
+    transform: scaleX(0);
   }
 
-  .hero-slider__buttons {
-    gap: 20px;
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-slider__image,
+  .hero-slider__copy > *,
+  .hero-slider__dot--active::after {
+    animation-duration: 1ms;
+  }
+
+  .hero-slider__button,
+  .hero-slider__navigation,
+  .hero-slider__dot {
+    transition-duration: 1ms;
   }
 }

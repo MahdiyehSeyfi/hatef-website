@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import slide1 from "../../assets/images/slide-1.png";
 import slide2 from "../../assets/images/slide-2.png";
 import slide3 from "../../assets/images/slide-3.png";
@@ -10,49 +11,126 @@ const slides = [
     image: slide1,
     title: "هاتف",
     subtitle: "برنامه هدایت اعتبارات توسعه فناوری",
+    descriptions: [
+      "توضیحات برنامه هاتف برای پژوهشگران و متقاضیان برنامه هاتف",
+      "برای پژوهشگران، فناوران و صاحبان ایده‌های توسعه فناوری",
+      "حمایت از تجاری‌سازی بروندادهای دانشگاهی و توسعه محصولات فناورانه",
+    ],
   },
   {
     id: 2,
     image: slide2,
-    title: "هاتف",
-    subtitle: "حمایت از توسعه فناوری‌های دانشگاهی",
+    title: "حمایت پژوهشی",
+    subtitle: "توسعه ایده‌های دانشگاهی و فناورانه",
+    descriptions: [
+      "حمایت از پژوهشگران و صاحبان ایده‌های نوآورانه",
+      "تسهیل ارتباط دانشگاه با صنعت و بازار",
+      "توسعه راهکارهای کاربردی و قابل تجاری‌سازی",
+    ],
   },
   {
     id: 3,
     image: slide3,
-    title: "هاتف",
-    subtitle: "تجاری‌سازی دستاوردهای پژوهشی",
+    title: "تجاری‌سازی",
+    subtitle: "تبدیل دستاوردهای پژوهشی به محصول",
+    descriptions: [
+      "همراهی با تیم‌های دانشگاهی در مسیر توسعه محصول",
+      "ایجاد فرصت‌های همکاری و سرمایه‌گذاری",
+      "حمایت از پروژه‌های دارای ظرفیت ورود به بازار",
+    ],
   },
   {
     id: 4,
     image: slide4,
-    title: "هاتف",
-    subtitle: "ارتباط دانشگاه، صنعت و فناوری",
+    title: "همکاری",
+    subtitle: "ارتباط مؤثر میان دانشگاه و صنعت",
+    descriptions: [
+      "ایجاد شبکه همکاری میان پژوهشگران و صنایع",
+      "توسعه پروژه‌های مشترک و مسئله‌محور",
+      "استفاده از ظرفیت‌های علمی دانشگاه تهران",
+    ],
   },
 ];
 
+function ArrowIcon({ direction }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className={`hero-slider__arrow-icon hero-slider__arrow-icon--${direction}`}
+    >
+      <path
+        d="M8.5 5.5 15 12l-6.5 6.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function HeroSlider() {
-  const activeSlide = slides[0];
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const activeSlide = slides[activeIndex];
+
+  const showNextSlide = () => {
+    setActiveIndex((currentIndex) => {
+      return (currentIndex + 1) % slides.length;
+    });
+  };
+
+  const showPreviousSlide = () => {
+    setActiveIndex((currentIndex) => {
+      return (currentIndex - 1 + slides.length) % slides.length;
+    });
+  };
+
+  const showSelectedSlide = (index) => {
+    setActiveIndex(index);
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setActiveIndex((currentIndex) => {
+        return (currentIndex + 1) % slides.length;
+      });
+    }, 6000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [activeIndex]);
 
   return (
-    <section
-      className="hero-slider"
-      style={{ backgroundImage: `url(${activeSlide.image})` }}
-    >
-      <div className="hero-slider__shade" />
+    <section className="hero-slider">
+      <img
+        key={`hero-image-${activeSlide.id}`}
+        className="hero-slider__image"
+        src={activeSlide.image}
+        alt=""
+      />
 
-      <div className="hero-slider__content">
+      <div className="hero-slider__overlay" />
+
+      <div className="container hero-slider__content">
         <div className="hero-slider__panel">
-          <h1 className="hero-slider__title">{activeSlide.title}</h1>
+          <div
+            key={`hero-copy-${activeSlide.id}`}
+            className="hero-slider__copy"
+            aria-live="polite"
+          >
+            <h1 className="hero-slider__title">{activeSlide.title}</h1>
 
-          <h2 className="hero-slider__subtitle">{activeSlide.subtitle}</h2>
+            <h2 className="hero-slider__subtitle">{activeSlide.subtitle}</h2>
 
-          <div className="hero-slider__description">
-            <p>توضیحات برنامه هاتف برای پژوهشگران و متقاضیان برنامه هاتف</p>
-            <p>برای پژوهشگران، فناوران و صاحبان ایده‌های توسعه فناوری</p>
-            <p>
-              حمایت از تجاری‌سازی بروندادهای دانشگاهی و توسعه محصولات فناورانه
-            </p>
+            <div className="hero-slider__description">
+              {activeSlide.descriptions.map((description) => (
+                <p key={description}>{description}</p>
+              ))}
+            </div>
           </div>
 
           <div className="hero-slider__buttons">
@@ -73,21 +151,41 @@ function HeroSlider() {
         </div>
       </div>
 
-      <div className="hero-slider__controls" aria-hidden="true">
-        <span className="hero-slider__arrow">⌃</span>
+      <button
+        type="button"
+        className="hero-slider__navigation hero-slider__navigation--previous"
+        onClick={showPreviousSlide}
+        aria-label="اسلاید قبلی"
+      >
+        <ArrowIcon direction="previous" />
+      </button>
 
-        <div className="hero-slider__dots">
-          {slides.map((slide, index) => (
-            <span
+      <button
+        type="button"
+        className="hero-slider__navigation hero-slider__navigation--next"
+        onClick={showNextSlide}
+        aria-label="اسلاید بعدی"
+      >
+        <ArrowIcon direction="next" />
+      </button>
+
+      <div className="hero-slider__dots" aria-label="انتخاب اسلاید">
+        {slides.map((slide, index) => {
+          const isActive = index === activeIndex;
+
+          return (
+            <button
               key={slide.id}
+              type="button"
               className={`hero-slider__dot ${
-                index === 0 ? "hero-slider__dot--active" : ""
+                isActive ? "hero-slider__dot--active" : ""
               }`}
+              onClick={() => showSelectedSlide(index)}
+              aria-label={`نمایش اسلاید ${index + 1}`}
+              aria-current={isActive ? "true" : undefined}
             />
-          ))}
-        </div>
-
-        <span className="hero-slider__arrow">⌄</span>
+          );
+        })}
       </div>
     </section>
   );
