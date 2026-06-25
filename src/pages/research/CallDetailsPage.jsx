@@ -5,17 +5,10 @@ import ctaBannerImage from "../../assets/images/banner-2.png";
 
 import NewsSidebar from "../../components/news/NewsSidebar";
 
-import "./CallDetailsPage.css";
+import { getCallById, getCalls } from "../../services/callService";
+import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
 
-const callData = {
-  id: 1,
-  number: "۲",
-  title: "فراخوان اولین دوره هدایت اعتبارات توسعه فناوری (هاتف) ۱۴۰۴–۱۴۰۵",
-  category: "با محوریت هوش مصنوعی",
-  deadline: "مهلت تا: ۱۴۰۵/۰۵/۰۵",
-  status: "در حال دریافت طرح‌ها",
-  submitStatus: "در حال دریافت طرح",
-};
+import "./CallDetailsPage.css";
 
 const quickLinks = [
   {
@@ -44,23 +37,100 @@ const quickLinks = [
 const faqItems = [
   {
     id: 1,
-    question: "عنوان سند راهبردی شماره ۱",
+    question: "چه کسانی می‌توانند در این فراخوان شرکت کنند؟",
     answer:
-      "توضیحات مربوط به این سوال در این بخش قرار می‌گیرد. این متن می‌تواند شامل شرایط، مدارک لازم و زمان‌بندی ارسال طرح باشد.",
+      "پژوهشگران، فناوران، تیم‌های نوآور و صاحبان ایده می‌توانند با توجه به شرایط اعلام‌شده در فراخوان، طرح خود را ثبت کنند.",
   },
   {
     id: 2,
-    question: "عنوان سند راهبردی شماره ۱",
+    question: "طرح‌ها چگونه بررسی می‌شوند؟",
     answer:
-      "پاسخ این سوال می‌تواند درباره نحوه ثبت‌نام، بررسی اولیه، داوری تخصصی و مراحل بعدی دریافت حمایت باشد.",
+      "طرح‌ها ابتدا از نظر کامل‌بودن مدارک بررسی می‌شوند و سپس وارد مرحله ارزیابی تخصصی، بررسی داوران و تصمیم‌گیری نهایی می‌شوند.",
   },
   {
     id: 3,
-    question: "عنوان سند راهبردی شماره ۱",
+    question: "نتیجه طرح از کجا قابل مشاهده است؟",
     answer:
-      "در این بخش می‌توان توضیحات تکمیلی درباره فرآیند ارسال طرح و پیگیری وضعیت آن را قرار داد.",
+      "پس از انتشار نتایج توسط دبیرخانه، فناور می‌تواند نتیجه نهایی طرح خود را از طریق داشبورد کاربری مشاهده کند.",
   },
 ];
+
+function toPersianNumber(value) {
+  const persianDigits = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+
+  return String(value).replace(/\d/g, (digit) => persianDigits[Number(digit)]);
+}
+
+function getCallByRouteParam(callId) {
+  const directCall = getCallById(callId);
+
+  if (directCall) {
+    return directCall;
+  }
+
+  const allCalls = getCalls();
+  const numericIndex = Number(callId);
+
+  if (Number.isInteger(numericIndex) && numericIndex > 0) {
+    return allCalls[numericIndex - 1] || null;
+  }
+
+  return null;
+}
+
+function getCallNumber(call) {
+  const allCalls = getCalls();
+  const index = allCalls.findIndex((item) => item.id === call.id);
+
+  if (index === -1) {
+    return "۱";
+  }
+
+  return toPersianNumber(index + 1);
+}
+
+function getCallCategory(call) {
+  return call.field ? `با محوریت ${call.field}` : "فراخوان برنامه هاتف";
+}
+
+function getCallDeadline(call) {
+  if (!call.deadlineDate && !call.deadlineTime) {
+    return "مهلت ارسال مشخص نشده است";
+  }
+
+  if (call.deadlineDate && call.deadlineTime) {
+    return `مهلت تا: ${call.deadlineDate} ساعت ${call.deadlineTime}`;
+  }
+
+  return `مهلت تا: ${call.deadlineDate || call.deadlineTime}`;
+}
+
+function getCallSubmitStatus(call) {
+  if (call.status === CALL_STATUS.PUBLISHED) {
+    return "در حال دریافت طرح";
+  }
+
+  return CALL_STATUS_LABELS[call.status] || "وضعیت نامشخص";
+}
+
+function getCallStatusLabel(call) {
+  if (call.status === CALL_STATUS.PUBLISHED) {
+    return "در حال دریافت طرح‌ها";
+  }
+
+  return CALL_STATUS_LABELS[call.status] || "وضعیت نامشخص";
+}
+
+function mapCallDetails(call) {
+  return {
+    ...call,
+    number: getCallNumber(call),
+    category: getCallCategory(call),
+    deadline: getCallDeadline(call),
+    status: getCallStatusLabel(call),
+    submitStatus: getCallSubmitStatus(call),
+  };
+}
 
 function CallBadge({ children, variant = "default" }) {
   return (
@@ -79,16 +149,29 @@ function SectionTitle({ children }) {
   );
 }
 
-function QuickActions() {
+function QuickActions({ call }) {
+  const links = quickLinks.map((item) => {
+    if (item.download && call.pdfFileUrl) {
+      return {
+        ...item,
+        href: call.pdfFileUrl,
+      };
+    }
+
+    return item;
+  });
+
   return (
     <aside className="call-details__quick-actions">
-      {quickLinks.map((item) => (
+      {links.map((item) => (
         <a
           key={item.id}
           href={item.href}
           className={`call-details__quick-link ${
             item.download ? "call-details__quick-link--download" : ""
           }`}
+          target={item.download && call.pdfFileUrl ? "_blank" : undefined}
+          rel={item.download && call.pdfFileUrl ? "noreferrer" : undefined}
         >
           {item.download && <span aria-hidden="true">↓</span>}
           {item.label}
@@ -102,40 +185,40 @@ function QuickActions() {
   );
 }
 
-function CallHero() {
+function CallHero({ call }) {
+  const isActive = call.status === CALL_STATUS.PUBLISHED;
+
   return (
     <section className="call-details__hero">
       <div className="call-details__hero-image">
-        <img src={bannerImage} alt={callData.title} />
+        <img src={bannerImage} alt={call.title} />
 
         <div className="call-details__hero-status">
-          <CallBadge variant="active">{callData.submitStatus}</CallBadge>
-          <span>{callData.deadline}</span>
+          <CallBadge variant={isActive ? "active" : "default"}>
+            {call.submitStatus}
+          </CallBadge>
+
+          <span>{call.deadline}</span>
         </div>
       </div>
 
       <div className="call-details__hero-content">
-        <QuickActions />
+        <QuickActions call={call} />
 
         <div className="call-details__hero-info">
           <div className="call-details__meta">
-            <span className="call-details__number">{callData.number}</span>
+            <span className="call-details__number">{call.number}</span>
 
-            <h1>{callData.title}</h1>
+            <h1>{call.title}</h1>
 
-            <CallBadge>{callData.category}</CallBadge>
+            <CallBadge>{call.category}</CallBadge>
           </div>
 
-          <p>
-            در این بخش، اولویت‌های پژوهشی سال جاری معرفی شده‌اند. پژوهشگران
-            می‌توانند با توجه به این محورها، طرح‌های پژوهشی و فناورانه خود را در
-            راستای اولویت‌های تعیین‌شده ارائه دهند.
-          </p>
+          <p>{call.description}</p>
 
           <p>
-            این فراخوان با هدف حمایت از ایده‌ها و طرح‌های فناورانه دانشگاهی
-            طراحی شده و تلاش می‌کند مسیر تبدیل پژوهش به محصول، خدمت یا راهکار
-            کاربردی را کوتاه‌تر و دقیق‌تر کند.
+            {call.moreDescription ||
+              "این فراخوان با هدف حمایت از ایده‌ها و طرح‌های فناورانه دانشگاهی طراحی شده و تلاش می‌کند مسیر تبدیل پژوهش به محصول، خدمت یا راهکار کاربردی را کوتاه‌تر و دقیق‌تر کند."}
           </p>
         </div>
       </div>
@@ -143,46 +226,73 @@ function CallHero() {
   );
 }
 
-function CallContent() {
+function CallContent({ call }) {
   return (
     <article className="call-details__article">
       <section id="registration-guide">
         <SectionTitle>محورهای پژوهشی سال جاری</SectionTitle>
 
         <p>
-          در این بخش، اولویت‌های پژوهشی سال جاری معرفی شده‌اند. پژوهشگران
-          می‌توانند با توجه به این محورها، طرح‌های پژوهشی و فناورانه خود را در
-          راستای اولویت‌های تعیین‌شده ارائه دهند. در این بخش، پژوهشگران
-          می‌توانند با توجه به این محورها، طرح‌های پژوهشی و فناورانه خود را در
-          راستای اولویت‌های تعیین‌شده ارائه دهند.
+          این فراخوان در حوزه <strong>{call.field}</strong> تعریف شده است و
+          متقاضیان می‌توانند طرح‌های مرتبط با این محور را برای بررسی ارسال کنند.
         </p>
 
         <p>
-          هدف از اعلام این محورها، تمرکز بر نیازهای واقعی جامعه، صنعت و زیست‌بوم
-          فناوری کشور است. طرح‌های ارسالی باید مسئله‌محور، قابل توسعه و دارای
-          ظرفیت تبدیل‌شدن به محصول یا خدمت باشند.
+          طرح‌های ارسالی باید مسئله‌محور، قابل اجرا، دارای ظرفیت توسعه و مرتبط
+          با نیازهای واقعی جامعه، صنعت یا زیست‌بوم فناوری باشند.
         </p>
       </section>
 
       <section id="eligibility">
-        <SectionTitle>محورهای پژوهشی سال جاری</SectionTitle>
+        <SectionTitle>شرایط احراز و ارسال آثار</SectionTitle>
 
         <p>
-          در این بخش، پژوهشگران می‌توانند با توجه به محورهای معرفی‌شده، طرح‌های
-          پژوهشی و فناورانه خود را آماده کنند. طرح‌ها پس از ارسال، ابتدا از نظر
-          کامل‌بودن مدارک و انطباق با محور فراخوان بررسی می‌شوند.
+          متقاضیان لازم است اطلاعات طرح، اعضای تیم، سوابق مرتبط، برنامه اجرایی و
+          مستندات موردنیاز را با دقت آماده کنند و در بازه زمانی اعلام‌شده ارسال
+          کنند.
         </p>
 
         <p>
-          پس از بررسی اولیه، طرح‌های واجد شرایط وارد مرحله ارزیابی تخصصی
-          می‌شوند. در این مرحله، معیارهایی مانند نوآوری، امکان اجرا، قابلیت
-          توسعه، اثرگذاری و ظرفیت تجاری‌سازی مورد توجه قرار می‌گیرد.
+          پس از ثبت طرح، دبیرخانه ابتدا کامل‌بودن مدارک و ارتباط طرح با محور
+          فراخوان را بررسی می‌کند. سپس طرح وارد مرحله ارزیابی تخصصی و داوری
+          می‌شود.
         </p>
 
         <p>
-          پژوهشگران و تیم‌های فناور لازم است اطلاعات طرح، اعضای تیم، سوابق
-          مرتبط، برنامه اجرایی و مستندات موردنیاز را با دقت آماده و ارسال کنند.
+          معیارهایی مانند نوآوری، امکان اجرا، ظرفیت توسعه، اثرگذاری و امکان
+          تجاری‌سازی در بررسی طرح‌ها مورد توجه قرار می‌گیرد.
         </p>
+      </section>
+
+      <section id="proposal-guide">
+        <SectionTitle>راهنمای تدوین پروپوزال</SectionTitle>
+
+        <p>
+          پروپوزال بهتر است شامل تعریف مسئله، راهکار پیشنهادی، نوآوری طرح، تیم
+          اجرایی، زمان‌بندی، منابع موردنیاز، خروجی مورد انتظار و مسیر توسعه یا
+          تجاری‌سازی باشد.
+        </p>
+
+        <p>
+          هرچه مسیر اجرا، مزیت رقابتی و خروجی طرح شفاف‌تر نوشته شود، فرآیند
+          بررسی و تصمیم‌گیری دقیق‌تر انجام خواهد شد.
+        </p>
+      </section>
+
+      <section id="download-pdf">
+        <SectionTitle>نسخه PDF فراخوان</SectionTitle>
+
+        {call.pdfFileUrl ? (
+          <p>
+            نسخه PDF این فراخوان از طریق لینک نسخه PDF در بخش دسترسی سریع قابل
+            دریافت است.
+          </p>
+        ) : (
+          <p>
+            برای این فراخوان هنوز فایل PDF جداگانه ثبت نشده است. اطلاعات اصلی
+            فراخوان در همین صفحه قابل مشاهده است.
+          </p>
+        )}
       </section>
     </article>
   );
@@ -196,16 +306,16 @@ function CallCta() {
       <div className="call-details__cta-overlay" />
 
       <div className="call-details__cta-content">
-        <h2>برای تدوین نقشه راه تجاری‌سازی اقدام کنید</h2>
+        <h2>برای ثبت طرح خود در این فراخوان اقدام کنید</h2>
 
         <p>
-          در صورت تمایل به دریافت این خدمت، درخواست خود را ثبت کنید تا پس از
-          بررسی اولیه، فرآیند تدوین نقشه راه آغاز شود.
+          پس از مطالعه شرایط فراخوان، می‌توانید از طریق داشبورد فناور طرح خود را
+          ثبت و وضعیت بررسی آن را پیگیری کنید.
         </p>
 
         <div className="call-details__cta-actions">
-          <a href="#submit-form">تدوین نقشه راه</a>
-          <a href="#consultation">مشاوره با کارشناسان</a>
+          <Link to="/auth">ورود به سامانه</Link>
+          <Link to="/research-support/guide-eligibility">راهنمای شرکت</Link>
         </div>
       </div>
     </section>
@@ -233,13 +343,43 @@ function CallFaq() {
   );
 }
 
+function CallNotFound() {
+  return (
+    <main className="call-details">
+      <div className="call-details__container">
+        <section className="call-details__article">
+          <SectionTitle>فراخوان پیدا نشد</SectionTitle>
+
+          <p>
+            فراخوانی با این شناسه در سامانه ثبت نشده است یا ممکن است آدرس وارد
+            شده اشتباه باشد.
+          </p>
+
+          <div className="call-details__back-wrap">
+            <Link to="/research-support/calls" className="call-details__back">
+              بازگشت به فهرست فراخوان‌ها
+            </Link>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
 function CallDetailsPage() {
   const { callId } = useParams();
+  const selectedCall = getCallByRouteParam(callId);
+
+  if (!selectedCall) {
+    return <CallNotFound />;
+  }
+
+  const call = mapCallDetails(selectedCall);
 
   return (
     <main className="call-details">
       <div className="call-details__container">
-        <CallHero />
+        <CallHero call={call} />
 
         <div className="call-details__layout">
           <aside className="call-details__sidebar">
@@ -247,7 +387,7 @@ function CallDetailsPage() {
           </aside>
 
           <div className="call-details__main">
-            <CallContent />
+            <CallContent call={call} />
           </div>
         </div>
 
@@ -261,7 +401,7 @@ function CallDetailsPage() {
           </Link>
 
           <span className="call-details__page-id">
-            شناسه فراخوان: {callId || callData.id}
+            شناسه فراخوان: {call.id}
           </span>
         </div>
       </div>
