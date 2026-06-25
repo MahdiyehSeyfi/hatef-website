@@ -1,0 +1,87 @@
+import {
+  PLAN_FINAL_STATUS,
+  PLAN_REVIEW_STATUS,
+  PLAN_STATUS,
+} from "../constants/statuses";
+
+export const MOCK_PLANS = [
+  {
+    id: "plan-ai-assistant",
+    trackingCode: "HTF-1405-001",
+    title: "دستیار هوشمند تحلیل نیازهای فناورانه سازمان‌ها",
+    summary:
+      "سامانه‌ای مبتنی بر هوش مصنوعی برای تحلیل نیازهای سازمانی و پیشنهاد راهکارهای فناورانه.",
+    callId: "call-ai-2026",
+    innovatorId: "user-innovator-1",
+    field: "هوش مصنوعی",
+    proposalFileUrl: "",
+    status: PLAN_STATUS.UNDER_REVIEW,
+    currentReviewStatus: PLAN_REVIEW_STATUS.PENDING,
+    committeeFeedback: "",
+    finalStatus: PLAN_FINAL_STATUS.NONE,
+    finalDecisionNote: "",
+    resultsPublished: false,
+    submittedAt: "1405/03/15",
+    updatedAt: "1405/03/15",
+  },
+  {
+    id: "plan-energy-monitoring",
+    trackingCode: "HTF-1405-002",
+    title: "پلتفرم پایش مصرف انرژی در ساختمان‌های هوشمند",
+    summary:
+      "راهکاری برای جمع‌آوری داده مصرف انرژی، تحلیل الگوها و ارائه پیشنهادهای بهینه‌سازی.",
+    callId: "call-ai-2026",
+    innovatorId: "user-innovator-1",
+    field: "انرژی هوشمند",
+    proposalFileUrl: "",
+    status: PLAN_STATUS.REVIEWED,
+    currentReviewStatus: PLAN_REVIEW_STATUS.REVIEWED,
+    committeeFeedback:
+      "طرح از نظر مسئله و کاربرد صنعتی قابل توجه است و نیاز به تکمیل مدل درآمدی دارد.",
+    finalStatus: PLAN_FINAL_STATUS.WEAK_ACCEPTED,
+    finalDecisionNote:
+      "طرح به‌صورت قبول ضعیف تأیید شد و باید در مرحله اجرا مدل تجاری تکمیل شود.",
+    resultsPublished: true,
+    submittedAt: "1405/03/18",
+    updatedAt: "1405/03/25",
+  },
+  {
+    id: "plan-marketplace",
+    trackingCode: "HTF-1405-003",
+    title: "بازارگاه اتصال فناوران و همکاران تجاری",
+    summary:
+      "پلتفرمی برای معرفی طرح‌های دانشگاهی به شرکت‌ها و سرمایه‌گذاران حوزه فناوری.",
+    callId: "call-commercial-2026",
+    innovatorId: "user-innovator-1",
+    field: "تجاری‌سازی",
+    proposalFileUrl: "",
+    status: PLAN_STATUS.ACCEPTED,
+    currentReviewStatus: PLAN_REVIEW_STATUS.REVIEWED,
+    committeeFeedback:
+      "طرح از نظر نیاز بازار و امکان همکاری تجاری ظرفیت مناسبی دارد.",
+    finalStatus: PLAN_FINAL_STATUS.ACCEPTED,
+    finalDecisionNote: "طرح برای ورود به مسیر تجاری‌سازی تأیید شد.",
+    resultsPublished: true,
+    submittedAt: "1405/03/20",
+    updatedAt: "1405/03/28",
+  },
+  {
+    id: "plan-health-ai",
+    trackingCode: "HTF-1405-004",
+    title: "تحلیل هوشمند داده‌های سلامت برای غربالگری اولیه",
+    summary:
+      "ابزاری برای تحلیل داده‌های اولیه سلامت و کمک به شناسایی ریسک‌های اولیه.",
+    callId: "call-ai-2026",
+    innovatorId: "user-innovator-1",
+    field: "سلامت دیجیتال",
+    proposalFileUrl: "",
+    status: PLAN_STATUS.UNDER_REVIEW,
+    currentReviewStatus: PLAN_REVIEW_STATUS.PENDING,
+    committeeFeedback: "",
+    finalStatus: PLAN_FINAL_STATUS.NONE,
+    finalDecisionNote: "",
+    resultsPublished: false,
+    submittedAt: "1405/03/22",
+    updatedAt: "1405/03/22",
+  },
+];
