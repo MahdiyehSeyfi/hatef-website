@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 
 import ScrollManager from "./ScrollManager";
+import ProtectedRoute from "./ProtectedRoute";
+import AuthSessionGuard from "./AuthSessionGuard";
 import MainLayout from "../layouts/MainLayout";
 
 import HomePage from "../pages/HomePage";
@@ -38,30 +40,66 @@ import ReviewerDashboardPage from "../pages/dashboard/ReviewerDashboardPage";
 import InstructorDashboardPage from "../pages/dashboard/InstructorDashboardPage";
 import CommitteeSecretariatDashboardPage from "../pages/dashboard/CommitteeSecretariatDashboardPage";
 
+import { USER_ROLES } from "../constants/roles";
+
 function AppRouter() {
   return (
     <BrowserRouter>
       <ScrollManager />
-
+      <AuthSessionGuard />
       <Routes>
         <Route path="auth" element={<AuthPage />} />
+
         <Route
           path="dashboard/innovator"
-          element={<InnovatorDashboardPage />}
+          element={
+            <ProtectedRoute allowedRoles={[USER_ROLES.INNOVATOR]}>
+              <InnovatorDashboardPage />
+            </ProtectedRoute>
+          }
         />
+
+        <Route
+          path="dashboard/business"
+          element={<Navigate to="/dashboard/business-collaboration" replace />}
+        />
+
         <Route
           path="dashboard/business-collaboration"
-          element={<BusinessDashboardPage />}
+          element={
+            <ProtectedRoute allowedRoles={[USER_ROLES.BUSINESS_PARTNER]}>
+              <BusinessDashboardPage />
+            </ProtectedRoute>
+          }
         />
-        <Route path="dashboard/reviewer" element={<ReviewerDashboardPage />} />
+
+        <Route
+          path="dashboard/reviewer"
+          element={
+            <ProtectedRoute allowedRoles={[USER_ROLES.REVIEWER]}>
+              <ReviewerDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="dashboard/instructor"
-          element={<InstructorDashboardPage />}
+          element={
+            <ProtectedRoute allowedRoles={[USER_ROLES.INSTRUCTOR]}>
+              <InstructorDashboardPage />
+            </ProtectedRoute>
+          }
         />
+
         <Route
           path="dashboard/committee-secretariat"
-          element={<CommitteeSecretariatDashboardPage />}
+          element={
+            <ProtectedRoute allowedRoles={[USER_ROLES.COMMITTEE]}>
+              <CommitteeSecretariatDashboardPage />
+            </ProtectedRoute>
+          }
         />
+
         <Route element={<MainLayout />}>
           <Route
             path="business/collaboration"
@@ -79,6 +117,7 @@ function AppRouter() {
             path="business/opportunities"
             element={<CollaborationOpportunitiesPage />}
           />
+
           <Route
             path="research-support/calls/:callId"
             element={<CallDetailsPage />}
@@ -92,30 +131,36 @@ function AppRouter() {
             path="research-support/guide-eligibility"
             element={<GuideEligibilityPage />}
           />
-
           <Route
             path="research-support/review-evaluation"
             element={<ReviewEvaluationPage />}
           />
+
           <Route
             path="services/commercialization-roadmap"
             element={<CommercializationRoadmapPage />}
           />
+          <Route
+            path="services"
+            element={<Navigate to="/services/technology-guidance" replace />}
+          />
+          <Route
+            path="services/technology-guidance"
+            element={<TechnologyGuidancePage />}
+          />
+          <Route path="services/consulting" element={<ConsultingPage />} />
+
           <Route index element={<HomePage />} />
-
           <Route path="about" element={<AboutPage />} />
-
           <Route path="contact" element={<ContactPage />} />
 
           <Route path="news" element={<NewsPage />} />
-
           <Route path="news/:newsId" element={<NewsDetailsPage />} />
 
           <Route
             path="documents"
             element={<Navigate to="/documents/forms" replace />}
           />
-
           <Route path="documents/:category" element={<DocumentsPage />} />
 
           <Route
@@ -124,37 +169,21 @@ function AppRouter() {
               <ActivitiesPage key="combined-activities-page" mode="combined" />
             }
           />
-
           <Route
             path="events/all"
             element={<ActivitiesPage key="events-only-page" mode="events" />}
           />
-
           <Route path="events/:eventId" element={<EventDetailsPage />} />
 
           <Route
             path="courses"
             element={<Navigate to="/courses/all" replace />}
           />
-
           <Route
             path="courses/all"
             element={<ActivitiesPage key="courses-only-page" mode="courses" />}
           />
-
           <Route path="courses/:courseId" element={<CourseDetailsPage />} />
-
-          <Route
-            path="services"
-            element={<Navigate to="/services/technology-guidance" replace />}
-          />
-
-          <Route
-            path="services/technology-guidance"
-            element={<TechnologyGuidancePage />}
-          />
-
-          <Route path="services/consulting" element={<ConsultingPage />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
