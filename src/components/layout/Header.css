@@ -358,3 +358,22 @@
   color: var(--color-primary);
   background-color: #f7f9fc;
 }
+
+.site-header__navigation--locked .site-header__submenu {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.site-header {
+  z-index: 10000;
+}
+
+.site-header__submenu {
+  z-index: 10020;
+}
+
+.site-search {
+  z-index: 9990;
+}

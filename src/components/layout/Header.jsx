@@ -20,7 +20,7 @@ const navigationItems = [
         href: "/about#history",
       },
       {
-        label: "چارت سازمانی",
+        label: "نمودار سازمانی",
         href: "/about#organization",
       },
       {
@@ -35,97 +35,89 @@ const navigationItems = [
   },
   {
     label: "حمایت پژوهشی",
-    href: "#research-support",
+    href: "/#research-support",
     children: [
       {
-        label: "محورهای سال جاری",
-        href: "#current-fields",
-      },
-      {
         label: "فراخوان‌ها",
-        href: "#calls",
+        href: "/research-support/calls",
       },
       {
-        label: "شرایط احراز",
-        href: "#requirements",
+        label: "محورهای سال جاری",
+        href: "/research-support/current-fields",
       },
       {
         label: "راهنمای ثبت‌نام",
-        href: "#registration-guide",
+        href: "/research-support/guide-eligibility",
+      },
+      {
+        label: "شرایط احراز",
+        href: "/research-support/guide-eligibility#eligibility",
       },
       {
         label: "شیوه‌نامه تدوین پروپوزال",
-        href: "#proposal-guide",
+        href: "/research-support/guide-eligibility#proposal-guideline",
       },
       {
         label: "نظام داوری",
-        href: "#review-system",
+        href: "/research-support/review-evaluation",
       },
       {
         label: "معیارهای ارزیابی",
-        href: "#evaluation-criteria",
+        href: "/research-support/review-evaluation#evaluation-criteria",
       },
     ],
   },
   {
     label: "همکاری‌های تجاری",
-    href: "#business",
+    href: "/#business",
     children: [
       {
         label: "فرصت‌های همکاری",
-        href: "#collaboration-opportunities",
-        children: [
-          {
-            label: "فرصت‌های سرمایه‌گذاری",
-            href: "#investment-opportunities",
-          },
-          {
-            label: "فرصت‌های تجاری",
-            href: "#commercial-opportunities",
-          },
-        ],
-      },
-      {
-        label: "مزایای همکاری",
-        href: "#collaboration-benefits",
+        href: "/business/opportunities",
       },
       {
         label: "دستاوردها و پروژه‌های موفق",
-        href: "#successful-projects",
+        href: "/business/successful-projects",
       },
+
       {
         label: "نحوه همکاری",
-        href: "#collaboration-process",
+        href: "/business/collaboration",
+      },
+
+      {
+        label: "مزایای همکاری",
+        href: "/business/collaboration#benefits",
       },
       {
         label: "همکاران تجاری ما",
-        href: "#commercial-partners",
+        href: "/business/collaboration#partners",
       },
       {
         label: "چارچوب‌های همکاری",
-        href: "#collaboration-frameworks",
+        href: "/business/collaboration#frameworks",
       },
       {
         label: "ارتباط جهت مشارکت",
-        href: "#participation-contact",
+        href: "/#participation-contact",
       },
     ],
   },
   {
     label: "خدمات ما",
-    href: "#services",
+    href: "/services/technology-guidance",
     children: [
       {
         label: "راهبری و هدایت فناور",
-        href: "#technology-guidance",
+        href: "/services/technology-guidance",
       },
       {
         label: "خدمات مشاوره",
-        href: "#consulting",
+        href: "/services/consulting",
       },
       {
         label: "نقشه راه تجاری‌سازی",
-        href: "#commercialization-roadmap",
+        href: "/services/commercialization-roadmap",
       },
     ],
   },
@@ -185,7 +177,7 @@ const searchItems = [
     href: "/about#history",
   },
   {
-    label: "چارت سازمانی",
+    label: "نمودار سازمانی",
     href: "/about#organization",
   },
   {
@@ -198,27 +190,59 @@ const searchItems = [
   },
   {
     label: "حمایت پژوهشی",
-    href: "#research-support",
-  },
-  {
-    label: "محورهای سال جاری",
-    href: "#current-fields",
+    href: "/#research-support",
   },
   {
     label: "فراخوان‌ها",
-    href: "#calls",
+    href: "/#calls",
+  },
+  {
+    label: "محورهای سال جاری",
+    href: "/#current-fields",
+  },
+  {
+    label: "راهنمای ثبت‌نام",
+    href: "/research-support/guide-eligibility",
+  },
+  {
+    label: "شرایط احراز",
+    href: "/research-support/guide-eligibility#eligibility",
+  },
+  {
+    label: "شیوه‌نامه تدوین پروپوزال",
+    href: "/research-support/guide-eligibility#proposal-guideline",
+  },
+  {
+    label: "نظام داوری",
+    href: "/research-support/review-evaluation",
+  },
+  {
+    label: "معیارهای ارزیابی",
+    href: "/research-support/review-evaluation#evaluation-criteria",
   },
   {
     label: "همکاری‌های تجاری",
-    href: "#business",
+    href: "/#business",
   },
   {
     label: "فرصت‌های همکاری",
-    href: "#collaboration-opportunities",
+    href: "/#collaboration-opportunities",
   },
   {
     label: "خدمات ما",
-    href: "#services",
+    href: "/services/technology-guidance",
+  },
+  {
+    label: "راهبری و هدایت فناور",
+    href: "/services/technology-guidance",
+  },
+  {
+    label: "خدمات مشاوره",
+    href: "/services/consulting",
+  },
+  {
+    label: "نقشه راه تجاری‌سازی",
+    href: "/services/commercialization-roadmap",
   },
   {
     label: "رویدادها",
@@ -234,7 +258,7 @@ const searchItems = [
   },
   {
     label: "دستاوردهای هاتف",
-    href: "#achievements",
+    href: "/#achievements",
   },
   {
     label: "مستندات",
@@ -246,39 +270,62 @@ const searchItems = [
   },
 ];
 
-function scrollInsideAboutPage(href) {
-  if (!href.startsWith("/about") || window.location.pathname !== "/about") {
+function getRouteParts(href) {
+  if (!href.startsWith("/")) {
+    return null;
+  }
+
+  const [pathnamePart, hashPart = ""] = href.split("#");
+
+  return {
+    pathname: pathnamePart || "/",
+    hash: hashPart ? `#${hashPart}` : "",
+  };
+}
+
+function scrollToHashTarget(hash) {
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      if (!hash) {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "smooth",
+        });
+
+        return;
+      }
+
+      const sectionId = decodeURIComponent(hash.replace("#", ""));
+      const targetElement = document.getElementById(sectionId);
+
+      targetElement?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  });
+}
+
+function scrollIfSamePage(href) {
+  const routeParts = getRouteParts(href);
+
+  if (!routeParts) {
     return;
   }
 
-  const hashIndex = href.indexOf("#");
+  if (window.location.pathname !== routeParts.pathname) {
+    return;
+  }
 
-  window.requestAnimationFrame(() => {
-    if (hashIndex === -1) {
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
-
-      return;
-    }
-
-    const sectionId = decodeURIComponent(href.slice(hashIndex + 1));
-
-    const targetElement = document.getElementById(sectionId);
-
-    targetElement?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  });
+  scrollToHashTarget(routeParts.hash);
 }
 
 function SmartLink({ href, className, children, onClick, ...restProps }) {
   const isRouterLink = href.startsWith("/");
 
   const handleClick = (event) => {
-    scrollInsideAboutPage(href);
+    scrollIfSamePage(href);
 
     onClick?.(event);
   };
@@ -303,7 +350,7 @@ function SmartLink({ href, className, children, onClick, ...restProps }) {
   );
 }
 
-function NavigationItem({ item, nested = false }) {
+function NavigationItem({ item, nested = false, onNavigate }) {
   const hasChildren = Boolean(item.children?.length);
 
   return (
@@ -314,6 +361,7 @@ function NavigationItem({ item, nested = false }) {
     >
       <SmartLink
         href={item.href}
+        onClick={onNavigate}
         className={
           nested ? "site-header__submenu-link" : "site-header__menu-link"
         }
@@ -331,7 +379,12 @@ function NavigationItem({ item, nested = false }) {
       {hasChildren && (
         <ul className="site-header__submenu">
           {item.children.map((child) => (
-            <NavigationItem key={child.label} item={child} nested />
+            <NavigationItem
+              key={child.label}
+              item={child}
+              nested
+              onNavigate={onNavigate}
+            />
           ))}
         </ul>
       )}
@@ -343,8 +396,8 @@ function Header() {
   const navigate = useNavigate();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
   const [searchQuery, setSearchQuery] = useState("");
+  const [isMenuLocked, setIsMenuLocked] = useState(false);
 
   const normalizedQuery = searchQuery.trim();
 
@@ -359,14 +412,35 @@ function Header() {
     setSearchQuery("");
   };
 
+  const closeNavigationMenu = () => {
+    setIsMenuLocked(true);
+  };
+
+  const handleLogoClick = (event) => {
+    event.preventDefault();
+
+    closeSearch();
+    closeNavigationMenu();
+
+    navigate("/");
+
+    scrollToHashTarget("");
+  };
+
   const navigateToResult = (href) => {
     if (href.startsWith("/")) {
       navigate(href);
 
-      scrollInsideAboutPage(href);
-    } else {
-      window.location.hash = href;
+      const routeParts = getRouteParts(href);
+
+      if (routeParts) {
+        scrollToHashTarget(routeParts.hash);
+      }
+
+      return;
     }
+
+    window.location.hash = href;
   };
 
   const handleSearchSubmit = (event) => {
@@ -379,24 +453,41 @@ function Header() {
     navigateToResult(searchResults[0].href);
 
     closeSearch();
+    closeNavigationMenu();
   };
 
   const handleResultClick = () => {
     closeSearch();
+    closeNavigationMenu();
   };
 
   return (
     <>
       <header className="site-header">
         <div className="container site-header__inner">
-          <Link to="/" className="site-header__logo" aria-label="صفحه اصلی">
+          <Link
+            to="/"
+            className="site-header__logo"
+            aria-label="صفحه اصلی"
+            onClick={handleLogoClick}
+          >
             <img src={universityLogo} alt="لوگوی دانشگاه تهران" />
           </Link>
 
-          <nav className="site-header__navigation" aria-label="منوی اصلی">
+          <nav
+            className={`site-header__navigation ${
+              isMenuLocked ? "site-header__navigation--locked" : ""
+            }`}
+            aria-label="منوی اصلی"
+            onMouseLeave={() => setIsMenuLocked(false)}
+          >
             <ul className="site-header__menu">
               {navigationItems.map((item) => (
-                <NavigationItem key={item.label} item={item} />
+                <NavigationItem
+                  key={item.label}
+                  item={item}
+                  onNavigate={closeNavigationMenu}
+                />
               ))}
             </ul>
           </nav>
@@ -414,9 +505,13 @@ function Header() {
               <img src={searchIcon} alt="" />
             </button>
 
-            <a href="#login" className="site-header__login">
+            <SmartLink
+              href="/auth"
+              className="site-header__login"
+              onClick={closeNavigationMenu}
+            >
               ورود | ثبت‌نام
-            </a>
+            </SmartLink>
           </div>
         </div>
       </header>

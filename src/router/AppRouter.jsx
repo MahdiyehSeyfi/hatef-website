@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 
+import ScrollManager from "./ScrollManager";
 import MainLayout from "../layouts/MainLayout";
 
 import HomePage from "../pages/HomePage";
@@ -15,11 +16,91 @@ import ActivitiesPage from "../pages/activities/ActivitiesPage";
 import CourseDetailsPage from "../pages/activities/CourseDetailsPage";
 import EventDetailsPage from "../pages/activities/EventDetailsPage";
 
+import TechnologyGuidancePage from "../pages/services/TechnologyGuidancePage";
+import ConsultingPage from "../pages/services/ConsultingPage";
+import CommercializationRoadmapPage from "../pages/services/CommercializationRoadmapPage";
+
+import GuideEligibilityPage from "../pages/research/GuideEligibilityPage";
+import ReviewEvaluationPage from "../pages/research/ReviewEvaluationPage";
+import CallsPage from "../pages/research/CallsPage";
+import CurrentFieldsPage from "../pages/research/CurrentFieldsPage";
+import CallDetailsPage from "../pages/research/CallDetailsPage";
+
+import CollaborationOpportunitiesPage from "../pages/business/CollaborationOpportunitiesPage";
+import CollaborationProjectDetailsPage from "../pages/business/CollaborationProjectDetailsPage";
+import SuccessfulProjectsPage from "../pages/business/SuccessfulProjectsPage";
+import BusinessCollaborationPage from "../pages/business/BusinessCollaborationPage";
+
+import AuthPage from "../pages/auth/AuthPage";
+import InnovatorDashboardPage from "../pages/dashboard/InnovatorDashboardPage";
+import BusinessDashboardPage from "../pages/dashboard/BusinessDashboardPage";
+import ReviewerDashboardPage from "../pages/dashboard/ReviewerDashboardPage";
+import InstructorDashboardPage from "../pages/dashboard/InstructorDashboardPage";
+import CommitteeSecretariatDashboardPage from "../pages/dashboard/CommitteeSecretariatDashboardPage";
+
 function AppRouter() {
   return (
     <BrowserRouter>
+      <ScrollManager />
+
       <Routes>
+        <Route path="auth" element={<AuthPage />} />
+        <Route
+          path="dashboard/innovator"
+          element={<InnovatorDashboardPage />}
+        />
+        <Route
+          path="dashboard/business-collaboration"
+          element={<BusinessDashboardPage />}
+        />
+        <Route path="dashboard/reviewer" element={<ReviewerDashboardPage />} />
+        <Route
+          path="dashboard/instructor"
+          element={<InstructorDashboardPage />}
+        />
+        <Route
+          path="dashboard/committee-secretariat"
+          element={<CommitteeSecretariatDashboardPage />}
+        />
         <Route element={<MainLayout />}>
+          <Route
+            path="business/collaboration"
+            element={<BusinessCollaborationPage />}
+          />
+          <Route
+            path="business/successful-projects"
+            element={<SuccessfulProjectsPage />}
+          />
+          <Route
+            path="business/opportunities/:projectId"
+            element={<CollaborationProjectDetailsPage />}
+          />
+          <Route
+            path="business/opportunities"
+            element={<CollaborationOpportunitiesPage />}
+          />
+          <Route
+            path="research-support/calls/:callId"
+            element={<CallDetailsPage />}
+          />
+          <Route
+            path="research-support/current-fields"
+            element={<CurrentFieldsPage />}
+          />
+          <Route path="research-support/calls" element={<CallsPage />} />
+          <Route
+            path="research-support/guide-eligibility"
+            element={<GuideEligibilityPage />}
+          />
+
+          <Route
+            path="research-support/review-evaluation"
+            element={<ReviewEvaluationPage />}
+          />
+          <Route
+            path="services/commercialization-roadmap"
+            element={<CommercializationRoadmapPage />}
+          />
           <Route index element={<HomePage />} />
 
           <Route path="about" element={<AboutPage />} />
@@ -62,6 +143,18 @@ function AppRouter() {
           />
 
           <Route path="courses/:courseId" element={<CourseDetailsPage />} />
+
+          <Route
+            path="services"
+            element={<Navigate to="/services/technology-guidance" replace />}
+          />
+
+          <Route
+            path="services/technology-guidance"
+            element={<TechnologyGuidancePage />}
+          />
+
+          <Route path="services/consulting" element={<ConsultingPage />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
