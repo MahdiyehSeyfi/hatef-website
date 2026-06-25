@@ -8,6 +8,8 @@ import {
   getCommitteeCalls,
   getCommitteeDashboardStats,
   getCommitteePlans,
+  getCommitteeReviewerFeedbackPlans,
+  getCommitteeReviewerProfiles,
   getCommitteeTasksByPlanId,
 } from "../../services/committeeService";
 
@@ -4990,13 +4992,10 @@ function PlansHistoryPanel({ plans }) {
   );
 }
 
-function ReviewersInfoPanel({ plans }) {
+function ReviewersInfoPanel() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const reviewerStats = REVIEWER_PROFILES.map((reviewer, index) => ({
-    ...reviewer,
-    stats: getReviewerParticipationStats(reviewer, index, plans),
-  }));
+  const reviewerStats = getCommitteeReviewerProfiles();
 
   const filteredReviewers = reviewerStats.filter((reviewer) => {
     const normalized = searchTerm.trim().toLowerCase();
@@ -5044,7 +5043,7 @@ function ReviewersInfoPanel({ plans }) {
       <div className="committee-reviewers__summary-grid">
         <article>
           <span>تعداد داوران</span>
-          <strong>{toPersianDigits(REVIEWER_PROFILES.length)}</strong>
+          <strong>{toPersianDigits(reviewerStats.length)}</strong>
           <p>اعضای فعال شبکه داوری</p>
         </article>
         <article>
@@ -5116,19 +5115,13 @@ function ReviewersInfoPanel({ plans }) {
   );
 }
 
-function ReviewerFeedbacksPanel({ plans }) {
+function ReviewerFeedbacksPanel() {
   const [searchTerm, setSearchTerm] = useState("");
   const [fieldFilter, setFieldFilter] = useState("all");
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const feedbackPlans = plans
-    .map((plan) => ({
-      ...plan,
-      reviewerFeedbacks: getReviewerFeedbackItems(plan),
-    }))
-    .filter((plan) => plan.reviewerFeedbacks.length > 0);
-
+  const feedbackPlans = getCommitteeReviewerFeedbackPlans();
   const fields = [...new Set(feedbackPlans.map((plan) => plan.field))];
 
   const filteredPlans = feedbackPlans.filter((plan) => {
@@ -5163,8 +5156,8 @@ function ReviewerFeedbacksPanel({ plans }) {
           <span>بازخوردهای داوران</span>
           <h3>طرح‌های دارای بازخورد داور</h3>
           <p>
-            هر طرحی که حداقل یک بازخورد دارد در این بخش نمایش داده می‌شود؛ ممکن
-            است هر طرح تا پنج بازخورد داور داشته باشد.
+            هر طرحی که حداقل یک بازخورد دارد در این بخش نمایش داده می‌شود؛
+            داده‌ها از بازخوردهای مرکزی داوران خوانده می‌شوند.
           </p>
         </div>
       </div>
