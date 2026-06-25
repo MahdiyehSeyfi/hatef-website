@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router";
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 import bannerImage from "../../assets/images/banner.png";
 
+import { getCommitteeDashboardStats } from "../../services/committeeService";
+
 import "./InnovatorDashboardPage.css";
 import "./CommitteeSecretariatDashboardPage.css";
 
@@ -1589,7 +1591,14 @@ function RequestStatusBadge({ status }) {
   );
 }
 
-function DashboardPanel({ requests, calls, plans, activities, orders }) {
+function DashboardPanel({
+  requests,
+  calls,
+  plans,
+  activities,
+  orders,
+  dashboardStats,
+}) {
   const waitingRequests = requests.filter(
     (request) => request.status === "در انتظار پیگیری",
   ).length;
@@ -1611,6 +1620,11 @@ function DashboardPanel({ requests, calls, plans, activities, orders }) {
     (order) => order.status === "در انتظار پذیرش",
   ).length;
 
+  const centralUnfinalizedPlans =
+    dashboardStats?.withoutFinalStatus ?? unfinalizedPlans;
+  const centralReviewedPlans = dashboardStats?.reviewedCommitteePlans ?? 0;
+  const centralPublishedResults = dashboardStats?.publishedResults ?? 0;
+
   const stats = [
     {
       label: "درخواست‌های نیازمند پاسخ",
@@ -1619,8 +1633,8 @@ function DashboardPanel({ requests, calls, plans, activities, orders }) {
     },
     {
       label: "طرح‌های بدون نتیجه نهایی",
-      value: unfinalizedPlans,
-      hint: "طرح‌هایی که هنوز تعیین تکلیف نشده‌اند",
+      value: centralUnfinalizedPlans,
+      hint: `از داده مرکزی؛ ${toPersianDigits(centralReviewedPlans)} طرح بررسی‌شده و ${toPersianDigits(centralPublishedResults)} نتیجه منتشرشده`,
     },
     {
       label: "دوره/رویداد در انتظار بررسی",
@@ -1642,8 +1656,8 @@ function DashboardPanel({ requests, calls, plans, activities, orders }) {
     },
     {
       title: "تعیین وضعیت نهایی طرح‌ها",
-      meta: `${toPersianDigits(unfinalizedPlans)} طرح هنوز وضعیت نهایی ندارد`,
-      status: unfinalizedPlans ? "تکمیل شود" : "آماده انتشار نتایج",
+      meta: `${toPersianDigits(centralUnfinalizedPlans)} طرح هنوز وضعیت نهایی ندارد`,
+      status: centralUnfinalizedPlans ? "تکمیل شود" : "آماده انتشار نتایج",
     },
     {
       title: "پیگیری سفارش‌های اجرا",
@@ -6479,6 +6493,10 @@ function CommitteeSecretariatDashboardPage() {
 
   const activeSectionData =
     SECTION_DATA[activeSection] || SECTION_DATA.dashboard;
+  const committeeDashboardStats = useMemo(
+    () => getCommitteeDashboardStats(),
+    [],
+  );
 
   useEffect(() => {
     if (!callNotice) return undefined;
@@ -6529,6 +6547,7 @@ function CommitteeSecretariatDashboardPage() {
           plans={plans}
           activities={instructorActivities}
           orders={executionOrders}
+          dashboardStats={committeeDashboardStats}
         />
       );
     }
