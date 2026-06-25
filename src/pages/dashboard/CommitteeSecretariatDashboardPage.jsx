@@ -8,6 +8,7 @@ import {
   getCommitteeCalls,
   getCommitteeDashboardStats,
   getCommitteePlans,
+  getCommitteeTasksByPlanId,
 } from "../../services/committeeService";
 
 import "./InnovatorDashboardPage.css";
@@ -851,6 +852,35 @@ function getAcceptedTaskDisplayStatus(task) {
   if (!task) return "در انتظار بررسی فناور";
   if (isAcceptedTaskFinished(task)) return "پایان یافته";
   return task.participantStatus || "در انتظار بررسی فناور";
+}
+
+function normalizeAcceptedTaskFromService(task) {
+  const managerDecisionMap = {
+    waiting_for_innovator_review: "",
+    viewed_by_innovator: "",
+    answered_by_innovator: "",
+    needs_revision: "نیازمند اصلاح",
+    finished: "پایان یافته",
+  };
+
+  return {
+    ...task,
+    managerDecision:
+      managerDecisionMap[task.managerDecision] || task.managerDecision || "",
+    reviewedAt: task.reviewedAt || task.updatedAt || "",
+  };
+}
+
+function buildAcceptedPlanTasksFromService(acceptedPlans) {
+  return acceptedPlans.reduce((tasksMap, plan) => {
+    const planId = plan.sourceId || plan.id;
+    return {
+      ...tasksMap,
+      [plan.id]: getCommitteeTasksByPlanId(planId).map(
+        normalizeAcceptedTaskFromService,
+      ),
+    };
+  }, {});
 }
 
 function getAcceptedTaskStatusClass(status) {
@@ -4297,7 +4327,9 @@ function AcceptedPlansPanel({ plans }) {
   const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [viewingPlanId, setViewingPlanId] = useState(null);
-  const [tasksByPlan, setTasksByPlan] = useState(INITIAL_ACCEPTED_PLAN_TASKS);
+  const [tasksByPlan, setTasksByPlan] = useState(() =>
+    buildAcceptedPlanTasksFromService(acceptedPlans),
+  );
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [newTask, setNewTask] = useState({
     title: "",
