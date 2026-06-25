@@ -4,7 +4,10 @@ import { Link, useNavigate } from "react-router";
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 import bannerImage from "../../assets/images/banner.png";
 
-import { getCommitteeDashboardStats } from "../../services/committeeService";
+import {
+  getCommitteeCalls,
+  getCommitteeDashboardStats,
+} from "../../services/committeeService";
 
 import "./InnovatorDashboardPage.css";
 import "./CommitteeSecretariatDashboardPage.css";
@@ -3155,14 +3158,20 @@ function CallListPanel({
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
+  const currentCallStatuses = ["منتشر شده", "پیش‌نویس"];
+  const historyCallStatuses = [
+    "all",
+    "منتشر شده",
+    "پیش‌نویس",
+    "غیرفعال",
+    "آرشیو شده",
+  ];
   const allowedStatuses =
-    mode === "history"
-      ? ["all", "منتشر شده", "پیش‌نویس", "غیرفعال"]
-      : ["all", "منتشر شده", "پیش‌نویس"];
+    mode === "history" ? historyCallStatuses : ["all", ...currentCallStatuses];
   const baseCalls =
     mode === "history"
       ? calls
-      : calls.filter((call) => call.status !== "غیرفعال");
+      : calls.filter((call) => currentCallStatuses.includes(call.status));
 
   const filteredCalls = baseCalls.filter((call) => {
     const matchesStatus =
@@ -6449,7 +6458,7 @@ function CommitteeSecretariatDashboardPage() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [requests, setRequests] = useState(INITIAL_RECEIVED_REQUESTS);
   const [profile, setProfile] = useState(INITIAL_PROFILE);
-  const [calls, setCalls] = useState(INITIAL_CALLS);
+  const [calls, setCalls] = useState(() => getCommitteeCalls());
   const [editingCall, setEditingCall] = useState(null);
   const [callNotice, setCallNotice] = useState("");
   const [callFormResetKey, setCallFormResetKey] = useState(0);
