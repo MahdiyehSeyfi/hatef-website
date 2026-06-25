@@ -3,67 +3,10 @@ import { Link } from "react-router";
 
 import bannerImage from "../../assets/images/banner.png";
 
+import { getCalls, getPublishedCalls } from "../../services/callService";
+import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
+
 import "./CallsPage.css";
-
-const activeCall = {
-  id: 1,
-  number: "۲",
-  title: "فراخوان اولین دوره هدایت اعتبارات توسعه فناوری (هاتف) ۱۴۰۴–۱۴۰۵",
-  category: "با محوریت هوش مصنوعی",
-  deadline: "مهلت تا: ۱۴۰۵/۰۵/۰۵",
-  status: "در حال دریافت طرح‌ها",
-};
-
-const previousCalls = [
-  {
-    id: 2,
-    number: "۲",
-    title: "فراخوان اولین دوره هدایت اعتبارات توسعه فناوری (هاتف) ۱۴۰۴–۱۴۰۵",
-    category: "با محوریت انرژی‌های تجدیدپذیر",
-    deadline: "مهلت تا: ۱۴۰۵/۰۵/۰۵",
-    status: "پایان مهلت ارسال طرح",
-  },
-  {
-    id: 3,
-    number: "۲",
-    title: "فراخوان حمایت از توسعه محصولات فناورانه دانشگاهی",
-    category: "با محوریت تجاری‌سازی",
-    deadline: "مهلت تا: ۱۴۰۴/۱۲/۲۰",
-    status: "پایان مهلت ارسال طرح",
-  },
-  {
-    id: 4,
-    number: "۱",
-    title: "فراخوان جذب ایده‌های پژوهشی مسئله‌محور و کاربردی",
-    category: "با محوریت پژوهش کاربردی",
-    deadline: "مهلت تا: ۱۴۰۴/۱۱/۱۵",
-    status: "پایان مهلت ارسال طرح",
-  },
-  {
-    id: 5,
-    number: "۱",
-    title: "فراخوان توسعه فناوری‌های سبز و محیط‌زیستی",
-    category: "با محوریت فناوری سبز",
-    deadline: "مهلت تا: ۱۴۰۴/۱۰/۳۰",
-    status: "پایان مهلت ارسال طرح",
-  },
-  {
-    id: 6,
-    number: "۱",
-    title: "فراخوان حمایت از طرح‌های هوشمندسازی صنعتی",
-    category: "با محوریت هوش مصنوعی",
-    deadline: "مهلت تا: ۱۴۰۴/۰۹/۲۵",
-    status: "پایان مهلت ارسال طرح",
-  },
-  {
-    id: 7,
-    number: "۱",
-    title: "فراخوان توسعه راهکارهای فناورانه برای صنایع بزرگ",
-    category: "با محوریت صنعت و دانشگاه",
-    deadline: "مهلت تا: ۱۴۰۴/۰۸/۱۵",
-    status: "پایان مهلت ارسال طرح",
-  },
-];
 
 const articleParagraphs = [
   "فراخوان‌های برنامه هاتف با هدف شناسایی، ارزیابی و حمایت از طرح‌های پژوهشی و فناورانه طراحی شده‌اند. این فراخوان‌ها فرصتی فراهم می‌کنند تا پژوهشگران، تیم‌های فناور و صاحبان ایده بتوانند طرح‌های خود را در مسیر توسعه، راهبری، ارزیابی و تجاری‌سازی قرار دهند.",
@@ -71,6 +14,46 @@ const articleParagraphs = [
   "طرح‌هایی که از نظر نوآوری، قابلیت اجرا، ظرفیت توسعه و ارتباط با نیازهای واقعی جامعه یا صنعت امتیاز مناسبی دریافت کنند، وارد مراحل بعدی بررسی و حمایت می‌شوند. این مسیر می‌تواند شامل داوری تخصصی، مشاوره، راهبری فناوری و اتصال به فرصت‌های همکاری باشد.",
   "برنامه هاتف تلاش می‌کند ارتباط میان دانشگاه، پژوهشگران، صنعت و نهادهای حمایتی را تقویت کند. به همین دلیل، فراخوان‌ها فقط یک اطلاعیه ساده نیستند؛ بلکه نقطه شروع یک مسیر هدفمند برای رشد فناوری و تبدیل دستاوردهای پژوهشی به راهکارهای کاربردی محسوب می‌شوند.",
 ];
+
+const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+
+function toPersianNumber(value) {
+  return String(value).replace(/\d/g, (digit) => PERSIAN_DIGITS[Number(digit)]);
+}
+
+function getCallCategory(call) {
+  return call.field ? `با محوریت ${call.field}` : "فراخوان برنامه هاتف";
+}
+
+function getCallDeadline(call) {
+  if (!call.deadlineDate && !call.deadlineTime) {
+    return "مهلت ارسال مشخص نشده است";
+  }
+
+  if (call.deadlineDate && call.deadlineTime) {
+    return `مهلت تا: ${call.deadlineDate} ساعت ${call.deadlineTime}`;
+  }
+
+  return `مهلت تا: ${call.deadlineDate || call.deadlineTime}`;
+}
+
+function getCallStatusLabel(call) {
+  if (call.status === CALL_STATUS.PUBLISHED) {
+    return "در حال دریافت طرح‌ها";
+  }
+
+  return CALL_STATUS_LABELS[call.status] || "وضعیت نامشخص";
+}
+
+function mapCallForCard(call, index) {
+  return {
+    ...call,
+    number: toPersianNumber(index + 1),
+    category: getCallCategory(call),
+    deadline: getCallDeadline(call),
+    statusLabel: getCallStatusLabel(call),
+  };
+}
 
 function CallsSubheading({ title, warning = false, showLine = true }) {
   return (
@@ -133,7 +116,7 @@ function CallCard({ call, isActive = false }) {
               : "calls-page__call-badge--closed"
           }`}
         >
-          {call.status}
+          {call.statusLabel}
         </div>
 
         <div className="calls-page__call-deadline">{call.deadline}</div>
@@ -192,6 +175,16 @@ function CallsArticle() {
 function CallsPage() {
   const [visiblePreviousCount, setVisiblePreviousCount] = useState(2);
 
+  const allCalls = getCalls();
+
+  const activeCalls = getPublishedCalls().map((call, index) =>
+    mapCallForCard(call, index),
+  );
+
+  const previousCalls = allCalls
+    .filter((call) => call.status !== CALL_STATUS.PUBLISHED)
+    .map((call, index) => mapCallForCard(call, index));
+
   const visiblePreviousCalls = previousCalls.slice(0, visiblePreviousCount);
   const hasMorePreviousCalls = visiblePreviousCount < previousCalls.length;
 
@@ -227,12 +220,12 @@ function CallsPage() {
 
           <div className="calls-page__hero-stats">
             <div>
-              <strong>۱</strong>
+              <strong>{toPersianNumber(activeCalls.length)}</strong>
               <span>فراخوان فعال</span>
             </div>
 
             <div>
-              <strong>۶</strong>
+              <strong>{toPersianNumber(allCalls.length)}</strong>
               <span>دوره ثبت‌شده</span>
             </div>
 
@@ -248,17 +241,33 @@ function CallsPage() {
         <section className="calls-page__section" id="active-calls">
           <CallsSubheading title="فراخوان‌های فعال" />
 
-          <CallCard call={activeCall} isActive />
+          {activeCalls.length > 0 ? (
+            <div className="calls-page__previous-list">
+              {activeCalls.map((call) => (
+                <CallCard key={call.id} call={call} isActive />
+              ))}
+            </div>
+          ) : (
+            <p className="calls-page__empty">
+              در حال حاضر فراخوان فعالی منتشر نشده است.
+            </p>
+          )}
         </section>
 
         <section className="calls-page__section" id="previous-calls">
           <CallsSubheading title="دوره‌های پیشین" warning showLine={false} />
 
-          <div className="calls-page__previous-list">
-            {visiblePreviousCalls.map((call) => (
-              <CallCard key={call.id} call={call} />
-            ))}
-          </div>
+          {visiblePreviousCalls.length > 0 ? (
+            <div className="calls-page__previous-list">
+              {visiblePreviousCalls.map((call) => (
+                <CallCard key={call.id} call={call} />
+              ))}
+            </div>
+          ) : (
+            <p className="calls-page__empty">
+              هنوز فراخوان آرشیوشده‌ای ثبت نشده است.
+            </p>
+          )}
 
           {hasMorePreviousCalls && (
             <div className="calls-page__footer">
