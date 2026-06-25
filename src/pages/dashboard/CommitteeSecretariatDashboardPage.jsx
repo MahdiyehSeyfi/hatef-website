@@ -7,6 +7,7 @@ import bannerImage from "../../assets/images/banner.png";
 import {
   getCommitteeCalls,
   getCommitteeDashboardStats,
+  getCommitteePlans,
 } from "../../services/committeeService";
 
 import "./InnovatorDashboardPage.css";
@@ -6462,7 +6463,7 @@ function CommitteeSecretariatDashboardPage() {
   const [editingCall, setEditingCall] = useState(null);
   const [callNotice, setCallNotice] = useState("");
   const [callFormResetKey, setCallFormResetKey] = useState(0);
-  const [plans, setPlans] = useState(INITIAL_COMMITTEE_PLANS);
+  const [plans, setPlans] = useState(() => getCommitteePlans());
   const [resultsPublished, setResultsPublished] = useState(false);
   const [instructorActivities, setInstructorActivities] = useState(
     INITIAL_COMMITTEE_ACTIVITIES,
