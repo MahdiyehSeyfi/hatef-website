@@ -3,6 +3,18 @@ import { Link, useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 
+import { getCurrentUser } from "../../services/authService";
+import { getPublishedCalls, getCallById } from "../../services/callService";
+import { getPlansByInnovatorId } from "../../services/planService";
+import { getReviewsByPlanId } from "../../services/reviewService";
+import { getTasksWithPlanByInnovatorId } from "../../services/taskService";
+import {
+  PLAN_FINAL_STATUS,
+  PLAN_REVIEW_STATUS,
+  PLAN_STATUS,
+  TASK_STATUS,
+} from "../../constants/statuses";
+
 import "./InnovatorDashboardPage.css";
 
 const NAV_ITEMS = [
@@ -43,29 +55,175 @@ const NAV_ITEMS = [
   },
 ];
 
-const CALL_OPTIONS = [
-  {
-    id: "ai-call",
-    title: "فراخوان هدایت اعتبارات توسعه فناوری",
-    field: "با محوریت هوش مصنوعی",
-    deadline: "۱۴۰۵/۰۵/۰۵ - ساعت ۲۳:۵۹",
+function formatCallDeadline(call) {
+  if (!call?.deadlineDate && !call?.deadlineTime) {
+    return "مهلت مشخص نشده";
+  }
+
+  if (call.deadlineDate && call.deadlineTime) {
+    return `${call.deadlineDate} - ساعت ${call.deadlineTime}`;
+  }
+
+  return call.deadlineDate || call.deadlineTime;
+}
+
+function getCallOptionsForInnovator() {
+  return getPublishedCalls().map((call) => ({
+    id: call.id,
+    title: call.title,
+    field: call.field ? `با محوریت ${call.field}` : "فراخوان برنامه هاتف",
+    deadline: formatCallDeadline(call),
     status: "فعال",
-  },
-  {
-    id: "energy-call",
-    title: "فراخوان توسعه فناوری‌های انرژی",
-    field: "انرژی، محیط‌زیست و پایداری",
-    deadline: "۱۴۰۵/۰۴/۲۰ - ساعت ۱۸:۰۰",
-    status: "فعال",
-  },
-  {
-    id: "health-call",
-    title: "فراخوان فناوری‌های سلامت دیجیتال",
-    field: "سلامت، داده و هوشمندسازی",
-    deadline: "۱۴۰۵/۰۶/۱۵ - ساعت ۲۰:۰۰",
-    status: "جدید",
-  },
-];
+  }));
+}
+
+const CALL_OPTIONS = getCallOptionsForInnovator();
+
+function getCurrentInnovatorUserId() {
+  return getCurrentUser()?.id || "user-innovator-1";
+}
+
+function getPlanCallInfo(plan) {
+  return getCallById(plan.callId);
+}
+
+function getPlanStatusLabelFromCentralData(plan) {
+  if (plan.resultsPublished) {
+    if (plan.finalStatus === PLAN_FINAL_STATUS.ACCEPTED) {
+      return "قبول";
+    }
+
+    if (plan.finalStatus === PLAN_FINAL_STATUS.WEAK_ACCEPTED) {
+      return "قبول ضعیف";
+    }
+
+    if (plan.finalStatus === PLAN_FINAL_STATUS.REJECTED) {
+      return "رد";
+    }
+
+    if (plan.finalStatus === PLAN_FINAL_STATUS.WEAK_REJECTED) {
+      return "رد ضعیف";
+    }
+
+    if (plan.finalStatus === PLAN_FINAL_STATUS.NEEDS_REVISION) {
+      return "نیازمند اصلاح";
+    }
+  }
+
+  if (plan.currentReviewStatus === PLAN_REVIEW_STATUS.REVIEWED) {
+    return "داوری شده";
+  }
+
+  if (plan.status === PLAN_STATUS.REVIEWED) {
+    return "داوری شده";
+  }
+
+  if (plan.status === PLAN_STATUS.UNDER_REVIEW) {
+    return "در حال بررسی";
+  }
+
+  if (plan.status === PLAN_STATUS.SUBMITTED) {
+    return "در انتظار بررسی";
+  }
+
+  return "دریافت شده";
+}
+
+function getTaskStatusLabelFromCentralData(status) {
+  const statusMap = {
+    [TASK_STATUS.WAITING_FOR_INNOVATOR_REVIEW]: "در انتظار ارسال",
+    [TASK_STATUS.VIEWED_BY_INNOVATOR]: "مشاهده شده",
+    [TASK_STATUS.ANSWERED_BY_INNOVATOR]: "ارسال شده",
+    [TASK_STATUS.NEEDS_REVISION]: "نیازمند اصلاح",
+    [TASK_STATUS.FINISHED]: "پایان یافته",
+  };
+
+  return statusMap[status] || "در انتظار ارسال";
+}
+
+function mapPlanFeedbacks(plan) {
+  const reviews = getReviewsByPlanId(plan.id);
+  const feedbacks = {};
+
+  if (plan.committeeFeedback) {
+    feedbacks.secretariat = plan.committeeFeedback;
+  }
+
+  if (plan.finalDecisionNote && plan.resultsPublished) {
+    feedbacks.steering = plan.finalDecisionNote;
+  }
+
+  if (reviews.length > 0) {
+    feedbacks.reviewers = reviews.map((review) => ({
+      text: review.feedbackText,
+    }));
+  }
+
+  return Object.keys(feedbacks).length > 0 ? feedbacks : undefined;
+}
+
+function mapPlanForInnovatorDashboard(plan) {
+  const call = getPlanCallInfo(plan);
+
+  return {
+    id: plan.id,
+    title: plan.title,
+    callId: plan.callId,
+    call: call?.title || "فراخوان برنامه هاتف",
+    deadline: call ? formatCallDeadline(call) : "مهلت مشخص نشده",
+    date: plan.submittedAt || plan.updatedAt || "ثبت‌شده در سامانه",
+    fileName: plan.proposalFileUrl || `${plan.trackingCode || plan.id}.pdf`,
+    status: getPlanStatusLabelFromCentralData(plan),
+    feedbacks: mapPlanFeedbacks(plan),
+  };
+}
+
+function getInitialSubmittedPlansForCurrentUser() {
+  const innovatorId = getCurrentInnovatorUserId();
+
+  return getPlansByInnovatorId(innovatorId).map(mapPlanForInnovatorDashboard);
+}
+
+function getInitialSelectedPlanTasksForCurrentUser() {
+  const innovatorId = getCurrentInnovatorUserId();
+  const tasks = getTasksWithPlanByInnovatorId(innovatorId);
+
+  return tasks.reduce((groupedTasks, task) => {
+    const plan = task.plan;
+
+    if (
+      !plan ||
+      ![PLAN_FINAL_STATUS.ACCEPTED, PLAN_FINAL_STATUS.WEAK_ACCEPTED].includes(
+        plan.finalStatus,
+      )
+    ) {
+      return groupedTasks;
+    }
+
+    const planTasks = groupedTasks[plan.id] || [];
+
+    return {
+      ...groupedTasks,
+      [plan.id]: [
+        ...planTasks,
+        {
+          id: task.id,
+          title: task.title,
+          deadline:
+            task.deadlineDate && task.deadlineTime
+              ? `${task.deadlineDate} - ساعت ${task.deadlineTime}`
+              : task.deadlineDate || task.deadlineTime || "",
+          status: getTaskStatusLabelFromCentralData(task.status),
+          isNew: task.status === TASK_STATUS.WAITING_FOR_INNOVATOR_REVIEW,
+          managerMessage: task.managerMessage,
+          managerFeedback: task.managerFeedback,
+          description: task.innovatorResponseText,
+          fileName: task.innovatorFileUrl ? "فایل پاسخ فناور" : "",
+        },
+      ],
+    };
+  }, {});
+}
 
 const SECTION_DATA = {
   dashboard: {
@@ -898,7 +1056,9 @@ function SubmitPlanPanel() {
   const [selectedCallId, setSelectedCallId] = useState("");
   const [uploadedFile, setUploadedFile] = useState(null);
   const [existingFileName, setExistingFileName] = useState("");
-  const [submittedPlans, setSubmittedPlans] = useState(INITIAL_SUBMITTED_PLANS);
+  const [submittedPlans, setSubmittedPlans] = useState(() =>
+    getInitialSubmittedPlansForCurrentUser(),
+  );
   const [planTitle, setPlanTitle] = useState("");
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [editingPlanId, setEditingPlanId] = useState(null);
@@ -1347,13 +1507,15 @@ function SubmitPlanPanel() {
 }
 
 function SelectedPlansPanel() {
-  const acceptedPlans = INITIAL_SUBMITTED_PLANS.filter((plan) =>
-    ACCEPTED_PLAN_STATUSES.includes(plan.status),
+  const acceptedPlans = getInitialSubmittedPlansForCurrentUser().filter(
+    (plan) => ACCEPTED_PLAN_STATUSES.includes(plan.status),
   );
 
   const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
-  const [projectTasks, setProjectTasks] = useState(INITIAL_SELECTED_PLAN_TASKS);
+  const [projectTasks, setProjectTasks] = useState(() =>
+    getInitialSelectedPlanTasksForCurrentUser(),
+  );
   const [taskSubmitMessage, setTaskSubmitMessage] = useState("");
 
   const selectedPlan = acceptedPlans.find((plan) => plan.id === selectedPlanId);
@@ -2381,19 +2543,21 @@ function FaqPanel() {
 }
 
 function DashboardHomePanel() {
-  const submittedPlans = INITIAL_SUBMITTED_PLANS;
+  const submittedPlans = getInitialSubmittedPlansForCurrentUser();
   const acceptedPlans = submittedPlans.filter((plan) =>
     ACCEPTED_PLAN_STATUSES.includes(plan.status),
   );
 
-  const latestSubmittedPlan = submittedPlans[0];
+  const latestSubmittedPlan = submittedPlans[0] || null;
   const latestSelectedPlan = acceptedPlans[0] || null;
   const participatedCallsCount = new Set(
     submittedPlans.map((plan) => plan.callId),
   ).size;
 
+  const selectedPlanTasksMap = getInitialSelectedPlanTasksForCurrentUser();
+
   const selectedPlanTasks = latestSelectedPlan
-    ? INITIAL_SELECTED_PLAN_TASKS[latestSelectedPlan.id] || []
+    ? selectedPlanTasksMap[latestSelectedPlan.id] || []
     : [];
 
   const activeDeadlines = selectedPlanTasks
@@ -2436,19 +2600,29 @@ function DashboardHomePanel() {
       </div>
 
       <article className="dashboard-home__recent-card">
-        <div>
-          <span>طرح اخیر</span>
-          <h3>{latestSubmittedPlan.title}</h3>
-          <p>{latestSubmittedPlan.call}</p>
-        </div>
+        {latestSubmittedPlan ? (
+          <>
+            <div>
+              <span>طرح اخیر</span>
+              <h3>{latestSubmittedPlan.title}</h3>
+              <p>{latestSubmittedPlan.call}</p>
+            </div>
 
-        <div className="dashboard-home__recent-meta">
-          <StatusBadge
-            status={latestSubmittedPlan.status}
-            className="submit-plan__status--inline"
-          />
-          <small>ارسال: {latestSubmittedPlan.date}</small>
-        </div>
+            <div className="dashboard-home__recent-meta">
+              <StatusBadge
+                status={latestSubmittedPlan.status}
+                className="submit-plan__status--inline"
+              />
+              <small>ارسال: {latestSubmittedPlan.date}</small>
+            </div>
+          </>
+        ) : (
+          <div>
+            <span>طرح اخیر</span>
+            <h3>هنوز طرحی ثبت نشده است</h3>
+            <p>پس از ارسال اولین طرح، خلاصه آن در این بخش نمایش داده می‌شود.</p>
+          </div>
+        )}
       </article>
 
       <div className="dashboard-home__workspace-grid">
