@@ -4,6 +4,13 @@ import { Link, useNavigate } from "react-router";
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 import loginImage from "../../assets/images/login/login.png";
 
+import { USER_ROLES } from "../../constants/roles";
+import {
+  getDashboardPathByRole,
+  loginWithCredentials,
+  registerMockUser,
+} from "../../services/authService";
+
 import "./AuthPage.css";
 
 function BackIcon() {
@@ -38,12 +45,8 @@ function CheckIcon() {
 
 function AuthPage() {
   const navigate = useNavigate();
-
   const [activeView, setActiveView] = useState("login");
   const [forgotStep, setForgotStep] = useState("identify");
-  const [selectedUserType, setSelectedUserType] = useState("innovator");
-  const [loginIdentifier, setLoginIdentifier] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
 
   const isLogin = activeView === "login";
   const isRegister = activeView === "register";
@@ -59,63 +62,6 @@ function AuthPage() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-
-    if (isRegister) {
-      navigate(
-        selectedUserType === "business"
-          ? "/dashboard/business-collaboration"
-          : "/dashboard/innovator",
-      );
-      return;
-    }
-
-    if (isLogin) {
-      const normalizedIdentifier = loginIdentifier.trim().toLowerCase();
-
-      if (
-        normalizedIdentifier === "committee" ||
-        normalizedIdentifier === "secretariat" ||
-        normalizedIdentifier === "committee@example.com" ||
-        normalizedIdentifier === "secretariat@example.com" ||
-        normalizedIdentifier.includes("committee") ||
-        normalizedIdentifier.includes("secretariat")
-      ) {
-        navigate("/dashboard/committee-secretariat");
-        return;
-      }
-
-      if (
-        normalizedIdentifier === "reviewer" ||
-        normalizedIdentifier === "reviewer@example.com" ||
-        normalizedIdentifier.includes("reviewer")
-      ) {
-        navigate("/dashboard/reviewer");
-        return;
-      }
-
-      if (
-        normalizedIdentifier === "instructor" ||
-        normalizedIdentifier === "teacher" ||
-        normalizedIdentifier === "event" ||
-        normalizedIdentifier === "instructor@example.com" ||
-        normalizedIdentifier.includes("instructor") ||
-        normalizedIdentifier.includes("teacher")
-      ) {
-        navigate("/dashboard/instructor");
-        return;
-      }
-
-      if (
-        normalizedIdentifier === "business" ||
-        normalizedIdentifier === "business@example.com" ||
-        normalizedIdentifier.includes("business")
-      ) {
-        navigate("/dashboard/business-collaboration");
-        return;
-      }
-
-      navigate("/dashboard/innovator");
-    }
   };
 
   const openLogin = () => {
@@ -131,6 +77,44 @@ function AuthPage() {
   const openForgotPassword = () => {
     setActiveView("forgot");
     setForgotStep("identify");
+  };
+
+  const handleLogin = (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const identifier = formData.get("identifier");
+    const password = formData.get("password");
+    const user = loginWithCredentials(identifier, password);
+
+    if (!user) {
+      window.alert("نام کاربری/ایمیل یا رمز عبور درست نیست.");
+      return;
+    }
+
+    navigate(getDashboardPathByRole(user.role));
+  };
+
+  const handleRegister = (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const user = registerMockUser({
+      fullName: formData.get("fullName"),
+      email: formData.get("email"),
+      mobile: formData.get("mobile"),
+      password: formData.get("password"),
+      role: formData.get("role"),
+    });
+
+    if (!user) {
+      window.alert(
+        "ثبت‌نام انجام نشد. لطفاً اطلاعات ضروری را کامل کنید یا ایمیل تکراری وارد نکنید.",
+      );
+      return;
+    }
+
+    navigate(getDashboardPathByRole(user.role));
   };
 
   return (
@@ -202,17 +186,18 @@ function AuthPage() {
                     <h1>ورود به حساب کاربری</h1>
                   </div>
 
-                  <form className="auth-form" onSubmit={handleSubmit}>
+                  <form className="auth-form" onSubmit={handleLogin}>
                     <div className="auth-form__group">
-                      <label htmlFor="login-email">ایمیل یا نام کاربری</label>
+                      <label htmlFor="login-identifier">
+                        ایمیل یا نام کاربری
+                      </label>
                       <input
-                        id="login-email"
+                        id="login-identifier"
+                        name="identifier"
                         type="text"
-                        value={loginIdentifier}
-                        onChange={(event) =>
-                          setLoginIdentifier(event.target.value)
-                        }
-                        placeholder="example@email.com یا reviewer"
+                        placeholder="ایمیل یا نام کاربری"
+                        autoComplete="username"
+                        required
                       />
                     </div>
 
@@ -220,12 +205,11 @@ function AuthPage() {
                       <label htmlFor="login-password">رمز عبور</label>
                       <input
                         id="login-password"
+                        name="password"
                         type="password"
-                        value={loginPassword}
-                        onChange={(event) =>
-                          setLoginPassword(event.target.value)
-                        }
                         placeholder="رمز عبور"
+                        autoComplete="current-password"
+                        required
                       />
                     </div>
 
@@ -267,13 +251,15 @@ function AuthPage() {
                     <h1>ثبت‌نام در سامانه</h1>
                   </div>
 
-                  <form className="auth-form" onSubmit={handleSubmit}>
+                  <form className="auth-form" onSubmit={handleRegister}>
                     <div className="auth-form__group">
                       <label htmlFor="register-name">نام و نام خانوادگی</label>
                       <input
                         id="register-name"
+                        name="fullName"
                         type="text"
                         placeholder="نام و نام خانوادگی"
+                        required
                       />
                     </div>
 
@@ -281,8 +267,10 @@ function AuthPage() {
                       <label htmlFor="register-email">ایمیل</label>
                       <input
                         id="register-email"
+                        name="email"
                         type="email"
                         placeholder="example@email.com"
+                        required
                       />
                     </div>
 
@@ -290,6 +278,7 @@ function AuthPage() {
                       <label htmlFor="register-phone">شماره تماس</label>
                       <input
                         id="register-phone"
+                        name="mobile"
                         type="text"
                         placeholder="۰۹۱۲xxxxxxx"
                       />
@@ -299,8 +288,11 @@ function AuthPage() {
                       <label htmlFor="register-password">رمز عبور</label>
                       <input
                         id="register-password"
+                        name="password"
                         type="password"
                         placeholder="رمز عبور"
+                        autoComplete="new-password"
+                        required
                       />
                     </div>
 
@@ -311,10 +303,9 @@ function AuthPage() {
                         <label className="auth-user-types__item">
                           <input
                             type="radio"
-                            name="user-type"
-                            value="innovator"
-                            checked={selectedUserType === "innovator"}
-                            onChange={() => setSelectedUserType("innovator")}
+                            name="role"
+                            value={USER_ROLES.INNOVATOR}
+                            defaultChecked
                           />
                           <span className="auth-user-types__box">
                             <strong>فناور</strong>
@@ -324,10 +315,8 @@ function AuthPage() {
                         <label className="auth-user-types__item">
                           <input
                             type="radio"
-                            name="user-type"
-                            value="business"
-                            checked={selectedUserType === "business"}
-                            onChange={() => setSelectedUserType("business")}
+                            name="role"
+                            value={USER_ROLES.BUSINESS_PARTNER}
                           />
                           <span className="auth-user-types__box">
                             <strong>همکار تجاری</strong>
