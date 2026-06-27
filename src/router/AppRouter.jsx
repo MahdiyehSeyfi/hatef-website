@@ -42,6 +42,13 @@ import CommitteeSecretariatDashboardPage from "../pages/dashboard/CommitteeSecre
 
 import { USER_ROLES } from "../constants/roles";
 
+const INSTRUCTOR_ALLOWED_ROLES = [
+  USER_ROLES.INSTRUCTOR,
+  "instructor",
+  "event_organizer",
+  "organizer",
+].filter(Boolean);
+
 function AppRouter() {
   return (
     <BrowserRouter>
@@ -85,7 +92,7 @@ function AppRouter() {
         <Route
           path="dashboard/instructor"
           element={
-            <ProtectedRoute allowedRoles={[USER_ROLES.INSTRUCTOR]}>
+            <ProtectedRoute allowedRoles={INSTRUCTOR_ALLOWED_ROLES}>
               <InstructorDashboardPage />
             </ProtectedRoute>
           }

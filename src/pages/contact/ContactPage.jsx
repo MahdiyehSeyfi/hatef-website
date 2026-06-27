@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { Link } from "react-router";
 
-import bannerImage from "../../assets/images/banner.png";
-import contactIllustration from "../../assets/vectors/support.svg";
+import ContactFormSection from "../../components/common/ContactFormSection";
 
+import bannerImage from "../../assets/images/banner.png";
 import facebookIcon from "../../assets/icons/contact/facebook.svg";
 import instagramIcon from "../../assets/icons/contact/instagram.svg";
 import telegramIcon from "../../assets/icons/contact/telegram.svg";
@@ -173,25 +172,6 @@ function SectionHeading({ children }) {
 }
 
 function ContactPage() {
-  const [submitStatus, setSubmitStatus] = useState("");
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
-    const form = event.currentTarget;
-
-    if (!form.checkValidity()) {
-      form.reportValidity();
-      return;
-    }
-
-    setSubmitStatus(
-      "پیام شما در نسخه نمایشی ثبت شد. ارسال واقعی پس از اتصال به سرور فعال می‌شود.",
-    );
-
-    form.reset();
-  };
-
   return (
     <div className="contact-page">
       <div className="contact-page__container">
@@ -240,73 +220,14 @@ function ContactPage() {
           </div>
         </section>
 
-        <section className="contact-page__form-section">
-          <div className="contact-page__illustration">
-            <img src={contactIllustration} alt="تصویر پشتیبانی و پاسخ‌گویی" />
-          </div>
-
-          <div className="contact-form-wrapper">
-            <SectionHeading>فرم تماس</SectionHeading>
-
-            <form className="contact-form" onSubmit={handleSubmit} noValidate>
-              <div className="contact-form__field">
-                <input
-                  id="contact-full-name"
-                  name="fullName"
-                  type="text"
-                  autoComplete="name"
-                  placeholder="نام و نام خانوادگی"
-                  aria-label="نام و نام خانوادگی"
-                  required
-                />
-              </div>
-
-              <div className="contact-form__field">
-                <input
-                  id="contact-email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="ایمیل"
-                  aria-label="ایمیل"
-                  required
-                />
-              </div>
-
-              <div className="contact-form__field">
-                <input
-                  id="contact-subject"
-                  name="subject"
-                  type="text"
-                  placeholder="موضوع"
-                  aria-label="موضوع"
-                  required
-                />
-              </div>
-
-              <div className="contact-form__field contact-form__field--message">
-                <textarea
-                  id="contact-message"
-                  name="message"
-                  rows="8"
-                  placeholder="متن پیام"
-                  aria-label="متن پیام"
-                  required
-                />
-              </div>
-
-              {submitStatus && (
-                <p className="contact-form__status" role="status">
-                  {submitStatus}
-                </p>
-              )}
-
-              <div className="contact-form__actions">
-                <button type="submit">ارسال</button>
-              </div>
-            </form>
-          </div>
-        </section>
+        <ContactFormSection
+          id="contact-main-form"
+          title="فرم تماس"
+          submitLabel="ارسال"
+          sourceType="contact"
+          sourceTitle="تماس با ما"
+          statusMessage="پیام شما ثبت شد و برای بررسی به دبیرخانه ارسال شد."
+        />
       </div>
     </div>
   );

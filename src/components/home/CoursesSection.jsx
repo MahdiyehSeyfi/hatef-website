@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
 
 import bannerImage from "../../assets/images/banner.png";
+import ViewAllButton from "../common/ViewAllButton";
+import ActivityCard from "../activities/ActivityCard";
+import CoursesSliderControls from "../activities/CoursesSliderControls";
 
 import "./CoursesSection.css";
 
-const courses = [
+const FALLBACK_ACTIVITIES = [
   {
-    id: 1,
+    id: "course-1",
+    type: "course",
     title: "دوره جامع مدیریت سبز",
     startDate: "۱۴۰۵/۰۵/۰۵",
     instructor: "مهدیه سیفی",
@@ -15,15 +18,17 @@ const courses = [
     status: "در حال برگزاری",
   },
   {
-    id: 2,
-    title: "دوره مدیریت پروژه‌های فناورانه",
+    id: "event-1",
+    type: "event",
+    title: "رویداد معرفی فرصت‌های همکاری فناورانه",
     startDate: "۱۴۰۵/۰۵/۱۵",
-    instructor: "سارا احمدی",
-    organizer: "معاونت پژوهشی دانشگاه تهران",
+    instructor: "تیم هاتف",
+    organizer: "دبیرخانه هاتف",
     status: "ثبت‌نام فعال",
   },
   {
-    id: 3,
+    id: "course-2",
+    type: "course",
     title: "دوره توسعه کسب‌وکارهای دانش‌بنیان",
     startDate: "۱۴۰۵/۰۶/۲۰",
     instructor: "محمد کریمی",
@@ -31,15 +36,17 @@ const courses = [
     status: "ثبت‌نام فعال",
   },
   {
-    id: 4,
-    title: "دوره طراحی مدل کسب‌وکار فناورانه",
+    id: "event-2",
+    type: "event",
+    title: "نشست تخصصی تجاری‌سازی فناوری",
     startDate: "۱۴۰۵/۰۶/۲۵",
-    instructor: "مریم حیدری",
-    organizer: "مرکز رشد دانشگاه تهران",
+    instructor: "مرکز نوآوری",
+    organizer: "برنامه هاتف",
     status: "به‌زودی",
   },
   {
-    id: 5,
+    id: "course-3",
+    type: "course",
     title: "دوره آموزش تجاری‌سازی فناوری",
     startDate: "۱۴۰۵/۰۷/۱۰",
     instructor: "علی رضایی",
@@ -47,15 +54,17 @@ const courses = [
     status: "ثبت‌نام فعال",
   },
   {
-    id: 6,
-    title: "دوره مدیریت محصولات فناورانه",
+    id: "event-3",
+    type: "event",
+    title: "وبینار مسیر ورود طرح‌های دانشگاهی به صنعت",
     startDate: "۱۴۰۵/۰۷/۱۵",
-    instructor: "نگار محمدی",
-    organizer: "دانشکده مدیریت دانشگاه تهران",
+    instructor: "دبیرخانه هاتف",
+    organizer: "دانشگاه تهران",
     status: "به‌زودی",
   },
   {
-    id: 7,
+    id: "course-4",
+    type: "course",
     title: "دوره ارزیابی طرح‌های دانش‌بنیان",
     startDate: "۱۴۰۵/۰۸/۰۵",
     instructor: "حسین اکبری",
@@ -63,109 +72,366 @@ const courses = [
     status: "ثبت‌نام فعال",
   },
   {
-    id: 8,
-    title: "دوره توسعه بازار محصولات نوآورانه",
+    id: "event-4",
+    type: "event",
+    title: "رویداد ارائه نیازهای فناورانه صنعت",
     startDate: "۱۴۰۵/۰۸/۱۲",
-    instructor: "زهرا مرادی",
-    organizer: "مرکز کارآفرینی دانشگاه تهران",
+    instructor: "شرکای تجاری هاتف",
+    organizer: "برنامه هاتف",
     status: "به‌زودی",
   },
 ];
 
-const courseSlides = [
-  courses.slice(0, 4),
-  courses.slice(2, 6),
-  courses.slice(4, 8),
-];
+const ACTIVITY_STORAGE_KEY_PATTERN =
+  /(activity|activities|course|courses|event|events|workshop|webinar)/i;
 
-function SliderArrow({ direction }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className={`courses-section__arrow-icon courses-section__arrow-icon--${direction}`}
-    >
-      <path
-        d="M8.5 5.5 15 12l-6.5 6.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+function safeParseJson(value, fallbackValue = null) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallbackValue;
+  }
+}
+
+function normalizeText(value, fallback = "") {
+  const normalizedValue = String(value || "").trim();
+
+  return normalizedValue || fallback;
+}
+
+function normalizeActivityType(value = "") {
+  const normalizedValue = String(value || "").toLowerCase();
+
+  if (
+    normalizedValue.includes("event") ||
+    normalizedValue.includes("رویداد") ||
+    normalizedValue.includes("همایش") ||
+    normalizedValue.includes("نشست")
+  ) {
+    return "event";
+  }
+
+  return "course";
+}
+
+function getActivityType(item = {}) {
+  return normalizeActivityType(
+    item.type ||
+      item.activityType ||
+      item.kind ||
+      item.mode ||
+      item.category ||
+      item.activityCategory,
   );
 }
 
-function getCoursePath(courseId) {
-  return `/courses/course-${courseId}`;
+function getActivityTitle(item = {}) {
+  return normalizeText(
+    item.title ||
+      item.name ||
+      item.courseTitle ||
+      item.eventTitle ||
+      item.activityTitle,
+  );
 }
 
-function CourseCard({ course }) {
-  const coursePath = getCoursePath(course.id);
+function isVisibleActivity(item = {}) {
+  const status = String(item.status || item.state || "").toLowerCase();
 
+  return !["draft", "deleted", "archived", "inactive"].includes(status);
+}
+
+function isActivityCandidate(item, sourceKey = "") {
+  if (!item || typeof item !== "object" || Array.isArray(item)) {
+    return false;
+  }
+
+  const title = getActivityTitle(item);
+
+  if (!title) {
+    return false;
+  }
+
+  const sourceHasSignal = ACTIVITY_STORAGE_KEY_PATTERN.test(sourceKey);
+
+  const activityText = [
+    item.type,
+    item.activityType,
+    item.kind,
+    item.mode,
+    item.category,
+    item.activityCategory,
+    item.title,
+    item.name,
+  ]
+    .map((value) => String(value || "").toLowerCase())
+    .join(" ");
+
+  const itemHasSignal =
+    activityText.includes("course") ||
+    activityText.includes("event") ||
+    activityText.includes("workshop") ||
+    activityText.includes("webinar") ||
+    activityText.includes("دوره") ||
+    activityText.includes("رویداد") ||
+    activityText.includes("کارگاه") ||
+    activityText.includes("وبینار");
+
+  return (sourceHasSignal || itemHasSignal) && isVisibleActivity(item);
+}
+
+function collectActivityCandidates(value, sourceKey, output) {
+  if (Array.isArray(value)) {
+    value.forEach((item) => {
+      collectActivityCandidates(item, sourceKey, output);
+    });
+
+    return;
+  }
+
+  if (!value || typeof value !== "object") {
+    return;
+  }
+
+  if (isActivityCandidate(value, sourceKey)) {
+    output.push(value);
+  }
+
+  Object.entries(value).forEach(([key, childValue]) => {
+    if (Array.isArray(childValue)) {
+      collectActivityCandidates(childValue, `${sourceKey}.${key}`, output);
+    }
+  });
+}
+
+function readStoredActivityItems() {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return [];
+  }
+
+  const candidates = [];
+
+  for (let index = 0; index < window.localStorage.length; index += 1) {
+    const storageKey = window.localStorage.key(index) || "";
+
+    if (!ACTIVITY_STORAGE_KEY_PATTERN.test(storageKey)) {
+      continue;
+    }
+
+    const storedValue = window.localStorage.getItem(storageKey);
+    const parsedValue = safeParseJson(storedValue, null);
+
+    if (!parsedValue) {
+      continue;
+    }
+
+    collectActivityCandidates(parsedValue, storageKey, candidates);
+  }
+
+  return candidates;
+}
+
+function getActivityImage(item = {}) {
   return (
-    <article className="course-card">
-      <Link
-        to={coursePath}
-        className="course-card__image-wrapper"
-        aria-label={`مشاهده ${course.title}`}
-      >
-        <img
-          className="course-card__image"
-          src={bannerImage}
-          alt={course.title}
-        />
-
-        <span className="course-card__status">{course.status}</span>
-      </Link>
-
-      <div className="course-card__content">
-        <Link to={coursePath} className="course-card__title">
-          {course.title}
-        </Link>
-
-        <dl className="course-card__details">
-          <div>
-            <dt>شروع از:</dt>
-            <dd>{course.startDate}</dd>
-          </div>
-
-          <div>
-            <dt>مدرس:</dt>
-            <dd>{course.instructor}</dd>
-          </div>
-
-          <div>
-            <dt>برگزارکننده:</dt>
-            <dd>{course.organizer}</dd>
-          </div>
-        </dl>
-
-        <Link to={coursePath} className="course-card__button">
-          مشاهده دوره
-        </Link>
-      </div>
-    </article>
+    item.image ||
+    item.imageUrl ||
+    item.coverImage ||
+    item.bannerImage ||
+    item.thumbnail ||
+    item.poster ||
+    bannerImage
   );
+}
+
+function getActivityStartDate(item = {}) {
+  return normalizeText(
+    item.startDate ||
+      item.date ||
+      item.eventDate ||
+      item.courseDate ||
+      item.startAt ||
+      item.startTime ||
+      item.publishedAt ||
+      item.createdAt,
+    "زمان‌بندی اعلام نشده",
+  );
+}
+
+function getActivityInstructor(item = {}) {
+  const type = getActivityType(item);
+
+  return normalizeText(
+    item.instructor ||
+      item.teacher ||
+      item.presenter ||
+      item.speaker ||
+      item.lecturer ||
+      item.mentor,
+    type === "event" ? "ارائه‌دهنده رویداد" : "مدرس دوره",
+  );
+}
+
+function getActivityOrganizer(item = {}) {
+  return normalizeText(
+    item.organizer ||
+      item.organization ||
+      item.host ||
+      item.department ||
+      item.institution ||
+      item.ownerName,
+    "برنامه هاتف",
+  );
+}
+
+function getActivityStatus(item = {}) {
+  const rawStatus = normalizeText(
+    item.statusLabel ||
+      item.registrationStatus ||
+      item.statusText ||
+      item.status ||
+      item.state,
+  );
+
+  const normalizedStatus = rawStatus.toLowerCase();
+
+  if (
+    normalizedStatus === "published" ||
+    normalizedStatus === "active" ||
+    normalizedStatus === "open"
+  ) {
+    return "ثبت‌نام فعال";
+  }
+
+  if (normalizedStatus === "upcoming") {
+    return "به‌زودی";
+  }
+
+  if (normalizedStatus === "closed" || normalizedStatus === "finished") {
+    return "پایان‌یافته";
+  }
+
+  return rawStatus || "ثبت‌نام فعال";
+}
+
+function getActivityTimeValue(item = {}) {
+  const possibleDateValues = [
+    item.startDate,
+    item.date,
+    item.eventDate,
+    item.courseDate,
+    item.startAt,
+    item.publishedAt,
+    item.updatedAt,
+    item.createdAt,
+  ];
+
+  for (const value of possibleDateValues) {
+    const time = Date.parse(value);
+
+    if (!Number.isNaN(time)) {
+      return time;
+    }
+  }
+
+  return 0;
+}
+
+function normalizeActivityItem(item = {}, index = 0) {
+  const type = getActivityType(item);
+  const fallbackId = `${type}-${index + 1}`;
+  const id = normalizeText(item.id || item.slug || item.uuid, fallbackId);
+
+  return {
+    id,
+    type,
+    title: getActivityTitle(item),
+    startDate: getActivityStartDate(item),
+    instructor: getActivityInstructor(item),
+    organizer: getActivityOrganizer(item),
+    status: getActivityStatus(item),
+    image: getActivityImage(item),
+    path:
+      item.path ||
+      item.url ||
+      item.detailsPath ||
+      (type === "event" ? `/events/${id}` : `/courses/${id}`),
+    buttonLabel: type === "event" ? "مشاهده رویداد" : "مشاهده دوره",
+    firstMetaLabel: type === "event" ? "زمان:" : "شروع از:",
+    sortValue: getActivityTimeValue(item),
+  };
+}
+
+function getHomeActivityItems() {
+  const storedItems = readStoredActivityItems()
+    .map(normalizeActivityItem)
+    .filter((item) => item.title);
+
+  const uniqueItems = [];
+  const seenKeys = new Set();
+
+  storedItems.forEach((item) => {
+    const key = `${item.type}-${item.id}-${item.title}`;
+
+    if (seenKeys.has(key)) {
+      return;
+    }
+
+    seenKeys.add(key);
+    uniqueItems.push(item);
+  });
+
+  if (uniqueItems.length > 0) {
+    return uniqueItems
+      .sort((firstItem, secondItem) => {
+        return secondItem.sortValue - firstItem.sortValue;
+      })
+      .slice(0, 8);
+  }
+
+  return FALLBACK_ACTIVITIES.map(normalizeActivityItem);
+}
+
+function createActivitySlides(items) {
+  const slides = [];
+
+  for (let index = 0; index < items.length; index += 4) {
+    slides.push(items.slice(index, index + 4));
+  }
+
+  return slides.length > 0 ? slides : [items];
 }
 
 function CoursesSection() {
-  const pageCount = courseSlides.length;
+  const [activityItems, setActivityItems] = useState(getHomeActivityItems);
 
-  const loopSlides = useMemo(
-    () => [courseSlides[pageCount - 1], ...courseSlides, courseSlides[0]],
-    [pageCount],
+  const activitySlides = useMemo(
+    () => createActivitySlides(activityItems),
+    [activityItems],
   );
+
+  const pageCount = activitySlides.length;
+
+  const loopSlides = useMemo(() => {
+    if (pageCount === 0) {
+      return [];
+    }
+
+    return [
+      activitySlides[pageCount - 1],
+      ...activitySlides,
+      activitySlides[0],
+    ];
+  }, [activitySlides, pageCount]);
 
   const [trackIndex, setTrackIndex] = useState(1);
   const [transitionEnabled, setTransitionEnabled] = useState(true);
   const [isMoving, setIsMoving] = useState(false);
 
-  const activePage = (trackIndex - 1 + pageCount) % pageCount;
+  const activePage =
+    pageCount > 0 ? (trackIndex - 1 + pageCount) % pageCount : 0;
 
   const moveTo = (nextIndex) => {
-    if (isMoving) {
+    if (isMoving || pageCount <= 1) {
       return;
     }
 
@@ -220,7 +486,23 @@ function CoursesSection() {
   };
 
   useEffect(() => {
-    if (isMoving) {
+    const refreshActivityItems = () => {
+      setActivityItems(getHomeActivityItems());
+      setTransitionEnabled(false);
+      setIsMoving(false);
+      setTrackIndex(1);
+      restoreTransition();
+    };
+
+    window.addEventListener("storage", refreshActivityItems);
+
+    return () => {
+      window.removeEventListener("storage", refreshActivityItems);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isMoving || pageCount <= 1) {
       return undefined;
     }
 
@@ -233,60 +515,29 @@ function CoursesSection() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [trackIndex, isMoving]);
+  }, [trackIndex, isMoving, pageCount]);
+
+  if (activityItems.length === 0) {
+    return null;
+  }
 
   return (
     <section className="courses-section" id="courses">
       <div className="courses-section__container">
         <div className="courses-section__heading">
-          <h2>دوره‌های توانمندسازی</h2>
+          <h2>رویدادها و دوره‌ها</h2>
 
           <span className="courses-section__line" />
 
-          <div className="courses-section__controls">
-            <button
-              type="button"
-              className="courses-section__arrow"
-              onClick={showPreviousPage}
-              disabled={isMoving}
-              aria-label="اسلاید قبلی دوره‌ها"
-            >
-              <SliderArrow direction="previous" />
-            </button>
-
-            <div
-              className="courses-section__dots"
-              aria-label="انتخاب اسلاید دوره‌ها"
-            >
-              {courseSlides.map((slide, pageIndex) => {
-                const isActive = pageIndex === activePage;
-
-                return (
-                  <button
-                    key={`course-dot-${pageIndex}`}
-                    type="button"
-                    className={`courses-section__dot ${
-                      isActive ? "courses-section__dot--active" : ""
-                    }`}
-                    onClick={() => showSelectedPage(pageIndex)}
-                    disabled={isMoving}
-                    aria-label={`نمایش اسلاید ${pageIndex + 1}`}
-                    aria-current={isActive ? "true" : undefined}
-                  />
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              className="courses-section__arrow"
-              onClick={showNextPage}
-              disabled={isMoving}
-              aria-label="اسلاید بعدی دوره‌ها"
-            >
-              <SliderArrow direction="next" />
-            </button>
-          </div>
+          <CoursesSliderControls
+            slides={activitySlides}
+            activePage={activePage}
+            isMoving={isMoving}
+            pageCount={pageCount}
+            onPrevious={showPreviousPage}
+            onNext={showNextPage}
+            onSelectPage={showSelectedPage}
+          />
         </div>
 
         <div className="courses-section__viewport">
@@ -304,12 +555,12 @@ function CoursesSection() {
             {loopSlides.map((slide, slideIndex) => (
               <div
                 className="courses-section__page"
-                key={`course-slide-${slideIndex}`}
+                key={`activity-slide-${slideIndex}`}
               >
-                {slide.map((course) => (
-                  <CourseCard
-                    key={`${slideIndex}-${course.id}`}
-                    course={course}
+                {slide.map((activity) => (
+                  <ActivityCard
+                    key={`${slideIndex}-${activity.type}-${activity.id}`}
+                    item={activity}
                   />
                 ))}
               </div>
@@ -318,10 +569,7 @@ function CoursesSection() {
         </div>
 
         <div className="courses-section__footer">
-          <Link to="/courses/all" className="courses-section__view-all">
-            مشاهده همه
-            <span aria-hidden="true">←</span>
-          </Link>
+          <ViewAllButton to="/events" />
         </div>
       </div>
     </section>

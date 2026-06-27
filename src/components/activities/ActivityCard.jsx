@@ -2,70 +2,53 @@ import { Link } from "react-router";
 
 import "./ActivityCard.css";
 
-function getButtonLabel(item) {
-  if (item.status === "registering") {
-    return item.type === "event" ? "ثبت‌نام در رویداد" : "ثبت‌نام در دوره";
+function ActivityCard({ item, activity }) {
+  const currentItem = item || activity;
+
+  if (!currentItem) {
+    return null;
   }
-
-  if (item.status === "past") {
-    return item.type === "event"
-      ? "گزارش و اطلاعات رویداد"
-      : "گزارش و اطلاعات دوره";
-  }
-
-  return "اطلاعات بیشتر";
-}
-
-function getDetailsPath(item) {
-  if (item.type === "course") {
-    return `/courses/${item.id}`;
-  }
-
-  return `/events/${item.id}`;
-}
-
-function ActivityCard({ item }) {
-  const detailsPath = getDetailsPath(item);
 
   return (
     <article className="activity-card">
       <Link
-        to={detailsPath}
+        to={currentItem.path}
         className="activity-card__media"
-        aria-label={`مشاهده ${item.title}`}
+        aria-label={`مشاهده ${currentItem.title}`}
       >
         <img
           className="activity-card__image"
-          src={item.image}
-          alt={item.title}
+          src={currentItem.image}
+          alt={currentItem.title}
         />
+
+        <span className="activity-card__status">{currentItem.status}</span>
       </Link>
 
       <div className="activity-card__content">
-        <Link to={detailsPath} className="activity-card__title">
-          {item.title}
+        <Link to={currentItem.path} className="activity-card__title">
+          {currentItem.title}
         </Link>
 
         <dl className="activity-card__details">
           <div>
-            <dt>شروع از:</dt>
-            <dd>{item.startDate}</dd>
+            <dt>{currentItem.firstMetaLabel}</dt>
+            <dd>{currentItem.startDate}</dd>
           </div>
 
           <div>
-            <dt>{item.type === "event" ? "دبیر:" : "مدرس:"}</dt>
-
-            <dd>{item.instructor}</dd>
+            <dt>{currentItem.type === "event" ? "ارائه‌دهنده:" : "مدرس:"}</dt>
+            <dd>{currentItem.instructor}</dd>
           </div>
 
           <div>
             <dt>برگزارکننده:</dt>
-            <dd>{item.organizer}</dd>
+            <dd>{currentItem.organizer}</dd>
           </div>
         </dl>
 
-        <Link to={detailsPath} className="activity-card__button">
-          {getButtonLabel(item)}
+        <Link to={currentItem.path} className="activity-card__button">
+          {currentItem.buttonLabel}
         </Link>
       </div>
     </article>

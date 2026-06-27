@@ -6,6 +6,10 @@ import {
   allCollaborationProjects,
   getCollaborationProjectById,
 } from "../../data/collaborationProjectsData";
+import {
+  getPublishedSitePublicationProjectById,
+  getSitePublicationPreviewProject,
+} from "../../services/projectPublicationService";
 
 import "./CollaborationProjectDetailsPage.css";
 
@@ -70,10 +74,25 @@ function ReportsTabs({ reports }) {
 
         <h3>{activeReport.title}</h3>
 
-        <p>{activeReport.text}</p>
+        {activeReport.text ? (
+          <p>{activeReport.text}</p>
+        ) : (
+          <p className="collab-project-details__report-empty-text">
+            برای این گزارش توضیح متنی ثبت نشده است.
+          </p>
+        )}
 
         {activeReport.fileUrl ? (
-          <a href={activeReport.fileUrl}>دانلود فایل گزارش</a>
+          <a
+            href={activeReport.fileUrl}
+            download={activeReport.fileName || activeReport.title}
+            target="_blank"
+            rel="noreferrer"
+            className="collab-project-details__report-download"
+          >
+            دانلود فایل گزارش
+            {activeReport.fileName ? ` (${activeReport.fileName})` : ""}
+          </a>
         ) : (
           <div className="collab-project-details__text-report-note">
             برای این گزارش فایل جداگانه‌ای بارگذاری نشده و اطلاعات به‌صورت متنی
@@ -89,12 +108,19 @@ function CollaborationProjectDetailsPage() {
   const { projectId } = useParams();
   const [isFavorite, setIsFavorite] = useState(false);
 
+  const isPreviewProject = projectId === "preview";
+  const publicationProject = isPreviewProject
+    ? getSitePublicationPreviewProject()
+    : getPublishedSitePublicationProjectById(projectId);
+
   const project =
-    getCollaborationProjectById(projectId) || allCollaborationProjects[0];
+    publicationProject ||
+    getCollaborationProjectById(projectId) ||
+    allCollaborationProjects[0];
 
   const relatedProjects = allCollaborationProjects
     .filter((item) => item.group === project.group && item.id !== project.id)
-    .slice(0, 3);
+    .slice(0, 4);
 
   return (
     <main className="collab-project-details">
@@ -138,7 +164,13 @@ function CollaborationProjectDetailsPage() {
       </section>
 
       <div className="collab-project-details__container">
-        <section className="collab-project-details__summary-grid">
+        <section
+          className={`collab-project-details__summary-grid ${
+            publicationProject
+              ? "collab-project-details__summary-grid--dynamic"
+              : ""
+          }`}
+        >
           {project.indicators.map((indicator) => (
             <article key={indicator.label}>
               <strong>{indicator.value}</strong>
@@ -201,7 +233,14 @@ function CollaborationProjectDetailsPage() {
           <div className="collab-project-details__main">
             <section>
               <SectionTitle>توضیحات طرح</SectionTitle>
-              <p>{project.description}</p>
+              {project.descriptionHtml ? (
+                <div
+                  className="collab-project-details__rich-text"
+                  dangerouslySetInnerHTML={{ __html: project.descriptionHtml }}
+                />
+              ) : (
+                <p>{project.description}</p>
+              )}
             </section>
 
             <section>
@@ -221,7 +260,7 @@ function CollaborationProjectDetailsPage() {
 
             <section>
               <SectionTitle>گزارش‌ها و مستندات</SectionTitle>
-              <ReportsTabs reports={project.reports} />
+              <ReportsTabs reports={project.reports || []} />
             </section>
           </div>
         </div>
@@ -252,9 +291,14 @@ function CollaborationProjectDetailsPage() {
           id="project-contact-form"
         >
           <ContactFormSection
+            id={`project-contact-form-${project.id}`}
             title="فرم تماس"
             submitLabel="ارسال درخواست"
-            statusMessage="درخواست شما در نسخه نمایشی ثبت شد. ارسال واقعی پس از اتصال به سرور فعال می‌شود."
+            sourceType="collaboration-project"
+            sourceTitle="فرصت همکاری / پروژه"
+            relatedId={project.id}
+            relatedTitle={project.title}
+            statusMessage="درخواست همکاری شما برای این پروژه ثبت شد و برای بررسی به دبیرخانه ارسال شد."
           />
         </section>
 

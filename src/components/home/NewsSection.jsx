@@ -1,31 +1,65 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+
 import bannerImage from "../../assets/images/banner.png";
+import ViewAllButton from "../common/ViewAllButton";
+
+import {
+  getLatestPublicNewsItems,
+  NEWS_UPDATED_EVENT,
+} from "../../services/newsService";
+
 import "./NewsSection.css";
 
-const newsItems = [
-  {
-    id: 1,
-    title: "ویروس کرونا؛ هشدار درباره کاهش سریع اقدامات قرنطینه",
-    description:
-      "ویروس کرونا؛ هشدار درباره کاهش سریع اقدامات قرنطینه در حالی که جهان درگیر کنترل این بیماری است.",
-    date: "۱۴۰۵/۰۵/۰۵",
-  },
-  {
-    id: 2,
-    title: "ویروس کرونا؛ هشدار درباره کاهش سریع اقدامات قرنطینه",
-    description:
-      "گزارشی کوتاه از تازه‌ترین اخبار علمی، پژوهشی و فناوری دانشگاه تهران.",
-    date: "۱۴۰۵/۰۵/۰۵",
-  },
-  {
-    id: 3,
-    title: "ویروس کرونا؛ هشدار درباره کاهش سریع اقدامات قرنطینه",
-    description:
-      "مروری بر رویدادهای دانشگاهی و فعالیت‌های جدید در حوزه نوآوری و فناوری.",
-    date: "۱۴۰۵/۰۵/۰۵",
-  },
-];
+const SMALL_NEWS_TITLE_MAX_LENGTH = 42;
+
+function truncateText(value = "", maxLength = SMALL_NEWS_TITLE_MAX_LENGTH) {
+  const normalizedValue = String(value || "").trim();
+  const characters = Array.from(normalizedValue);
+
+  if (characters.length <= maxLength) {
+    return normalizedValue;
+  }
+
+  return `${characters.slice(0, maxLength).join("").trim()}...`;
+}
+
+function getNewsImage(newsItem) {
+  return newsItem?.image || bannerImage;
+}
+
+function getNewsSummary(newsItem) {
+  return (
+    newsItem?.summary || newsItem?.description || "خلاصه خبر در دسترس نیست."
+  );
+}
 
 function NewsSection() {
+  const [latestNewsItems, setLatestNewsItems] = useState(() =>
+    getLatestPublicNewsItems(5),
+  );
+
+  useEffect(() => {
+    const refreshNewsItems = () => {
+      setLatestNewsItems(getLatestPublicNewsItems(5));
+    };
+
+    window.addEventListener(NEWS_UPDATED_EVENT, refreshNewsItems);
+    window.addEventListener("storage", refreshNewsItems);
+
+    return () => {
+      window.removeEventListener(NEWS_UPDATED_EVENT, refreshNewsItems);
+      window.removeEventListener("storage", refreshNewsItems);
+    };
+  }, []);
+
+  const featuredNews = latestNewsItems[0];
+  const sideNewsItems = latestNewsItems.slice(1, 5);
+
+  if (!featuredNews) {
+    return null;
+  }
+
   return (
     <section className="news-section" id="news">
       <div className="container">
@@ -40,61 +74,64 @@ function NewsSection() {
 
         <div className="news-section__content">
           <article className="featured-news">
-            <a href="/news/1" className="featured-news__media">
+            <Link
+              to={`/news/${featuredNews.id}`}
+              className="featured-news__media"
+            >
               <img
                 className="featured-news__image"
-                src={bannerImage}
-                alt="خبر شاخص برنامه هاتف"
+                src={getNewsImage(featuredNews)}
+                alt={featuredNews.title}
               />
 
               <div className="featured-news__overlay">
                 <span className="featured-news__eyebrow">
-                  از سوی معاونت پژوهشی اعلام شد
+                  {featuredNews.category || "آخرین خبر هاتف"}
                 </span>
 
-                <h3>
-                  شناسایی پیش‌شاخص‌های زمین‌لرزه با داده‌های ماهواره‌ای و هوش
-                  مصنوعی
-                </h3>
+                <h3>{featuredNews.title}</h3>
               </div>
-            </a>
+            </Link>
           </article>
 
           <div className="news-section__side">
             <div className="news-section__list">
-              {newsItems.map((item) => (
+              {sideNewsItems.map((item) => (
                 <article className="news-list-item" key={item.id}>
-                  <a
-                    href={`/news/${item.id}`}
+                  <Link
+                    to={`/news/${item.id}`}
                     className="news-list-item__image-link"
                   >
                     <img
                       className="news-list-item__image"
-                      src={bannerImage}
+                      src={getNewsImage(item)}
                       alt={item.title}
                     />
-                  </a>
+                  </Link>
 
                   <div className="news-list-item__content">
-                    <a
-                      href={`/news/${item.id}`}
+                    <Link
+                      to={`/news/${item.id}`}
                       className="news-list-item__title"
+                      title={item.title}
                     >
-                      {item.title}
-                    </a>
+                      {truncateText(item.title)}
+                    </Link>
 
-                    <p>{item.description}</p>
+                    <p>{getNewsSummary(item)}</p>
 
                     <div className="news-list-item__meta">
-                      <span>{item.date}</span>
+                      <span>
+                        {item.publishedAt || item.date || item.createdAt}
+                      </span>
 
-                      <a
-                        href={`/news/${item.id}`}
+                      <Link
+                        to={`/news/${item.id}`}
                         className="news-list-item__more"
                       >
                         ادامه مطلب
                         <span aria-hidden="true">←</span>
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 </article>
@@ -102,10 +139,7 @@ function NewsSection() {
             </div>
 
             <div className="news-section__footer">
-              <a href="/news" className="news-section__view-all">
-                مشاهده همه
-                <span aria-hidden="true">←</span>
-              </a>
+              <ViewAllButton to="/news" />
             </div>
           </div>
         </div>

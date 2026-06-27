@@ -59,8 +59,9 @@
   min-height: 345px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   justify-self: start;
+  padding-top: 14px;
   padding-right: 44px;
   direction: rtl;
   animation: achievement-content-enter 450ms ease both;
@@ -102,7 +103,7 @@
 
 .achievement-information__description {
   max-width: 590px;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
 }
 
 .achievement-information__description p {
@@ -116,44 +117,8 @@
 .achievement-information__footer {
   display: flex;
   justify-content: flex-start;
-  margin-top: 4px;
+  margin-top: auto;
   direction: ltr;
-}
-
-.achievement-information__button {
-  width: 175px;
-  min-height: 46px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 13px;
-  border: 1px solid #cbd1d8;
-  color: var(--color-muted);
-  background-color: var(--color-white);
-  font-size: 14px;
-  direction: rtl;
-  transition:
-    color 200ms ease,
-    border-color 200ms ease,
-    background-color 200ms ease,
-    transform 200ms ease,
-    box-shadow 200ms ease;
-}
-
-.achievement-information__button:hover {
-  color: var(--color-white);
-  border-color: var(--color-primary);
-  background-color: var(--color-primary);
-  box-shadow: 0 9px 22px rgba(26, 54, 93, 0.16);
-  transform: translateY(-3px);
-}
-
-.achievement-information__button span {
-  transition: transform 200ms ease;
-}
-
-.achievement-information__button:hover span {
-  transform: translateX(-4px);
 }
 
 /* Image slider */
@@ -271,6 +236,73 @@
   width: 13px;
   height: 13px;
   background-color: var(--color-accent);
+}
+
+/* Shared View All Button - Final Override */
+
+.view-all-button,
+.support-plans__view-all,
+.news-section__view-all,
+.achievement-information__button {
+  width: 128px !important;
+  min-width: 128px !important;
+  max-width: 128px !important;
+  min-height: 34px !important;
+  height: 34px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+
+  padding: 0 14px !important;
+
+  border: 1px solid #cbd1d8 !important;
+  border-radius: 10px !important;
+
+  color: var(--color-muted) !important;
+  background-color: #ffffff !important;
+
+  font-family: inherit !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+
+  direction: rtl !important;
+  box-sizing: border-box !important;
+
+  transition:
+    color 200ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease,
+    transform 200ms ease,
+    box-shadow 200ms ease !important;
+}
+
+.view-all-button:hover,
+.support-plans__view-all:hover,
+.news-section__view-all:hover,
+.achievement-information__button:hover {
+  color: #ffffff !important;
+  border-color: var(--color-primary) !important;
+  background-color: var(--color-primary) !important;
+  box-shadow: 0 7px 16px rgba(26, 54, 93, 0.13) !important;
+  transform: translateY(-2px) !important;
+}
+
+.view-all-button span,
+.support-plans__view-all span,
+.news-section__view-all span,
+.achievement-information__button span {
+  line-height: 1 !important;
+  transition: transform 200ms ease !important;
+}
+
+.view-all-button:hover span,
+.support-plans__view-all:hover span,
+.news-section__view-all:hover span,
+.achievement-information__button:hover span {
+  transform: translateX(-3px) !important;
 }
 
 /* Animations */

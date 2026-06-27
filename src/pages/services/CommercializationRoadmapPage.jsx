@@ -258,9 +258,12 @@ function CommercializationRoadmapPage() {
         </section>
 
         <ContactFormSection
+          id="commercialization-roadmap-request-form"
           title="فرم تماس"
           submitLabel="ثبت درخواست"
-          statusMessage="درخواست تدوین نقشه راه شما در نسخه نمایشی ثبت شد. ارسال واقعی پس از اتصال به سرور فعال می‌شود."
+          sourceType="service"
+          sourceTitle="نقشه راه تجاری‌سازی"
+          statusMessage="درخواست تدوین نقشه راه تجاری‌سازی شما ثبت شد و برای بررسی به دبیرخانه ارسال شد."
         />
 
         <section className="service-faq" id="service-faq">

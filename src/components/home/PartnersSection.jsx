@@ -1,7 +1,15 @@
+import { Link, useNavigate } from "react-router";
+
 import shoppingBagIcon from "../../assets/icons/shopping-bag.svg";
 import behsazanLogo from "../../assets/logos/behsazan-mellat-logo.jpg";
 import mellatBankLogo from "../../assets/logos/mellat-bank-logo.jpg";
 import mellatVenturesLogo from "../../assets/logos/mellat-ventures-logo.png";
+
+import {
+  getCurrentUser,
+  getCurrentUserDashboardPath,
+} from "../../services/authService";
+
 import "./PartnersSection.css";
 
 const statistics = [
@@ -51,6 +59,21 @@ const partnerLogos = [
 ];
 
 function PartnersSection() {
+  const navigate = useNavigate();
+
+  const handleCollaborationClick = () => {
+    const currentUser = getCurrentUser();
+
+    if (!currentUser) {
+      navigate("/auth");
+      return;
+    }
+
+    const dashboardPath = getCurrentUserDashboardPath();
+
+    navigate(dashboardPath && dashboardPath !== "/" ? dashboardPath : "/");
+  };
+
   return (
     <section className="partners-section" id="business">
       <div className="container">
@@ -81,19 +104,20 @@ function PartnersSection() {
         </div>
 
         <div className="partners-section__actions">
-          <a
-            href="#collaboration-opportunities"
+          <Link
+            to="/business/opportunities"
             className="partners-section__button partners-section__button--primary"
           >
             فرصت‌های همکاری
-          </a>
+          </Link>
 
-          <a
-            href="#collaboration-contact"
+          <button
+            type="button"
             className="partners-section__button partners-section__button--secondary"
+            onClick={handleCollaborationClick}
           >
             ارتباط جهت همکاری
-          </a>
+          </button>
         </div>
 
         <div className="partners-section__logos">

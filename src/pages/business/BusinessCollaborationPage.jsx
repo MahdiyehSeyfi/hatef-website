@@ -443,9 +443,12 @@ function ContactSection() {
         </SectionTitle>
 
         <ContactFormSection
+          id="business-collaboration-request-form"
           title="فرم تماس"
           submitLabel="ارسال درخواست"
-          statusMessage="درخواست شما در نسخه نمایشی ثبت شد. ارسال واقعی پس از اتصال به سرور فعال می‌شود."
+          sourceType="business-collaboration"
+          sourceTitle="همکاری‌های تجاری"
+          statusMessage="درخواست همکاری تجاری شما ثبت شد و برای بررسی به دبیرخانه ارسال شد."
         />
       </div>
     </section>

@@ -220,3 +220,34 @@
   border-color: var(--color-accent);
   background-color: var(--color-accent);
 }
+
+/* v2 news labels */
+.news-list-page__labels {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.news-list-page__labels span,
+.news-list-page__labels strong {
+  min-height: 27px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.6;
+}
+
+.news-list-page__labels span {
+  color: #0f5f80;
+  background: #e8f8ff;
+}
+
+.news-list-page__labels strong {
+  color: #92400e;
+  background: #fef3c7;
+}

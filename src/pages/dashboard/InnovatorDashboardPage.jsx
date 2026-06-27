@@ -1,19 +1,67 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 
 import { getCurrentUser } from "../../services/authService";
 import { getPublishedCalls, getCallById } from "../../services/callService";
-import { getPlansByInnovatorId } from "../../services/planService";
+import {
+  addPlan,
+  deletePlan as deletePlanFromService,
+  getPlansByInnovatorId,
+  publishPlanBusinessOpportunity,
+  resubmitPlanRevision,
+  savePlanBusinessOpportunityDetails,
+  updatePlan,
+} from "../../services/planService";
+import { getBusinessCollaborationRequestStatsByPlanId } from "../../services/businessService";
+import {
+  COOPERATION_NEED_OPTIONS,
+  INVESTMENT_NEED_OPTIONS,
+  SITE_PUBLICATION_FIELD_OPTIONS,
+  getSitePublicationRequestsByInnovator,
+  saveSitePublicationDraft,
+  saveSitePublicationPreviewItem,
+  submitSitePublicationDraft,
+  SITE_PUBLICATION_STATUS,
+} from "../../services/projectPublicationService";
+import { getCurrentUserActivityRegistrations } from "../../services/activityRegistrationService";
+import { getParticipantNoticesForCurrentUserByActivityId } from "../../services/activityParticipantNoticeService";
+import {
+  getPublicCourseById,
+  getPublicEventById,
+} from "../../services/publicActivityService";
 import { getReviewsByPlanId } from "../../services/reviewService";
-import { getTasksWithPlanByInnovatorId } from "../../services/taskService";
+import {
+  getTasksWithPlanByInnovatorId,
+  markTaskViewed,
+  submitTaskResponse,
+  updateTask as updateTaskInService,
+} from "../../services/taskService";
 import {
   PLAN_FINAL_STATUS,
   PLAN_REVIEW_STATUS,
   PLAN_STATUS,
   TASK_STATUS,
 } from "../../constants/statuses";
+
+import {
+  addSupportTicket,
+  deleteSupportTicket,
+  getCurrentUserSupportTickets,
+} from "../../services/supportService";
+import {
+  deleteAllNotificationsForCurrentUser,
+  deleteNotification,
+  getNotificationsForCurrentUser,
+  markAllNotificationsAsReadForCurrentUser,
+  markNotificationAsRead,
+} from "../../services/notificationService";
+
+import {
+  getCurrentDashboardProfile,
+  saveCurrentDashboardProfile,
+} from "../../services/userProfileService";
 
 import "./InnovatorDashboardPage.css";
 
@@ -36,7 +84,16 @@ const NAV_ITEMS = [
         id: "selected-plans",
         label: "طرح‌های انتخاب‌شده",
       },
+      {
+        id: "site-publication",
+        label: "طرح‌های معرفی‌شده",
+      },
     ],
+  },
+  {
+    id: "my-activities",
+    label: "دوره‌ها و رویدادهای من",
+    icon: "🎓",
   },
   {
     id: "requests",
@@ -87,27 +144,42 @@ function getPlanCallInfo(plan) {
   return getCallById(plan.callId);
 }
 
+function getFinalStatusLabel(finalStatus) {
+  const statusMap = {
+    [PLAN_FINAL_STATUS.ACCEPTED]: "قبول",
+    [PLAN_FINAL_STATUS.WEAK_ACCEPTED]: "قبول ضعیف",
+    [PLAN_FINAL_STATUS.REJECTED]: "رد",
+    [PLAN_FINAL_STATUS.WEAK_REJECTED]: "رد ضعیف",
+    [PLAN_FINAL_STATUS.NEEDS_REVISION]: "نیازمند اصلاح",
+    accepted: "قبول",
+    weakAccepted: "قبول ضعیف",
+    weak_accepted: "قبول ضعیف",
+    rejected: "رد",
+    weakRejected: "رد ضعیف",
+    weak_rejected: "رد ضعیف",
+    needsRevision: "نیازمند اصلاح",
+    needs_revision: "نیازمند اصلاح",
+    قبول: "قبول",
+    "قبول ضعیف": "قبول ضعیف",
+    رد: "رد",
+    "رد ضعیف": "رد ضعیف",
+    "نیازمند اصلاح": "نیازمند اصلاح",
+  };
+
+  return statusMap[finalStatus] || "";
+}
+
+function isAcceptedFinalStatus(finalStatus) {
+  return ["قبول", "قبول ضعیف"].includes(getFinalStatusLabel(finalStatus));
+}
+
+function isNeedsRevisionFinalStatus(finalStatus) {
+  return getFinalStatusLabel(finalStatus) === "نیازمند اصلاح";
+}
+
 function getPlanStatusLabelFromCentralData(plan) {
   if (plan.resultsPublished) {
-    if (plan.finalStatus === PLAN_FINAL_STATUS.ACCEPTED) {
-      return "قبول";
-    }
-
-    if (plan.finalStatus === PLAN_FINAL_STATUS.WEAK_ACCEPTED) {
-      return "قبول ضعیف";
-    }
-
-    if (plan.finalStatus === PLAN_FINAL_STATUS.REJECTED) {
-      return "رد";
-    }
-
-    if (plan.finalStatus === PLAN_FINAL_STATUS.WEAK_REJECTED) {
-      return "رد ضعیف";
-    }
-
-    if (plan.finalStatus === PLAN_FINAL_STATUS.NEEDS_REVISION) {
-      return "نیازمند اصلاح";
-    }
+    return getFinalStatusLabel(plan.finalStatus) || "نتیجه نهایی منتشر شده";
   }
 
   if (plan.currentReviewStatus === PLAN_REVIEW_STATUS.REVIEWED) {
@@ -142,15 +214,24 @@ function getTaskStatusLabelFromCentralData(status) {
 }
 
 function mapPlanFeedbacks(plan) {
-  const reviews = getReviewsByPlanId(plan.id);
-  const feedbacks = {};
-
-  if (plan.committeeFeedback) {
-    feedbacks.secretariat = plan.committeeFeedback;
+  if (!plan.resultsPublished) {
+    return undefined;
   }
 
-  if (plan.finalDecisionNote && plan.resultsPublished) {
-    feedbacks.steering = plan.finalDecisionNote;
+  const reviews = getReviewsByPlanId(plan.id);
+  const feedbacks = {};
+  const generalFeedback = plan.finalDecisionNote || "";
+  const committeeFeedback =
+    plan.committeeFeedback && plan.committeeFeedback !== generalFeedback
+      ? plan.committeeFeedback
+      : "";
+
+  if (committeeFeedback) {
+    feedbacks.steering = committeeFeedback;
+  }
+
+  if (generalFeedback) {
+    feedbacks.general = generalFeedback;
   }
 
   if (reviews.length > 0) {
@@ -160,6 +241,347 @@ function mapPlanFeedbacks(plan) {
   }
 
   return Object.keys(feedbacks).length > 0 ? feedbacks : undefined;
+}
+
+function getDefaultBusinessOpportunityDetails(plan = {}) {
+  const details =
+    plan.businessOpportunityDetails &&
+    typeof plan.businessOpportunityDetails === "object"
+      ? plan.businessOpportunityDetails
+      : {};
+
+  const field =
+    details.field || details.category || plan.field || "همکاری تجاری";
+  const summary =
+    details.summary ||
+    details.description ||
+    plan.finalDecisionNote ||
+    plan.committeeFeedback ||
+    "این طرح پس از تعیین وضعیت نهایی توسط کمیته برای همکاری تجاری معرفی شده است.";
+
+  return {
+    title: details.title || plan.title || "موقعیت همکاری تجاری",
+    field,
+    category: details.category || details.field || field,
+    collaborationType:
+      details.collaborationType || "همکاری تجاری روی طرح منتشرشده",
+    location: details.location || "قابل مذاکره",
+    estimatedSupport: details.estimatedSupport || "قابل مذاکره",
+    duration: details.duration || "براساس توافق طرفین",
+    summary,
+    challenge:
+      details.challenge ||
+      "چالش اصلی این موقعیت، بررسی ظرفیت همکاری تجاری و تبدیل خروجی طرح به مسیر اجرا یا بازار است.",
+    solution:
+      details.solution ||
+      "همکار تجاری می‌تواند برای بررسی مدل همکاری، اجرای پایلوت، توسعه بازار یا مشارکت تجاری درخواست ثبت کند.",
+    businessValue:
+      details.businessValue ||
+      "این موقعیت ظرفیت معرفی به همکاران تجاری و شروع مذاکره همکاری را دارد.",
+    requirements: Array.isArray(details.requirements)
+      ? details.requirements.join("\n")
+      : details.requirements ||
+        "بررسی خلاصه طرح و وضعیت نهایی کمیته\nاعلام علاقه‌مندی و ظرفیت همکاری\nثبت درخواست همکاری برای شروع پیگیری دبیرخانه",
+    tags: Array.isArray(details.tags)
+      ? details.tags.join("، ")
+      : details.tags || `${field}، طرح منتشرشده، همکاری تجاری`,
+    updatedAt: details.updatedAt || "",
+  };
+}
+
+function isBusinessOpportunityPlan(plan) {
+  return Boolean(plan?.resultsPublished && plan?.publishForBusiness);
+}
+
+function getBusinessOpportunityPublicationLabel(plan) {
+  if (plan?.businessOpportunityPublished) {
+    return "منتشرشده در پنل همکار تجاری";
+  }
+
+  if (plan?.businessOpportunityDetails?.updatedAt) {
+    return "آماده انتشار نهایی";
+  }
+
+  return "نیازمند تکمیل اطلاعات";
+}
+
+function getBusinessRequestStatsText(planId) {
+  const stats = getBusinessCollaborationRequestStatsByPlanId(planId);
+
+  if (!stats.total) {
+    return "هنوز درخواست همکاری برای این طرح ثبت نشده است.";
+  }
+
+  return `${stats.total} درخواست همکاری ثبت شده`;
+}
+
+function getBusinessRequestStats(planId) {
+  return getBusinessCollaborationRequestStatsByPlanId(planId);
+}
+
+function normalizeBusinessOpportunityFormForSave(form) {
+  const listFromText = (value, separator = /[،,\n]/) =>
+    String(value || "")
+      .split(separator)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  return {
+    title: form.title,
+    field: form.field,
+    category: form.category || form.field,
+    collaborationType: form.collaborationType,
+    location: form.location,
+    estimatedSupport: form.estimatedSupport,
+    duration: form.duration,
+    summary: form.summary,
+    description: form.summary,
+    challenge: form.challenge,
+    solution: form.solution,
+    businessValue: form.businessValue,
+    requirements: listFromText(form.requirements, /\n/),
+    tags: listFromText(form.tags),
+  };
+}
+
+function sortIntroducedPlanRequests(requests = []) {
+  return [...requests].sort(
+    (first, second) =>
+      Number(second.updatedAtTimestamp || second.createdAtTimestamp || 0) -
+      Number(first.updatedAtTimestamp || first.createdAtTimestamp || 0),
+  );
+}
+
+function getInitialSitePublicationRequestsForCurrentUser() {
+  const innovatorId = getCurrentInnovatorUserId();
+
+  return sortIntroducedPlanRequests(
+    getSitePublicationRequestsByInnovator(innovatorId),
+  );
+}
+
+const DEFAULT_SITE_PUBLICATION_REPORT = {
+  id: "report-1",
+  title: "گزارش اولیه پروژه",
+  status: "تکمیل شده",
+  text: "",
+  type: "text",
+  fileName: "",
+  fileUrl: "",
+};
+
+function makeLocalId(prefix = "item") {
+  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+}
+
+function normalizeReportsForForm(reports = []) {
+  const normalizedReports = Array.isArray(reports) ? reports : [];
+
+  if (!normalizedReports.length) {
+    return [{ ...DEFAULT_SITE_PUBLICATION_REPORT }];
+  }
+
+  return normalizedReports.map((report, index) => ({
+    id: report.id || `report-${index + 1}`,
+    title: report.title || `گزارش ${index + 1}`,
+    status: report.status || "تکمیل شده",
+    text: report.text || "",
+    type: report.fileUrl ? "file" : report.type || "text",
+    fileName: report.fileName || "",
+    fileUrl: report.fileUrl || "",
+  }));
+}
+
+function stripHtml(value = "") {
+  return String(value || "")
+    .replace(/<br\s*\/?>(\n)?/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/h[1-6]>/gi, "\n\n")
+    .replace(/<li>/gi, "• ")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+}
+
+function hasSitePublicationDraft(request = {}) {
+  const draft = request.draft || {};
+
+  return Boolean(
+    draft.title ||
+    draft.summary ||
+    draft.contentHtml ||
+    draft.description ||
+    draft.image ||
+    draft.investmentNeed ||
+    draft.commercializationPercent ||
+    draft.collaborationReadinessPercent ||
+    (Array.isArray(draft.cooperationNeedTypes) &&
+      draft.cooperationNeedTypes.length) ||
+    (Array.isArray(draft.reports) &&
+      draft.reports.some(
+        (report) => report.title || report.text || report.fileUrl,
+      )),
+  );
+}
+
+function getDefaultSitePublicationForm(request = {}) {
+  const draft = request.draft || {};
+
+  return {
+    title: draft.title || request.planTitle || "",
+    field: draft.field || request.field || "",
+    summary: draft.summary || "",
+    contentHtml: draft.contentHtml || draft.description || "",
+    cooperationNeedTypes: Array.isArray(draft.cooperationNeedTypes)
+      ? draft.cooperationNeedTypes
+      : Array.isArray(draft.cooperationNeeds)
+        ? draft.cooperationNeeds
+        : [],
+    commercializationPercent: String(draft.commercializationPercent || ""),
+    collaborationReadinessPercent: String(
+      draft.collaborationReadinessPercent || "",
+    ),
+    investmentNeed: draft.investmentNeed || "",
+    image: draft.image || "",
+    reports: normalizeReportsForForm(draft.reports),
+  };
+}
+
+function normalizePercent(value) {
+  if (value === "" || value === null || typeof value === "undefined") {
+    return "";
+  }
+
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return "";
+  }
+
+  return String(Math.max(0, Math.min(100, Math.round(numericValue))));
+}
+
+function normalizeSitePublicationFormForSave(form = {}) {
+  const contentHtml = String(form.contentHtml || "").trim();
+
+  return {
+    title: form.title,
+    field: form.field,
+    summary: form.summary,
+    contentHtml,
+    description: stripHtml(contentHtml),
+    cooperationNeedTypes: Array.isArray(form.cooperationNeedTypes)
+      ? form.cooperationNeedTypes
+      : [],
+    cooperationNeeds: Array.isArray(form.cooperationNeedTypes)
+      ? form.cooperationNeedTypes
+      : [],
+    commercializationPercent: normalizePercent(form.commercializationPercent),
+    collaborationReadinessPercent: normalizePercent(
+      form.collaborationReadinessPercent,
+    ),
+    investmentNeed: form.investmentNeed,
+    image: form.image,
+    reports: normalizeReportsForForm(form.reports).map((report) => ({
+      ...report,
+      type: report.fileUrl ? "file" : "text",
+    })),
+  };
+}
+
+function readFileAsDataUrl(file, maxSizeBytes = 650 * 1024) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve("");
+      return;
+    }
+
+    if (file.size > maxSizeBytes) {
+      reject(
+        new Error(
+          "حجم فایل انتخاب‌شده زیاد است. لطفاً فایل کوچک‌تر انتخاب کنید.",
+        ),
+      );
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("خواندن فایل انجام نشد."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function readImageAsCompressedDataUrl(file, maxWidth = 1280, quality = 0.72) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve("");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      reject(new Error("لطفاً یک فایل تصویر انتخاب کنید."));
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const image = new Image();
+
+      image.onload = () => {
+        const ratio = Math.min(1, maxWidth / image.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(image.width * ratio);
+        canvas.height = Math.round(image.height * ratio);
+
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+
+      image.onerror = () => reject(new Error("پردازش تصویر انجام نشد."));
+      image.src = String(reader.result || "");
+    };
+
+    reader.onerror = () => reject(new Error("خواندن تصویر انجام نشد."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function getSitePublicationStatusClass(status) {
+  const statusMap = {
+    [SITE_PUBLICATION_STATUS.WAITING_FOR_INNOVATOR]: "waiting-send",
+    [SITE_PUBLICATION_STATUS.SUBMITTED_TO_COMMITTEE]: "submitted",
+    [SITE_PUBLICATION_STATUS.NEEDS_REVISION]: "revision",
+    [SITE_PUBLICATION_STATUS.PUBLISHED]: "finished",
+  };
+
+  return statusMap[status] || "default";
+}
+
+function getSitePublicationActionLabel(status) {
+  if (status === SITE_PUBLICATION_STATUS.NEEDS_REVISION) {
+    return "اصلاح اطلاعات";
+  }
+
+  if (status === SITE_PUBLICATION_STATUS.SUBMITTED_TO_COMMITTEE) {
+    return "مشاهده اطلاعات ارسالی";
+  }
+
+  if (status === SITE_PUBLICATION_STATUS.PUBLISHED) {
+    return "مشاهده اطلاعات منتشرشده";
+  }
+
+  return "تکمیل اطلاعات";
 }
 
 function mapPlanForInnovatorDashboard(plan) {
@@ -174,6 +596,13 @@ function mapPlanForInnovatorDashboard(plan) {
     date: plan.submittedAt || plan.updatedAt || "ثبت‌شده در سامانه",
     fileName: plan.proposalFileUrl || `${plan.trackingCode || plan.id}.pdf`,
     status: getPlanStatusLabelFromCentralData(plan),
+    finalStatus: plan.finalStatus,
+    publishForBusiness: Boolean(plan.publishForBusiness),
+    businessIntroducedAt: plan.businessIntroducedAt || "",
+    businessPublishedAt: plan.businessPublishedAt || "",
+    businessOpportunityPublished: Boolean(plan.businessOpportunityPublished),
+    businessOpportunityDetails: getDefaultBusinessOpportunityDetails(plan),
+    resultsPublished: Boolean(plan.resultsPublished),
     feedbacks: mapPlanFeedbacks(plan),
   };
 }
@@ -193,9 +622,8 @@ function getInitialSelectedPlanTasksForCurrentUser() {
 
     if (
       !plan ||
-      ![PLAN_FINAL_STATUS.ACCEPTED, PLAN_FINAL_STATUS.WEAK_ACCEPTED].includes(
-        plan.finalStatus,
-      )
+      !plan.resultsPublished ||
+      !isAcceptedFinalStatus(plan.finalStatus)
     ) {
       return groupedTasks;
     }
@@ -268,6 +696,18 @@ const SECTION_DATA = {
       "ثبت درخواست جدید",
     ],
     actionLabel: "ثبت درخواست جدید",
+  },
+  "my-activities": {
+    title: "دوره‌ها و رویدادهای من",
+    primaryTitle: "برنامه‌های ثبت‌نام‌شده",
+    primaryItems: [],
+    sideTitle: "دسترسی سریع",
+    sideItems: [
+      "مشاهده دوره‌های ثبت‌نام‌شده",
+      "مشاهده رویدادهای ثبت‌نام‌شده",
+      "ورود به صفحه جزئیات برنامه",
+    ],
+    actionLabel: "مشاهده برنامه‌ها",
   },
   requests: {
     title: "درخواست‌ها و پشتیبانی",
@@ -937,7 +1377,13 @@ function isFinalJudgementStatus(status) {
 }
 
 function isEditableSubmittedPlan(status) {
-  return status === "در انتظار بررسی";
+  return ["در انتظار بررسی", "نیازمند اصلاح"].includes(status);
+}
+
+function isRevisionResubmissionPlan(plan) {
+  return Boolean(
+    plan?.resultsPublished && isNeedsRevisionFinalStatus(plan?.finalStatus),
+  );
 }
 
 function getDownloadHref(plan) {
@@ -964,8 +1410,16 @@ function getFeedbackItems(plan) {
   if (plan.feedbacks.steering) {
     items.push({
       id: "steering",
-      title: "بازخورد کمیته راهبری",
+      title: "بازخورد عضو کمیته",
       text: plan.feedbacks.steering,
+    });
+  }
+
+  if (plan.feedbacks.general) {
+    items.push({
+      id: "general",
+      title: "بازخورد کلی",
+      text: plan.feedbacks.general,
     });
   }
 
@@ -999,7 +1453,7 @@ function getTaskStatusClass(status) {
 }
 
 function isLockedTaskStatus(status) {
-  return ["مشاهده شده", "پایان یافته"].includes(status);
+  return ["ارسال شده", "پایان یافته"].includes(status);
 }
 
 function getNearestTaskDeadline(tasks) {
@@ -1063,10 +1517,14 @@ function SubmitPlanPanel() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [editingPlanId, setEditingPlanId] = useState(null);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [businessForm, setBusinessForm] = useState(() =>
+    getDefaultBusinessOpportunityDetails(),
+  );
 
   const selectedCall = CALL_OPTIONS.find((item) => item.id === selectedCallId);
   const hasFile = Boolean(uploadedFile || existingFileName);
   const feedbackItems = getFeedbackItems(selectedPlan);
+  const businessOpportunityPlans = [];
 
   const resetForm = () => {
     setSubmitStep("select");
@@ -1077,6 +1535,7 @@ function SubmitPlanPanel() {
     setSelectedPlan(null);
     setEditingPlanId(null);
     setSubmitMessage("");
+    setBusinessForm(getDefaultBusinessOpportunityDetails());
   };
 
   const openNewPlan = () => {
@@ -1111,6 +1570,77 @@ function SubmitPlanPanel() {
     setSubmitMessage("");
   };
 
+  const openBusinessOpportunityDetails = (plan) => {
+    if (!isBusinessOpportunityPlan(plan)) {
+      return;
+    }
+
+    setSelectedPlan(plan);
+    setBusinessForm(getDefaultBusinessOpportunityDetails(plan));
+    setMode("business-details");
+    setSubmitMessage("");
+  };
+
+  const updateBusinessFormField = (fieldName, value) => {
+    setBusinessForm((currentForm) => ({
+      ...currentForm,
+      [fieldName]: value,
+    }));
+  };
+
+  const refreshBusinessOpportunityPlanState = (message, nextMode = "view") => {
+    const nextPlans = getInitialSubmittedPlansForCurrentUser();
+    const updatedSelectedPlan =
+      nextPlans.find((plan) => plan.id === selectedPlan?.id) || selectedPlan;
+
+    setSubmittedPlans(nextPlans);
+    setSelectedPlan(updatedSelectedPlan);
+    setBusinessForm(getDefaultBusinessOpportunityDetails(updatedSelectedPlan));
+    setSubmitMessage(message);
+    setMode(nextMode);
+
+    return updatedSelectedPlan;
+  };
+
+  const saveCurrentBusinessOpportunityDetails = () => {
+    if (!selectedPlan || !isBusinessOpportunityPlan(selectedPlan)) {
+      return null;
+    }
+
+    return savePlanBusinessOpportunityDetails(
+      selectedPlan.id,
+      normalizeBusinessOpportunityFormForSave(businessForm),
+    );
+  };
+
+  const handleBusinessOpportunityDetailsSubmit = (event) => {
+    event.preventDefault();
+
+    const savedPlan = saveCurrentBusinessOpportunityDetails();
+
+    if (!savedPlan) {
+      return;
+    }
+
+    refreshBusinessOpportunityPlanState(
+      "اطلاعات نمایش تجاری این طرح با موفقیت ذخیره شد. هنوز در پنل همکار تجاری منتشر نشده است.",
+    );
+  };
+
+  const handleBusinessOpportunityFinalPublish = () => {
+    const savedPlan = saveCurrentBusinessOpportunityDetails();
+
+    if (!savedPlan) {
+      return;
+    }
+
+    publishPlanBusinessOpportunity(savedPlan.id);
+
+    refreshBusinessOpportunityPlanState(
+      "اطلاعات همکاری تجاری این طرح ذخیره و در پنل همکار تجاری منتشر شد.",
+    );
+  };
+
   const deletePlan = (planId) => {
     const targetPlan = submittedPlans.find((plan) => plan.id === planId);
 
@@ -1124,9 +1654,10 @@ function SubmitPlanPanel() {
       return;
     }
 
-    setSubmittedPlans((currentPlans) =>
-      currentPlans.filter((plan) => plan.id !== planId),
-    );
+    deletePlanFromService(planId);
+    setSubmittedPlans(getInitialSubmittedPlansForCurrentUser());
+    setSelectedPlan(null);
+    setSubmitMessage("طرح با موفقیت حذف شد.");
   };
 
   const handleFileChange = (event) => {
@@ -1149,46 +1680,47 @@ function SubmitPlanPanel() {
       return;
     }
 
-    if (mode === "edit" && editingPlanId) {
-      setSubmittedPlans((currentPlans) =>
-        currentPlans.map((plan) =>
-          plan.id === editingPlanId
-            ? {
-                ...plan,
-                title: planTitle || plan.title,
-                callId: selectedCall.id,
-                call: selectedCall.title,
-                deadline: selectedCall.deadline,
-                fileName: uploadedFile?.name || existingFileName,
-                date: "ویرایش شده: امروز - ساعت ۱۴:۳۰",
-              }
-            : plan,
-        ),
-      );
+    const innovatorId = getCurrentInnovatorUserId();
+    const proposalFileName = uploadedFile?.name || existingFileName;
 
-      setSubmitMessage("تغییرات طرح با موفقیت ذخیره شد.");
+    if (mode === "edit" && editingPlanId) {
+      const planUpdates = {
+        title: planTitle || selectedPlan?.title || "طرح فناورانه",
+        callId: selectedCall.id,
+        field: selectedCall.field,
+        proposalFileUrl: proposalFileName,
+      };
+
+      if (isRevisionResubmissionPlan(selectedPlan)) {
+        resubmitPlanRevision(editingPlanId, planUpdates);
+      } else {
+        updatePlan(editingPlanId, planUpdates);
+      }
+
       setMode("list");
       resetForm();
+      setSubmittedPlans(getInitialSubmittedPlansForCurrentUser());
+      setSubmitMessage(
+        isRevisionResubmissionPlan(selectedPlan)
+          ? "طرح اصلاح‌شده با موفقیت ارسال شد و دوباره وارد چرخه بررسی شد."
+          : "تغییرات طرح با موفقیت ذخیره شد.",
+      );
       return;
     }
 
-    const newPlan = {
-      id: Date.now(),
+    addPlan({
       title: planTitle || "طرح جدید فناورانه",
       callId: selectedCall.id,
-      call: selectedCall.title,
-      deadline: selectedCall.deadline,
-      date: "امروز - ساعت ۱۴:۳۰",
-      fileName: uploadedFile.name,
-      status: "دریافت شده",
-    };
+      field: selectedCall.field,
+      innovatorId,
+      proposalFileUrl: proposalFileName,
+    });
 
-    setSubmittedPlans((currentPlans) => [newPlan, ...currentPlans]);
-    setSubmitMessage("طرح شما با موفقیت ارسال شد.");
     setMode("list");
     resetForm();
+    setSubmittedPlans(getInitialSubmittedPlansForCurrentUser());
+    setSubmitMessage("طرح شما با موفقیت ارسال شد.");
   };
-
   return (
     <section className="submit-plan">
       {mode === "list" && (
@@ -1204,6 +1736,49 @@ function SubmitPlanPanel() {
             </button>
           </div>
 
+          {businessOpportunityPlans.length > 0 && (
+            <section className="submit-plan__feedbacks submit-plan__business-introduction">
+              <div className="submit-plan__feedbacks-header">
+                <span>تکمیل اطلاعات همکاری تجاری</span>
+                <h3>طرح‌های معرفی‌شده برای همکاری تجاری</h3>
+                <p>
+                  کمیته این طرح‌ها را برای همکاری تجاری معرفی کرده است. این
+                  طرح‌ها تا زمانی که شما اطلاعات همکاری را تکمیل و انتشار نهایی
+                  نکنید، در پنل همکاران تجاری نمایش داده نمی‌شوند.
+                </p>
+              </div>
+
+              <div className="submit-plan__feedback-grid">
+                {businessOpportunityPlans.map((plan) => (
+                  <article key={`business-details-${plan.id}`}>
+                    <span>{getBusinessOpportunityPublicationLabel(plan)}</span>
+                    <p>{plan.title}</p>
+                    <small>
+                      {plan.businessOpportunityPublished
+                        ? `منتشرشده در: ${plan.businessPublishedAt || "ثبت نشده"}`
+                        : `معرفی‌شده توسط کمیته: ${plan.businessIntroducedAt || plan.businessPublishedAt || "پس از انتشار نهایی"}`}
+                    </small>
+                    {plan.businessOpportunityPublished && (
+                      <small>{getBusinessRequestStatsText(plan.id)}</small>
+                    )}
+                    <div className="submit-plan__footer-actions">
+                      <button
+                        type="button"
+                        onClick={() => openBusinessOpportunityDetails(plan)}
+                      >
+                        {plan.businessOpportunityPublished
+                          ? "ویرایش اطلاعات منتشرشده"
+                          : plan.businessOpportunityDetails?.updatedAt
+                            ? "ویرایش و انتشار نهایی"
+                            : "تکمیل اطلاعات همکاری تجاری"}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
           <ol className="submit-plan__submitted-list">
             {submittedPlans.map((plan, index) => {
               const canModify = isEditableSubmittedPlan(plan.status);
@@ -1217,6 +1792,9 @@ function SubmitPlanPanel() {
                     <p>{plan.call}</p>
                     <small>تاریخ ارسال: {plan.date}</small>
                     <small>ددلاین فراخوان: {plan.deadline}</small>
+                    {plan.businessOpportunityPublished && (
+                      <small>{getBusinessRequestStatsText(plan.id)}</small>
+                    )}
                   </div>
 
                   <StatusBadge status={plan.status} />
@@ -1229,6 +1807,16 @@ function SubmitPlanPanel() {
                     >
                       مشاهده
                     </button>
+
+                    {false && isBusinessOpportunityPlan(plan) && (
+                      <button
+                        type="button"
+                        className="submit-plan__action submit-plan__action--edit"
+                        onClick={() => openBusinessOpportunityDetails(plan)}
+                      >
+                        اطلاعات همکاری تجاری
+                      </button>
+                    )}
 
                     {canModify && (
                       <>
@@ -1310,6 +1898,82 @@ function SubmitPlanPanel() {
             </div>
           </div>
 
+          {false &&
+            selectedPlan.resultsPublished &&
+            selectedPlan.publishForBusiness && (
+              <section className="submit-plan__feedbacks submit-plan__business-introduction">
+                <div className="submit-plan__feedbacks-header">
+                  <span>همکاری تجاری</span>
+                  <h3>وضعیت معرفی این طرح در همکاری تجاری</h3>
+                  <p>
+                    شما فقط آمار تعداد درخواست‌های همکاری ثبت‌شده برای این طرح
+                    را می‌بینید. اطلاعات همکار تجاری، متن درخواست و پاسخ کمیته
+                    در پنل فناور نمایش داده نمی‌شود.
+                  </p>
+                </div>
+
+                <div className="submit-plan__feedback-grid">
+                  <article>
+                    <span>وضعیت همکاری تجاری</span>
+                    <p>
+                      {getBusinessOpportunityPublicationLabel(selectedPlan)}
+                    </p>
+                  </article>
+                  <article>
+                    <span>تاریخ معرفی توسط کمیته</span>
+                    <p>
+                      {selectedPlan.businessIntroducedAt ||
+                        "پس از انتشار نهایی"}
+                    </p>
+                  </article>
+                  <article>
+                    <span>تاریخ انتشار در پنل همکار تجاری</span>
+                    <p>
+                      {selectedPlan.businessOpportunityPublished
+                        ? selectedPlan.businessPublishedAt || "ثبت شده"
+                        : "هنوز منتشر نشده"}
+                    </p>
+                  </article>
+                  {selectedPlan.businessOpportunityPublished &&
+                    (() => {
+                      const stats = getBusinessRequestStats(selectedPlan.id);
+
+                      return (
+                        <>
+                          <article>
+                            <span>تعداد کل درخواست‌ها</span>
+                            <p>{stats.total}</p>
+                          </article>
+                          <article>
+                            <span>در انتظار پیگیری</span>
+                            <p>{stats.waiting}</p>
+                          </article>
+                          <article>
+                            <span>در حال پیگیری</span>
+                            <p>{stats.tracking}</p>
+                          </article>
+                          <article>
+                            <span>پایان‌یافته / پاسخ داده شده</span>
+                            <p>{stats.answered}</p>
+                          </article>
+                        </>
+                      );
+                    })()}
+                </div>
+
+                <div className="submit-plan__footer-actions">
+                  <button
+                    type="button"
+                    onClick={() => openBusinessOpportunityDetails(selectedPlan)}
+                  >
+                    {selectedPlan.businessOpportunityPublished
+                      ? "ویرایش اطلاعات همکاری تجاری"
+                      : "تکمیل و انتشار اطلاعات همکاری تجاری"}
+                  </button>
+                </div>
+              </section>
+            )}
+
           {isFinalJudgementStatus(selectedPlan.status) &&
             feedbackItems.length > 0 && (
               <section className="submit-plan__feedbacks">
@@ -1336,9 +2000,208 @@ function SubmitPlanPanel() {
           {isEditableSubmittedPlan(selectedPlan.status) && (
             <div className="submit-plan__footer-actions">
               <button type="button" onClick={() => openEditPlan(selectedPlan)}>
-                ویرایش این طرح
+                {isRevisionResubmissionPlan(selectedPlan)
+                  ? "ویرایش و ارسال مجدد طرح"
+                  : "ویرایش این طرح"}
               </button>
             </div>
+          )}
+        </div>
+      )}
+
+      {mode === "business-details" && selectedPlan && (
+        <div className="submit-plan__panel">
+          <div className="submit-plan__panel-header">
+            <div>
+              <span>اطلاعات همکاری تجاری</span>
+              <h3>تکمیل اطلاعات نمایش موقعیت تجاری</h3>
+              <p>
+                این اطلاعات تا وقتی «انتشار نهایی در پنل همکار تجاری» را نزنید،
+                فقط برای شما ذخیره می‌شود و در پنل همکاران تجاری نمایش داده
+                نمی‌شود.
+              </p>
+            </div>
+
+            <button type="button" onClick={() => openViewPlan(selectedPlan)}>
+              بازگشت به مشاهده طرح
+            </button>
+          </div>
+
+          <form
+            className="submit-plan__upload-form"
+            onSubmit={handleBusinessOpportunityDetailsSubmit}
+          >
+            <label className="submit-plan__input-group">
+              <span>عنوان نمایش در پنل همکاری تجاری</span>
+              <input
+                type="text"
+                value={businessForm.title}
+                onChange={(event) =>
+                  updateBusinessFormField("title", event.target.value)
+                }
+                placeholder="عنوان موقعیت همکاری"
+              />
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>حوزه / دسته‌بندی</span>
+              <input
+                type="text"
+                value={businessForm.field}
+                onChange={(event) => {
+                  updateBusinessFormField("field", event.target.value);
+                  updateBusinessFormField("category", event.target.value);
+                }}
+                placeholder="مثلاً انرژی، سلامت دیجیتال، هوش مصنوعی صنعتی"
+              />
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>نوع همکاری پیشنهادی</span>
+              <input
+                type="text"
+                value={businessForm.collaborationType}
+                onChange={(event) =>
+                  updateBusinessFormField(
+                    "collaborationType",
+                    event.target.value,
+                  )
+                }
+                placeholder="مثلاً سرمایه‌گذاری، توسعه بازار، اجرای پایلوت"
+              />
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>محل اجرا یا بازار هدف</span>
+              <input
+                type="text"
+                value={businessForm.location}
+                onChange={(event) =>
+                  updateBusinessFormField("location", event.target.value)
+                }
+                placeholder="مثلاً تهران، سراسر کشور، قابل مذاکره"
+              />
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>برآورد حمایت یا سرمایه موردنیاز</span>
+              <input
+                type="text"
+                value={businessForm.estimatedSupport}
+                onChange={(event) =>
+                  updateBusinessFormField(
+                    "estimatedSupport",
+                    event.target.value,
+                  )
+                }
+                placeholder="مثلاً قابل مذاکره، ۵۰۰ میلیون تومان، حمایت غیرنقدی"
+              />
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>بازه همکاری پیشنهادی</span>
+              <input
+                type="text"
+                value={businessForm.duration}
+                onChange={(event) =>
+                  updateBusinessFormField("duration", event.target.value)
+                }
+                placeholder="مثلاً ۳ ماه پایلوت، ۶ ماه توسعه بازار"
+              />
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>خلاصه موقعیت</span>
+              <textarea
+                rows="4"
+                value={businessForm.summary}
+                onChange={(event) =>
+                  updateBusinessFormField("summary", event.target.value)
+                }
+                placeholder="خلاصه‌ای که همکار تجاری در ابتدای صفحه موقعیت می‌بیند"
+              />
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>مسئله یا چالش</span>
+              <textarea
+                rows="4"
+                value={businessForm.challenge}
+                onChange={(event) =>
+                  updateBusinessFormField("challenge", event.target.value)
+                }
+                placeholder="این طرح چه مسئله‌ای را برای بازار یا صنعت حل می‌کند؟"
+              />
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>راهکار پیشنهادی</span>
+              <textarea
+                rows="4"
+                value={businessForm.solution}
+                onChange={(event) =>
+                  updateBusinessFormField("solution", event.target.value)
+                }
+                placeholder="راهکار یا محصول شما برای حل این مسئله چیست؟"
+              />
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>ارزش تجاری</span>
+              <textarea
+                rows="4"
+                value={businessForm.businessValue}
+                onChange={(event) =>
+                  updateBusinessFormField("businessValue", event.target.value)
+                }
+                placeholder="چرا این طرح برای شریک تجاری جذاب است؟"
+              />
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>نیازمندی‌های همکاری</span>
+              <textarea
+                rows="4"
+                value={businessForm.requirements}
+                onChange={(event) =>
+                  updateBusinessFormField("requirements", event.target.value)
+                }
+                placeholder="هر مورد را در یک خط بنویسید"
+              />
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>برچسب‌ها</span>
+              <input
+                type="text"
+                value={businessForm.tags}
+                onChange={(event) =>
+                  updateBusinessFormField("tags", event.target.value)
+                }
+                placeholder="با ویرگول جدا کنید؛ مثال: انرژی، پایلوت، توسعه بازار"
+              />
+            </label>
+
+            <div className="submit-plan__footer-actions">
+              <button type="button" onClick={() => openViewPlan(selectedPlan)}>
+                انصراف
+              </button>
+
+              <button type="submit">ذخیره اطلاعات همکاری تجاری</button>
+
+              <button
+                type="button"
+                onClick={handleBusinessOpportunityFinalPublish}
+              >
+                {selectedPlan.businessOpportunityPublished
+                  ? "ذخیره و به‌روزرسانی انتشار"
+                  : "ذخیره و انتشار نهایی در پنل همکار تجاری"}
+              </button>
+            </div>
+          </form>
+
+          {submitMessage && (
+            <p className="submit-plan__success-message">{submitMessage}</p>
           )}
         </div>
       )}
@@ -1428,7 +2291,11 @@ function SubmitPlanPanel() {
             >
               <div className="submit-plan__deadline-box">
                 <span>
-                  {mode === "edit" ? "ویرایش طرح" : "فراخوان انتخاب‌شده"}
+                  {mode === "edit"
+                    ? isRevisionResubmissionPlan(selectedPlan)
+                      ? "ارسال مجدد طرح اصلاح‌شده"
+                      : "ویرایش طرح"
+                    : "فراخوان انتخاب‌شده"}
                 </span>
                 <h4>{selectedCall.title}</h4>
                 <p>{selectedCall.field}</p>
@@ -1491,7 +2358,11 @@ function SubmitPlanPanel() {
                   className={mode === "edit" ? "submit-plan__edit-submit" : ""}
                   disabled={!hasFile}
                 >
-                  {mode === "edit" ? "ذخیره تغییرات" : "ارسال طرح"}
+                  {mode === "edit"
+                    ? isRevisionResubmissionPlan(selectedPlan)
+                      ? "ارسال مجدد طرح"
+                      : "ذخیره تغییرات"
+                    : "ارسال طرح"}
                 </button>
               </div>
             </form>
@@ -1502,6 +2373,876 @@ function SubmitPlanPanel() {
           )}
         </div>
       )}
+    </section>
+  );
+}
+
+function SitePublicationPanel() {
+  const [requests, setRequests] = useState(() =>
+    getInitialSitePublicationRequestsForCurrentUser(),
+  );
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [mode, setMode] = useState("select");
+  const [form, setForm] = useState(() => getDefaultSitePublicationForm());
+  const [panelMessage, setPanelMessage] = useState("");
+  const descriptionEditorRef = useRef(null);
+
+  const selectedRequest = requests.find(
+    (request) => String(request.id) === String(selectedRequestId),
+  );
+
+  useEffect(() => {
+    if (mode !== "edit" || !descriptionEditorRef.current) {
+      return;
+    }
+
+    descriptionEditorRef.current.innerHTML = form.contentHtml || "";
+  }, [mode, selectedRequestId]);
+
+  const refreshRequests = (message = "") => {
+    const nextRequests = getInitialSitePublicationRequestsForCurrentUser();
+    setRequests(nextRequests);
+
+    if (selectedRequestId) {
+      const updatedRequest = nextRequests.find(
+        (request) => String(request.id) === String(selectedRequestId),
+      );
+
+      if (updatedRequest) {
+        setForm(getDefaultSitePublicationForm(updatedRequest));
+      }
+    }
+
+    setPanelMessage(message);
+  };
+
+  const openList = () => {
+    setMode("select");
+    setSelectedRequestId(null);
+    setForm(getDefaultSitePublicationForm());
+    setPanelMessage("");
+  };
+
+  const openEditor = (request) => {
+    setSelectedRequestId(request.id);
+    setForm(getDefaultSitePublicationForm(request));
+    setMode("edit");
+    setPanelMessage("");
+  };
+
+  const updateFormField = (fieldName, value) => {
+    setForm((currentForm) => ({
+      ...currentForm,
+      [fieldName]: value,
+    }));
+  };
+
+  const updatePercentField = (fieldName, value) => {
+    const normalizedValue = normalizePercent(value);
+    updateFormField(fieldName, normalizedValue);
+  };
+
+  const updateReport = (reportId, updates = {}) => {
+    setForm((currentForm) => ({
+      ...currentForm,
+      reports: normalizeReportsForForm(currentForm.reports).map((report) =>
+        report.id === reportId ? { ...report, ...updates } : report,
+      ),
+    }));
+  };
+
+  const addReport = () => {
+    setForm((currentForm) => ({
+      ...currentForm,
+      reports: [
+        ...normalizeReportsForForm(currentForm.reports),
+        {
+          ...DEFAULT_SITE_PUBLICATION_REPORT,
+          id: makeLocalId("report"),
+          title: `گزارش ${normalizeReportsForForm(currentForm.reports).length + 1}`,
+        },
+      ],
+    }));
+  };
+
+  const removeReport = (reportId) => {
+    setForm((currentForm) => {
+      const nextReports = normalizeReportsForForm(currentForm.reports).filter(
+        (report) => report.id !== reportId,
+      );
+
+      return {
+        ...currentForm,
+        reports: nextReports.length
+          ? nextReports
+          : [{ ...DEFAULT_SITE_PUBLICATION_REPORT }],
+      };
+    });
+  };
+
+  const toggleCooperationNeed = (need) => {
+    setForm((currentForm) => {
+      const currentNeeds = Array.isArray(currentForm.cooperationNeedTypes)
+        ? currentForm.cooperationNeedTypes
+        : [];
+      const hasNeed = currentNeeds.includes(need);
+
+      return {
+        ...currentForm,
+        cooperationNeedTypes: hasNeed
+          ? currentNeeds.filter((item) => item !== need)
+          : [...currentNeeds, need],
+      };
+    });
+  };
+
+  const syncEditorContent = () => {
+    updateFormField(
+      "contentHtml",
+      descriptionEditorRef.current?.innerHTML || "",
+    );
+  };
+
+  const applyEditorCommand = (command, value = null) => {
+    if (!descriptionEditorRef.current) {
+      return;
+    }
+
+    descriptionEditorRef.current.focus();
+    document.execCommand(command, false, value);
+    syncEditorContent();
+  };
+
+  const applyEditorLink = () => {
+    const linkUrl = window.prompt("آدرس لینک را وارد کنید:");
+
+    if (!linkUrl) {
+      return;
+    }
+
+    applyEditorCommand("createLink", linkUrl);
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const compressedImage = await readImageAsCompressedDataUrl(file);
+      updateFormField("image", compressedImage);
+      setPanelMessage("تصویر شاخص بارگذاری شد.");
+    } catch (error) {
+      setPanelMessage(error?.message || "بارگذاری تصویر انجام نشد.");
+    }
+  };
+
+  const handleReportFileUpload = async (reportId, event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const fileUrl = await readFileAsDataUrl(file);
+      updateReport(reportId, {
+        fileName: file.name,
+        fileUrl,
+        type: "file",
+      });
+      setPanelMessage("فایل گزارش بارگذاری شد.");
+    } catch (error) {
+      setPanelMessage(error?.message || "بارگذاری فایل گزارش انجام نشد.");
+    }
+  };
+
+  const validateForm = () => {
+    if (!form.title.trim()) {
+      setPanelMessage("عنوان صفحه پروژه را وارد کنید.");
+      return false;
+    }
+
+    if (!form.summary.trim()) {
+      setPanelMessage("خلاصه معرفی پروژه را وارد کنید.");
+      return false;
+    }
+
+    if (!stripHtml(form.contentHtml).trim()) {
+      setPanelMessage("توضیحات کامل پروژه را وارد کنید.");
+      return false;
+    }
+
+    if (!form.field) {
+      setPanelMessage("حوزه پروژه را انتخاب کنید.");
+      return false;
+    }
+
+    if (!form.collaborationReadinessPercent || !form.commercializationPercent) {
+      setPanelMessage("درصد آمادگی همکاری و ظرفیت تجاری‌سازی را وارد کنید.");
+      return false;
+    }
+
+    if (!form.investmentNeed) {
+      setPanelMessage("وضعیت نیاز به سرمایه را انتخاب کنید.");
+      return false;
+    }
+
+    if (!form.cooperationNeedTypes.length) {
+      setPanelMessage("حداقل یک نیازمندی همکاری یا توسعه را انتخاب کنید.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSaveDraft = () => {
+    if (!selectedRequest) {
+      return;
+    }
+
+    saveSitePublicationDraft(
+      selectedRequest.id,
+      normalizeSitePublicationFormForSave(form),
+    );
+
+    refreshRequests("اطلاعات صفحه معرفی طرح به‌صورت پیش‌نویس ذخیره شد.");
+  };
+
+  const handlePreview = () => {
+    if (!selectedRequest) {
+      return;
+    }
+
+    saveSitePublicationPreviewItem({
+      ...selectedRequest,
+      draft: normalizeSitePublicationFormForSave(form),
+    });
+
+    window.open(
+      "/business/opportunities/preview?preview=site-publication",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
+
+  const handleSubmitToCommittee = () => {
+    if (!selectedRequest || !validateForm()) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "بعد از ارسال برای کمیته، تا زمان اعلام نتیجه امکان ویرایش این اطلاعات را ندارید. ارسال انجام شود؟",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    submitSitePublicationDraft(
+      selectedRequest.id,
+      normalizeSitePublicationFormForSave(form),
+    );
+
+    refreshRequests("اطلاعات صفحه معرفی طرح برای بررسی کمیته ارسال شد.");
+    setMode("select");
+  };
+
+  if (mode === "edit" && selectedRequest) {
+    const isSubmitted =
+      selectedRequest.status === SITE_PUBLICATION_STATUS.SUBMITTED_TO_COMMITTEE;
+    const isPublished =
+      selectedRequest.status === SITE_PUBLICATION_STATUS.PUBLISHED;
+    const isLocked = isSubmitted || isPublished;
+
+    return (
+      <section className="submit-plan site-publication">
+        <div className="submit-plan__header site-publication__header">
+          <div>
+            <span>طرح‌های معرفی‌شده</span>
+            <h2>تکمیل اطلاعات طرح معرفی‌شده</h2>
+            <p>
+              اطلاعات این فرم بعد از بررسی و تأیید کمیته، بر اساس نوع معرفی در
+              پنل همکار تجاری یا سایت نمایش داده می‌شود.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="site-publication__back-button"
+            onClick={openList}
+          >
+            ← بازگشت به انتخاب طرح
+          </button>
+        </div>
+
+        <div className="submit-plan__panel site-publication__editor-panel">
+          <div className="submit-plan__panel-header">
+            <div>
+              <span>
+                {selectedRequest.trackingCode || selectedRequest.planId}
+              </span>
+              <h3>{selectedRequest.planTitle}</h3>
+            </div>
+
+            <span
+              className={`submit-plan__status submit-plan__status--${getSitePublicationStatusClass(
+                selectedRequest.status,
+              )}`}
+            >
+              {selectedRequest.status}
+            </span>
+          </div>
+
+          <div className="site-publication__meta-grid">
+            <article>
+              <span>نوع معرفی</span>
+              <strong>
+                {selectedRequest.publicationType || selectedRequest.destination}
+              </strong>
+            </article>
+            <article>
+              <span>فناور</span>
+              <strong>{selectedRequest.innovatorName}</strong>
+            </article>
+            <article>
+              <span>فراخوان</span>
+              <strong>{selectedRequest.callTitle || "ثبت نشده"}</strong>
+            </article>
+            <article>
+              <span>آخرین به‌روزرسانی</span>
+              <strong>
+                {selectedRequest.updatedAt || selectedRequest.createdAt}
+              </strong>
+            </article>
+          </div>
+
+          {selectedRequest.committeeFeedback && (
+            <div className="submit-plan__feedbacks site-publication__feedback-box">
+              <article>
+                <strong>بازخورد کمیته برای اصلاح</strong>
+                <p>{selectedRequest.committeeFeedback}</p>
+              </article>
+            </div>
+          )}
+
+          {isSubmitted && (
+            <p className="submit-plan__success-message">
+              این اطلاعات برای کمیته ارسال شده و تا اعلام نتیجه، امکان ویرایش
+              ندارد.
+            </p>
+          )}
+
+          {isPublished && (
+            <p className="submit-plan__success-message">
+              این صفحه توسط کمیته در سایت منتشر شده است.
+            </p>
+          )}
+
+          <form
+            className="submit-plan__upload-form"
+            onSubmit={(event) => event.preventDefault()}
+          >
+            <div className="submit-plan__input-group site-publication__full-row">
+              <span>تصویر شاخص پروژه</span>
+              <div className="site-publication__image-tools">
+                {form.image ? (
+                  <img src={form.image} alt="پیش‌نمایش تصویر پروژه" />
+                ) : (
+                  <div className="site-publication__image-placeholder">
+                    هنوز تصویری انتخاب نشده است.
+                  </div>
+                )}
+
+                <div>
+                  <label className="site-publication__upload-button">
+                    آپلود تصویر
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={isLocked}
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    className="site-publication__ghost-button"
+                    onClick={() => updateFormField("image", "")}
+                    disabled={isLocked || !form.image}
+                  >
+                    حذف تصویر
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <label className="submit-plan__input-group">
+              <span>عنوان صفحه پروژه / دستاورد</span>
+              <input
+                type="text"
+                value={form.title}
+                onChange={(event) =>
+                  updateFormField("title", event.target.value)
+                }
+                placeholder="مثلاً سامانه هوشمند مدیریت انرژی"
+                disabled={isLocked}
+              />
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>حوزه پروژه</span>
+              <select
+                value={form.field}
+                onChange={(event) =>
+                  updateFormField("field", event.target.value)
+                }
+                disabled={isLocked}
+              >
+                <option value="">انتخاب حوزه</option>
+                {SITE_PUBLICATION_FIELD_OPTIONS.map((fieldOption) => (
+                  <option value={fieldOption} key={fieldOption}>
+                    {fieldOption}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="submit-plan__input-group">
+              <span>خلاصه معرفی / توضیح هیرو</span>
+              <textarea
+                rows="3"
+                value={form.summary}
+                onChange={(event) =>
+                  updateFormField("summary", event.target.value)
+                }
+                placeholder="این متن در بخش هیرو صفحه داخلی پروژه نمایش داده می‌شود"
+                disabled={isLocked}
+              />
+            </label>
+
+            <div className="submit-plan__input-group site-publication__full-row">
+              <span>توضیحات کامل پروژه</span>
+              <div className="site-publication__editor-toolbar">
+                <button
+                  type="button"
+                  onClick={() => applyEditorCommand("bold")}
+                  disabled={isLocked}
+                >
+                  Bold
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyEditorCommand("underline")}
+                  disabled={isLocked}
+                >
+                  Underline
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyEditorCommand("formatBlock", "h3")}
+                  disabled={isLocked}
+                >
+                  تیتر
+                </button>
+                <button
+                  type="button"
+                  onClick={applyEditorLink}
+                  disabled={isLocked}
+                >
+                  لینک
+                </button>
+              </div>
+              <div
+                ref={descriptionEditorRef}
+                className="site-publication__rich-editor"
+                contentEditable={!isLocked}
+                suppressContentEditableWarning
+                onInput={syncEditorContent}
+                data-placeholder="توضیحات اصلی صفحه داخلی پروژه را وارد کنید"
+              />
+            </div>
+
+            <div className="site-publication__percent-row site-publication__full-row">
+              <div className="submit-plan__input-group site-publication__percent-field">
+                <div className="site-publication__percent-head">
+                  <span>آمادگی همکاری</span>
+                  <strong>{form.collaborationReadinessPercent || 0}%</strong>
+                </div>
+                <div className="site-publication__percent-control">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={form.collaborationReadinessPercent || 0}
+                    onChange={(event) =>
+                      updatePercentField(
+                        "collaborationReadinessPercent",
+                        event.target.value,
+                      )
+                    }
+                    disabled={isLocked}
+                  />
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={form.collaborationReadinessPercent}
+                    onChange={(event) =>
+                      updatePercentField(
+                        "collaborationReadinessPercent",
+                        event.target.value,
+                      )
+                    }
+                    onBlur={(event) =>
+                      updatePercentField(
+                        "collaborationReadinessPercent",
+                        event.target.value,
+                      )
+                    }
+                    placeholder="۰ تا ۱۰۰"
+                    disabled={isLocked}
+                  />
+                </div>
+              </div>
+
+              <div className="submit-plan__input-group site-publication__percent-field">
+                <div className="site-publication__percent-head">
+                  <span>ظرفیت تجاری‌سازی</span>
+                  <strong>{form.commercializationPercent || 0}%</strong>
+                </div>
+                <div className="site-publication__percent-control">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={form.commercializationPercent || 0}
+                    onChange={(event) =>
+                      updatePercentField(
+                        "commercializationPercent",
+                        event.target.value,
+                      )
+                    }
+                    disabled={isLocked}
+                  />
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={form.commercializationPercent}
+                    onChange={(event) =>
+                      updatePercentField(
+                        "commercializationPercent",
+                        event.target.value,
+                      )
+                    }
+                    onBlur={(event) =>
+                      updatePercentField(
+                        "commercializationPercent",
+                        event.target.value,
+                      )
+                    }
+                    placeholder="۰ تا ۱۰۰"
+                    disabled={isLocked}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <label className="submit-plan__input-group">
+              <span>نیاز به سرمایه</span>
+              <select
+                value={form.investmentNeed}
+                onChange={(event) =>
+                  updateFormField("investmentNeed", event.target.value)
+                }
+                disabled={isLocked}
+              >
+                <option value="">انتخاب وضعیت سرمایه</option>
+                {INVESTMENT_NEED_OPTIONS.map((investmentOption) => (
+                  <option value={investmentOption} key={investmentOption}>
+                    {investmentOption}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="submit-plan__input-group site-publication__full-row">
+              <span>نیازمندی همکاری یا توسعه</span>
+              <div className="site-publication__checkbox-grid">
+                {COOPERATION_NEED_OPTIONS.map((need) => (
+                  <label key={need}>
+                    <input
+                      type="checkbox"
+                      checked={form.cooperationNeedTypes.includes(need)}
+                      onChange={() => toggleCooperationNeed(need)}
+                      disabled={isLocked}
+                    />
+                    {need}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="site-publication__reports site-publication__full-row">
+              <div className="site-publication__reports-header">
+                <div>
+                  <span>گزارش‌ها و مستندات</span>
+                  <p>
+                    برای هر گزارش می‌توانید توضیح متنی و فایل جداگانه ثبت کنید.
+                  </p>
+                </div>
+                <button type="button" onClick={addReport} disabled={isLocked}>
+                  افزودن گزارش
+                </button>
+              </div>
+
+              {normalizeReportsForForm(form.reports).map((report, index) => (
+                <article
+                  className="site-publication__report-editor"
+                  key={report.id}
+                >
+                  <div className="site-publication__report-editor-head">
+                    <strong>گزارش {index + 1}</strong>
+                    <button
+                      type="button"
+                      onClick={() => removeReport(report.id)}
+                      disabled={isLocked}
+                    >
+                      حذف گزارش
+                    </button>
+                  </div>
+
+                  <label>
+                    عنوان گزارش
+                    <input
+                      type="text"
+                      value={report.title}
+                      onChange={(event) =>
+                        updateReport(report.id, { title: event.target.value })
+                      }
+                      disabled={isLocked}
+                    />
+                  </label>
+
+                  <label>
+                    وضعیت گزارش
+                    <select
+                      value={report.status}
+                      onChange={(event) =>
+                        updateReport(report.id, { status: event.target.value })
+                      }
+                      disabled={isLocked}
+                    >
+                      <option value="تکمیل شده">تکمیل شده</option>
+                      <option value="در حال تکمیل">در حال تکمیل</option>
+                      <option value="نیازمند بررسی">نیازمند بررسی</option>
+                    </select>
+                  </label>
+
+                  <label className="site-publication__report-text">
+                    متن گزارش
+                    <textarea
+                      rows="3"
+                      value={report.text}
+                      onChange={(event) =>
+                        updateReport(report.id, { text: event.target.value })
+                      }
+                      disabled={isLocked}
+                    />
+                  </label>
+
+                  <div className="site-publication__report-file-row">
+                    <label className="site-publication__upload-button">
+                      آپلود فایل گزارش
+                      <input
+                        type="file"
+                        onChange={(event) =>
+                          handleReportFileUpload(report.id, event)
+                        }
+                        disabled={isLocked}
+                      />
+                    </label>
+                    {report.fileName ? (
+                      <span>{report.fileName}</span>
+                    ) : (
+                      <span>فایلی انتخاب نشده است.</span>
+                    )}
+                    <button
+                      type="button"
+                      className="site-publication__ghost-button"
+                      onClick={() =>
+                        updateReport(report.id, {
+                          fileName: "",
+                          fileUrl: "",
+                          type: "text",
+                        })
+                      }
+                      disabled={isLocked || !report.fileUrl}
+                    >
+                      حذف فایل
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="submit-plan__footer-actions site-publication__footer-actions">
+              <button
+                type="button"
+                onClick={openList}
+                className="site-publication__secondary-button"
+              >
+                بازگشت
+              </button>
+
+              <button type="button" onClick={handlePreview}>
+                پیش‌نمایش
+              </button>
+
+              {!isSubmitted && !isPublished && (
+                <>
+                  <button type="button" onClick={handleSaveDraft}>
+                    ذخیره پیش‌نویس
+                  </button>
+
+                  <button type="button" onClick={handleSubmitToCommittee}>
+                    ارسال برای بررسی کمیته
+                  </button>
+                </>
+              )}
+            </div>
+          </form>
+
+          {panelMessage && (
+            <p className="submit-plan__success-message">{panelMessage}</p>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="submit-plan site-publication">
+      <div className="submit-plan__header site-publication__header">
+        <div>
+          <span>طرح‌های معرفی‌شده</span>
+          <h2>انتخاب طرح برای تکمیل اطلاعات معرفی</h2>
+          <p>
+            این بخش شامل طرح‌هایی است که کمیته برای موقعیت تجاری یا پروژه موفق
+            معرفی کرده است. ابتدا یک طرح را انتخاب کنید و بعد اطلاعات لازم را
+            تکمیل کنید.
+          </p>
+        </div>
+      </div>
+
+      <div className="submit-plan__panel site-publication__selection-panel">
+        <div className="submit-plan__panel-header">
+          <div>
+            <span>مرحله اول</span>
+            <h3>انتخاب از بین طرح‌های معرفی‌شده</h3>
+          </div>
+        </div>
+
+        {requests.length > 0 ? (
+          <div className="site-publication__selection-grid">
+            {sortIntroducedPlanRequests(requests).map((request, index) => {
+              const hasDraft = hasSitePublicationDraft(request);
+
+              return (
+                <article
+                  className="site-publication__selection-card"
+                  key={request.id}
+                >
+                  <div className="site-publication__selection-order">
+                    {index + 1}
+                  </div>
+
+                  <div className="site-publication__selection-content">
+                    <div className="site-publication__selection-topline">
+                      <span>{request.trackingCode || request.planId}</span>
+                      <div className="site-publication__selection-badges">
+                        {hasDraft &&
+                          request.status ===
+                            SITE_PUBLICATION_STATUS.WAITING_FOR_INNOVATOR && (
+                            <span className="site-publication__draft-badge">
+                              پیش‌نویس
+                            </span>
+                          )}
+                        <span
+                          className={`submit-plan__status submit-plan__status--${getSitePublicationStatusClass(
+                            request.status,
+                          )}`}
+                        >
+                          {request.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    <h4>{request.planTitle}</h4>
+
+                    <dl>
+                      <div>
+                        <dt>نوع معرفی</dt>
+                        <dd>
+                          {request.publicationType || request.destination}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>فراخوان</dt>
+                        <dd>{request.callTitle || "ثبت نشده"}</dd>
+                      </div>
+                      <div>
+                        <dt>آخرین به‌روزرسانی</dt>
+                        <dd>{request.updatedAt || request.createdAt}</dd>
+                      </div>
+                      <div>
+                        <dt>وضعیت نهایی طرح</dt>
+                        <dd>{request.finalStatus || "ثبت نشده"}</dd>
+                      </div>
+                    </dl>
+
+                    {request.committeeFeedback && (
+                      <p className="site-publication__selection-feedback">
+                        بازخورد کمیته: {request.committeeFeedback}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="site-publication__selection-actions">
+                    <button type="button" onClick={() => openEditor(request)}>
+                      {getSitePublicationActionLabel(request.status)}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="submit-plan__empty-state site-publication__empty-state">
+            <h3>فعلاً طرحی برای تکمیل معرفی نشده است.</h3>
+            <p>
+              اگر کمیته در مرحله تعیین‌تکلیف، گزینه معرفی به موقعیت تجاری یا
+              معرفی برای پروژه‌های موفق را فعال کند، طرح در این بخش نمایش داده
+              می‌شود.
+            </p>
+          </div>
+        )}
+
+        {panelMessage && (
+          <p className="submit-plan__success-message">{panelMessage}</p>
+        )}
+      </div>
     </section>
   );
 }
@@ -1538,7 +3279,12 @@ function SelectedPlansPanel() {
     setTaskSubmitMessage("");
   };
 
+  const reloadProjectTasks = () => {
+    setProjectTasks(getInitialSelectedPlanTasksForCurrentUser());
+  };
+
   const updateTask = (planId, taskId, updates) => {
+    updateTaskInService(taskId, updates);
     setProjectTasks((currentTasks) => ({
       ...currentTasks,
       [planId]: (currentTasks[planId] || []).map((task) =>
@@ -1551,7 +3297,9 @@ function SelectedPlansPanel() {
     const task = selectedPlanTasks.find((item) => item.id === taskId);
 
     if (selectedPlan && task?.isNew) {
+      markTaskViewed(taskId);
       updateTask(selectedPlan.id, taskId, {
+        status: "مشاهده شده",
         isNew: false,
       });
     }
@@ -1584,6 +3332,15 @@ function SelectedPlansPanel() {
   };
 
   const saveTaskResponse = (planId, taskId) => {
+    const task = (projectTasks[planId] || []).find(
+      (item) => item.id === taskId,
+    );
+
+    submitTaskResponse(taskId, {
+      description: task?.description || "",
+      fileName: task?.fileName || "",
+    });
+
     updateTask(planId, taskId, {
       status: "ارسال شده",
       isNew: false,
@@ -1592,6 +3349,7 @@ function SelectedPlansPanel() {
     setTaskSubmitMessage("پاسخ شما با موفقیت برای مدیر ارسال شد.");
 
     window.setTimeout(() => {
+      reloadProjectTasks();
       setTaskSubmitMessage("");
       setSelectedTaskId(null);
     }, 1100);
@@ -1921,15 +3679,197 @@ function SelectedPlansPanel() {
   );
 }
 
+function getRegisteredActivityDetails(registration) {
+  if (registration.activityType === "event") {
+    const activity = getPublicEventById(registration.activityId, {
+      includePreview: true,
+    });
+
+    return {
+      activity,
+      typeLabel: "رویداد",
+      detailsPath: `/events/${registration.activityId}`,
+      dateLabel: activity?.eventDate || activity?.startDate || "تاریخ نامشخص",
+      metaLabel: activity?.location || activity?.format || "جزئیات ثبت نشده",
+    };
+  }
+
+  const activity = getPublicCourseById(registration.activityId, {
+    includePreview: true,
+  });
+
+  return {
+    activity,
+    typeLabel: "دوره",
+    detailsPath: `/courses/${registration.activityId}`,
+    dateLabel: activity?.startDate || "تاریخ نامشخص",
+    metaLabel: activity?.instructor || activity?.format || "جزئیات ثبت نشده",
+  };
+}
+
+function RegisteredActivitiesPanel() {
+  const registrations = getCurrentUserActivityRegistrations();
+
+  const registeredActivities = registrations.map((registration) => {
+    const details = getRegisteredActivityDetails(registration);
+    const notices = getParticipantNoticesForCurrentUserByActivityId(
+      registration.activityId,
+    );
+
+    return {
+      registration,
+      ...details,
+      notices,
+      title: details.activity?.title || registration.activityTitle,
+    };
+  });
+
+  return (
+    <section className="selected-plans">
+      <div className="selected-plans__panel">
+        <div className="selected-plans__header">
+          <div>
+            <span>دوره‌ها و رویدادهای من</span>
+            <h3>برنامه‌هایی که در آن‌ها ثبت‌نام کرده‌اید</h3>
+            <p>
+              این بخش فقط برنامه‌هایی را نشان می‌دهد که با حساب کاربری فعلی شما
+              ثبت‌نام شده‌اند.
+            </p>
+          </div>
+        </div>
+
+        <div className="selected-plans__grid">
+          {registeredActivities.map(
+            ({
+              registration,
+              activity,
+              typeLabel,
+              detailsPath,
+              dateLabel,
+              metaLabel,
+              title,
+              notices,
+            }) => (
+              <article className="selected-plans__card" key={registration.id}>
+                <div>
+                  <span>{typeLabel}</span>
+                  <h4>{title}</h4>
+                  <p>{metaLabel}</p>
+                </div>
+
+                <div className="selected-plans__meta">
+                  <span>تاریخ ثبت‌نام: {registration.registeredAt}</span>
+                  <span>تاریخ برگزاری: {dateLabel}</span>
+                  <span>
+                    وضعیت:{" "}
+                    {activity?.status === "past" ? "برگزار شده" : "ثبت‌نام شده"}
+                  </span>
+                </div>
+
+                {notices.length > 0 && (
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "10px",
+                      marginTop: "4px",
+                      padding: "14px",
+                      borderRadius: "16px",
+                      background: "rgba(1, 210, 201, 0.08)",
+                      border: "1px solid rgba(1, 210, 201, 0.2)",
+                    }}
+                  >
+                    <strong
+                      style={{
+                        color: "#0a274f",
+                        fontSize: "12px",
+                        fontWeight: 900,
+                      }}
+                    >
+                      آخرین اطلاعیه‌های مدرس
+                    </strong>
+                    {notices.slice(0, 3).map((notice) => (
+                      <div
+                        key={notice.id}
+                        style={{
+                          display: "grid",
+                          gap: "4px",
+                          paddingBottom: "8px",
+                          borderBottom: "1px solid rgba(10, 39, 79, 0.08)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "#0a274f",
+                            fontSize: "12px",
+                            fontWeight: 800,
+                          }}
+                        >
+                          {notice.title}
+                        </span>
+                        <small
+                          style={{
+                            color: "#667085",
+                            fontSize: "11px",
+                            lineHeight: 1.9,
+                          }}
+                        >
+                          {notice.message}
+                        </small>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <Link
+                  to={detailsPath}
+                  style={{
+                    width: "fit-content",
+                    minHeight: "42px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginTop: "auto",
+                    padding: "0 18px",
+                    borderRadius: "14px",
+                    color: "#ffffff",
+                    background: "#19b4e9",
+                    fontSize: "12px",
+                    fontWeight: 900,
+                  }}
+                >
+                  مشاهده جزئیات
+                </Link>
+              </article>
+            ),
+          )}
+
+          {registeredActivities.length === 0 && (
+            <div className="selected-plans__empty">
+              هنوز در هیچ دوره یا رویدادی ثبت‌نام نکرده‌اید.
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function SupportRequestsPanel() {
-  const [requests, setRequests] = useState(INITIAL_SUPPORT_REQUESTS);
+  const supportRoleName = "فناور";
+  const [requests, setRequests] = useState(() =>
+    getCurrentUserSupportTickets(supportRoleName),
+  );
   const [mode, setMode] = useState("list");
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [requestTitle, setRequestTitle] = useState("");
   const [requestMessage, setRequestMessage] = useState("");
 
+  const refreshRequests = () => {
+    setRequests(getCurrentUserSupportTickets(supportRoleName));
+  };
+
   const selectedRequest = requests.find(
-    (request) => request.id === selectedRequestId,
+    (request) => String(request.id) === String(selectedRequestId),
   );
 
   const openNewRequest = () => {
@@ -1937,6 +3877,7 @@ function SupportRequestsPanel() {
     setSelectedRequestId(null);
     setRequestTitle("");
     setRequestMessage("");
+    refreshRequests();
   };
 
   const openList = () => {
@@ -1944,15 +3885,19 @@ function SupportRequestsPanel() {
     setSelectedRequestId(null);
     setRequestTitle("");
     setRequestMessage("");
+    refreshRequests();
   };
 
   const openRequest = (requestId) => {
     setSelectedRequestId(requestId);
     setMode("view");
+    refreshRequests();
   };
 
   const deleteRequest = (requestId) => {
-    const targetRequest = requests.find((request) => request.id === requestId);
+    const targetRequest = requests.find(
+      (request) => String(request.id) === String(requestId),
+    );
 
     if (!targetRequest || targetRequest.seenBySupport) {
       return;
@@ -1964,9 +3909,8 @@ function SupportRequestsPanel() {
       return;
     }
 
-    setRequests((currentRequests) =>
-      currentRequests.filter((request) => request.id !== requestId),
-    );
+    deleteSupportTicket(requestId);
+    refreshRequests();
   };
 
   const submitRequest = (event) => {
@@ -1976,18 +3920,14 @@ function SupportRequestsPanel() {
       return;
     }
 
-    const newRequest = {
-      id: Date.now(),
-      title: requestTitle.trim() || "درخواست جدید",
-      message: requestMessage.trim(),
-      sentAt: getCurrentPersianDateTime(),
-      status: "در انتظار پیگیری",
-      seenBySupport: false,
-      supportReply: "",
-      repliedAt: "",
-    };
+    addSupportTicket(
+      {
+        title: requestTitle.trim() || "درخواست جدید",
+        message: requestMessage.trim(),
+      },
+      supportRoleName,
+    );
 
-    setRequests((currentRequests) => [newRequest, ...currentRequests]);
     openList();
   };
 
@@ -2000,8 +3940,8 @@ function SupportRequestsPanel() {
               <span>درخواست جدید</span>
               <h3>ثبت درخواست پشتیبانی</h3>
               <p>
-                درخواست شما به‌صورت متنی ثبت می‌شود و پس از مشاهده توسط پشتیبان،
-                امکان حذف آن وجود نخواهد داشت.
+                درخواست شما برای کمیته/دبیرخانه ثبت می‌شود و پاسخ آن در همین بخش
+                و در پیام‌ها نمایش داده خواهد شد.
               </p>
             </div>
 
@@ -2054,8 +3994,10 @@ function SupportRequestsPanel() {
   }
 
   if (mode === "view" && selectedRequest) {
+    const hasReply = Boolean(
+      selectedRequest.supportReply || selectedRequest.reply,
+    );
     const canDelete = !selectedRequest.seenBySupport;
-    const hasReply = Boolean(selectedRequest.supportReply);
 
     return (
       <section className="support-requests">
@@ -2098,8 +4040,8 @@ function SupportRequestsPanel() {
 
             {hasReply ? (
               <article className="support-requests__message support-requests__message--support">
-                <span>پاسخ پشتیبان</span>
-                <p>{selectedRequest.supportReply}</p>
+                <span>پاسخ کمیته/دبیرخانه</span>
+                <p>{selectedRequest.supportReply || selectedRequest.reply}</p>
               </article>
             ) : (
               <article className="support-requests__empty-reply">
@@ -2133,10 +4075,10 @@ function SupportRequestsPanel() {
         <div className="support-requests__panel-header">
           <div>
             <span>درخواست‌ها</span>
-            <h3>درخواست‌های پشتیبانی شما</h3>
+            <h3>درخواست‌ها و پشتیبانی</h3>
             <p>
-              درخواست‌های قبلی، وضعیت بررسی و پاسخ‌های پشتیبان در این بخش نمایش
-              داده می‌شوند.
+              درخواست‌های شما، وضعیت پیگیری و پاسخ‌های کمیته/دبیرخانه در این بخش
+              نمایش داده می‌شود.
             </p>
           </div>
 
@@ -2147,7 +4089,7 @@ function SupportRequestsPanel() {
 
         <div className="support-requests__list">
           {requests.map((request) => {
-            const hasReply = Boolean(request.supportReply);
+            const hasReply = Boolean(request.supportReply || request.reply);
             const canDelete = !request.seenBySupport;
 
             return (
@@ -2155,22 +4097,14 @@ function SupportRequestsPanel() {
                 <div className="support-requests__card-main">
                   <div className="support-requests__card-title">
                     <h4>{request.title}</h4>
-
                     {hasReply && (
                       <span className="support-requests__reply-badge">
                         پاسخ دریافت شده
                       </span>
                     )}
-
-                    {!hasReply && request.status === "در انتظار پیگیری" && (
+                    {!hasReply && (
                       <span className="support-requests__waiting-badge">
-                        در انتظار پیگیری
-                      </span>
-                    )}
-
-                    {!hasReply && request.status === "در حال پیگیری" && (
-                      <span className="support-requests__progress-badge">
-                        در حال پیگیری
+                        {request.status || "در انتظار پیگیری"}
                       </span>
                     )}
                   </div>
@@ -2203,6 +4137,12 @@ function SupportRequestsPanel() {
               </article>
             );
           })}
+
+          {requests.length === 0 && (
+            <div className="support-requests__empty-reply">
+              هنوز درخواستی ثبت نشده است.
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -2210,12 +4150,18 @@ function SupportRequestsPanel() {
 }
 
 function MessagesPanel() {
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
-  const [selectedMessageId, setSelectedMessageId] = useState(null);
+  const [messages, setMessages] = useState(() =>
+    getNotificationsForCurrentUser(),
+  );
   const [filter, setFilter] = useState("all");
+  const [selectedMessageId, setSelectedMessageId] = useState(null);
+
+  const refreshMessages = () => {
+    setMessages(getNotificationsForCurrentUser());
+  };
 
   const selectedMessage = messages.find(
-    (message) => message.id === selectedMessageId,
+    (message) => String(message.id) === String(selectedMessageId),
   );
 
   const unreadCount = messages.filter((message) => !message.isRead).length;
@@ -2224,56 +4170,35 @@ function MessagesPanel() {
   ).length;
 
   const filteredMessages = messages.filter((message) => {
-    if (filter === "unread") {
-      return !message.isRead;
-    }
-
-    if (filter === "important") {
-      return message.isImportant;
-    }
-
+    if (filter === "unread") return !message.isRead;
+    if (filter === "important") return message.isImportant;
     return true;
   });
 
-  const openMessage = (messageId) => {
-    setSelectedMessageId(messageId);
-
-    setMessages((currentMessages) =>
-      currentMessages.map((message) =>
-        message.id === messageId ? { ...message, isRead: true } : message,
-      ),
-    );
-  };
-
-  const closeMessage = () => {
-    setSelectedMessageId(null);
-  };
-
   const markAllAsRead = () => {
-    setMessages((currentMessages) =>
-      currentMessages.map((message) => ({ ...message, isRead: true })),
-    );
-  };
-
-  const deleteMessage = (messageId) => {
-    setMessages((currentMessages) =>
-      currentMessages.filter((message) => message.id !== messageId),
-    );
-
-    if (selectedMessageId === messageId) {
-      setSelectedMessageId(null);
-    }
+    markAllNotificationsAsReadForCurrentUser();
+    refreshMessages();
   };
 
   const deleteAllMessages = () => {
-    const confirmed = window.confirm("آیا از حذف همه پیام‌ها مطمئن هستید؟");
-
-    if (!confirmed) {
-      return;
-    }
-
-    setMessages([]);
+    if (!window.confirm("آیا از حذف همه پیام‌ها مطمئن هستید؟")) return;
+    deleteAllNotificationsForCurrentUser();
     setSelectedMessageId(null);
+    refreshMessages();
+  };
+
+  const openMessage = (messageId) => {
+    markNotificationAsRead(messageId);
+    setSelectedMessageId(messageId);
+    refreshMessages();
+  };
+
+  const removeMessage = (messageId) => {
+    deleteNotification(messageId);
+    if (String(selectedMessageId) === String(messageId)) {
+      setSelectedMessageId(null);
+    }
+    refreshMessages();
   };
 
   if (selectedMessage) {
@@ -2282,17 +4207,22 @@ function MessagesPanel() {
         <div className="messages-panel__panel">
           <div className="messages-panel__panel-header">
             <div>
-              <span>{selectedMessage.category}</span>
+              <span>جزئیات پیام</span>
               <h3>{selectedMessage.title}</h3>
-              <p>{selectedMessage.sentAt}</p>
+              <p>
+                {selectedMessage.category} / {selectedMessage.sentAt}
+              </p>
             </div>
 
             <button
               type="button"
               className="messages-panel__back-button"
-              onClick={closeMessage}
+              onClick={() => {
+                setSelectedMessageId(null);
+                refreshMessages();
+              }}
             >
-              بازگشت به پیام‌ها
+              بازگشت
             </button>
           </div>
 
@@ -2300,7 +4230,6 @@ function MessagesPanel() {
             {selectedMessage.isImportant && (
               <span className="messages-panel__important-badge">مهم</span>
             )}
-
             <p>{selectedMessage.body}</p>
           </article>
         </div>
@@ -2314,10 +4243,10 @@ function MessagesPanel() {
         <div className="messages-panel__panel-header">
           <div>
             <span>پیام‌ها و اعلانات</span>
-            <h3>لیست پیام‌های سامانه</h3>
+            <h3>اعلان‌های سامانه</h3>
             <p>
-              اعلان‌ها، یادآوری‌ها و پیام‌های مرتبط با طرح‌ها و درخواست‌های شما
-              در این بخش قرار می‌گیرند.
+              اعلان‌های مربوط به درخواست‌ها، پاسخ‌ها، وظایف و فعالیت‌های جدید
+              اینجا نمایش داده می‌شود.
             </p>
           </div>
 
@@ -2325,16 +4254,13 @@ function MessagesPanel() {
             <button type="button" onClick={markAllAsRead}>
               خواندن همه
             </button>
-
             <button
               type="button"
               className="messages-panel__delete-all-button"
               onClick={deleteAllMessages}
-              aria-label="حذف همه پیام‌ها"
-              title="حذف همه پیام‌ها"
               disabled={messages.length === 0}
             >
-              🗑
+              ×
             </button>
           </div>
         </div>
@@ -2387,11 +4313,9 @@ function MessagesPanel() {
               <div className="messages-panel__card-main">
                 <div className="messages-panel__title-row">
                   <h4>{message.title}</h4>
-
                   {!message.isRead && (
                     <span className="messages-panel__unread-badge">جدید</span>
                   )}
-
                   {message.isImportant && (
                     <span className="messages-panel__important-badge">مهم</span>
                   )}
@@ -2405,21 +4329,19 @@ function MessagesPanel() {
                 </div>
               </div>
 
-              <div className="messages-panel__card-actions">
+              <div className="messages-panel__card-actions messages-panel__actions">
                 <button
                   type="button"
                   className="messages-panel__view-button"
                   onClick={() => openMessage(message.id)}
                 >
-                  مشاهده پیام
+                  مشاهده
                 </button>
-
                 <button
                   type="button"
-                  className="messages-panel__delete-message-button"
-                  onClick={() => deleteMessage(message.id)}
+                  className="messages-panel__delete-message-button messages-panel__remove-button messages-panel__remove-message"
+                  onClick={() => removeMessage(message.id)}
                   aria-label="حذف پیام"
-                  title="حذف پیام"
                 >
                   ×
                 </button>
@@ -2738,7 +4660,8 @@ function ProfilePanel({ profile, onEdit }) {
         <div>
           <span>پروفایل کاربری</span>
           <h3>
-            {profile.firstName} {profile.lastName}
+            {profile.fullName ||
+              `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
           </h3>
           <p>{profile.level}</p>
         </div>
@@ -2750,12 +4673,11 @@ function ProfilePanel({ profile, onEdit }) {
 
       <div className="profile-panel__info-grid">
         <article>
-          <span>نام</span>
-          <strong>{profile.firstName}</strong>
-        </article>
-        <article>
-          <span>نام خانوادگی</span>
-          <strong>{profile.lastName}</strong>
+          <span>نام و نام خانوادگی</span>
+          <strong>
+            {profile.fullName ||
+              `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
+          </strong>
         </article>
         <article>
           <span>شماره موبایل</span>
@@ -2805,7 +4727,11 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
       return;
     }
 
-    updateField("avatarPreview", URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateField("avatarPreview", String(reader.result || ""));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (event) => {
@@ -2821,11 +4747,32 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
 
     const nextProfile = {
       ...formData,
-      avatarLetter: formData.firstName?.[0] || profile.avatarLetter || "ف",
+      fullName:
+        formData.fullName ||
+        `${formData.firstName || ""} ${formData.lastName || ""}`.trim(),
+      avatarLetter:
+        formData.firstName?.[0] ||
+        formData.fullName?.[0] ||
+        profile.avatarLetter ||
+        "ف",
     };
 
-    onSave(nextProfile);
-    setMessage("تغییرات پروفایل با موفقیت ذخیره شد.");
+    try {
+      const savedProfile = onSave(nextProfile, passwordData);
+      setFormData(savedProfile || nextProfile);
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setMessage(
+        passwordData.newPassword
+          ? "اطلاعات پروفایل و رمز عبور با موفقیت ذخیره شد."
+          : "تغییرات پروفایل با موفقیت ذخیره شد.",
+      );
+    } catch (error) {
+      setMessage(error?.message || "ذخیره تغییرات با خطا روبه‌رو شد.");
+    }
   };
 
   return (
@@ -3087,8 +5034,23 @@ function InnovatorDashboardPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [recentMessages, setRecentMessages] = useState(INITIAL_RECENT_MESSAGES);
-  const [userProfile, setUserProfile] = useState(INITIAL_USER_PROFILE);
+  const notificationMenuRef = useRef(null);
+  const [recentMessages, setRecentMessages] = useState(() =>
+    getNotificationsForCurrentUser().slice(0, 3),
+  );
+  const [userProfile, setUserProfile] = useState(() =>
+    getCurrentDashboardProfile(INITIAL_USER_PROFILE),
+  );
+
+  const saveUserProfile = (nextProfile, passwordData = {}) => {
+    const savedProfile = saveCurrentDashboardProfile(
+      nextProfile,
+      INITIAL_USER_PROFILE,
+      passwordData,
+    );
+    setUserProfile(savedProfile);
+    return savedProfile;
+  };
 
   const currentSection = useMemo(
     () => SECTION_DATA[activeSection],
@@ -3098,6 +5060,27 @@ function InnovatorDashboardPage() {
   const unreadMessagesCount = recentMessages.filter(
     (item) => !item.isRead,
   ).length;
+
+  useEffect(() => {
+    if (!isNotificationOpen) {
+      return undefined;
+    }
+
+    const closeOnOutsideClick = (event) => {
+      if (
+        notificationMenuRef.current &&
+        !notificationMenuRef.current.contains(event.target)
+      ) {
+        setIsNotificationOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+    };
+  }, [isNotificationOpen]);
 
   const resetCurrentContent = () => {
     setContentResetKey((currentKey) => currentKey + 1);
@@ -3146,12 +5129,58 @@ function InnovatorDashboardPage() {
     resetCurrentContent();
   };
 
-  const markMessageAsRead = (messageId) => {
-    setRecentMessages((currentMessages) =>
-      currentMessages.map((message) =>
-        message.id === messageId ? { ...message, isRead: true } : message,
-      ),
-    );
+  const refreshRecentMessages = () => {
+    setRecentMessages(getNotificationsForCurrentUser().slice(0, 3));
+  };
+
+  const markMessageAsRead = (messageId, event) => {
+    event?.stopPropagation();
+    markNotificationAsRead(messageId);
+    refreshRecentMessages();
+  };
+
+  const markAllRecentMessagesAsRead = (event) => {
+    event?.stopPropagation();
+    markAllNotificationsAsReadForCurrentUser();
+    refreshRecentMessages();
+  };
+
+  const openMessagesCenter = (event) => {
+    event?.stopPropagation();
+    setIsNotificationOpen(false);
+    setActiveSection("messages");
+    setActiveSubItem("");
+    setOpenMenuId("");
+    resetCurrentContent();
+  };
+
+  const openNotificationTarget = (message) => {
+    markNotificationAsRead(message.id);
+    refreshRecentMessages();
+    setIsNotificationOpen(false);
+
+    if (message.sourceType === "task" || message.sourceType === "plan") {
+      setActiveSection("calls");
+      setActiveSubItem("selected-plans");
+      setOpenMenuId("calls");
+      resetCurrentContent();
+      return;
+    }
+
+    if (message.sourceType === "support-ticket") {
+      openInternalPage("requests");
+      return;
+    }
+
+    if (message.sourceType === "site-publication-request") {
+      setActiveSection("calls");
+      setActiveSubItem("site-publication");
+      setOpenMenuId("calls");
+      resetCurrentContent();
+      return;
+    }
+
+    openInternalPage("messages");
   };
 
   const shouldShowSubmitPlan =
@@ -3160,7 +5189,11 @@ function InnovatorDashboardPage() {
   const shouldShowSelectedPlans =
     activeSection === "calls" && activeSubItem === "selected-plans";
 
+  const shouldShowSitePublication =
+    activeSection === "calls" && activeSubItem === "site-publication";
+
   const shouldShowDashboard = activeSection === "dashboard";
+  const shouldShowMyActivities = activeSection === "my-activities";
   const shouldShowRequests = activeSection === "requests";
   const shouldShowMessages = activeSection === "messages";
   const shouldShowFaq = activeSection === "faq";
@@ -3263,7 +5296,10 @@ function InnovatorDashboardPage() {
           </div>
 
           <div className="innovator-dashboard__topbar-actions">
-            <div className="innovator-dashboard__notification-menu">
+            <div
+              className="innovator-dashboard__notification-menu"
+              ref={notificationMenuRef}
+            >
               <button
                 type="button"
                 className="innovator-dashboard__notification-trigger"
@@ -3282,6 +5318,50 @@ function InnovatorDashboardPage() {
                 <div className="innovator-dashboard__notification-dropdown">
                   <div className="innovator-dashboard__notification-header">
                     <strong>پیام‌های اخیر</strong>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={openMessagesCenter}
+                        title="رفتن به پیام‌ها و اعلانات"
+                        style={{
+                          width: "30px",
+                          height: "30px",
+                          border: "0",
+                          borderRadius: "999px",
+                          background: "#e8f8ff",
+                          cursor: "pointer",
+                        }}
+                      >
+                        📨
+                      </button>
+                      <button
+                        type="button"
+                        onClick={markAllRecentMessagesAsRead}
+                        disabled={unreadMessagesCount === 0}
+                        style={{
+                          height: "30px",
+                          border: "0",
+                          borderRadius: "999px",
+                          padding: "0 10px",
+                          color: unreadMessagesCount ? "#0e7ca8" : "#64748b",
+                          background: unreadMessagesCount
+                            ? "#e8f8ff"
+                            : "#e9edf2",
+                          fontFamily: "inherit",
+                          fontSize: "10px",
+                          fontWeight: 900,
+                          cursor: unreadMessagesCount ? "pointer" : "default",
+                        }}
+                      >
+                        خواندن همه
+                      </button>
+                    </div>
                     <small>{unreadMessagesCount} خوانده‌نشده</small>
                   </div>
 
@@ -3294,21 +5374,53 @@ function InnovatorDashboardPage() {
                             ? "innovator-dashboard__notification-item--read"
                             : ""
                         }`}
+                        onClick={() => openNotificationTarget(message)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            openNotificationTarget(message);
+                          }
+                        }}
+                        style={{
+                          cursor: "pointer",
+                          border: message.isRead
+                            ? "1px solid #bbf7d0"
+                            : "1px solid transparent",
+                          background: message.isRead ? "#f0fdf4" : undefined,
+                          opacity: message.isRead ? 1 : undefined,
+                        }}
                       >
                         <div>
                           <h4>{message.title}</h4>
-                          <p>{message.time}</p>
+                          <p>{message.sentAt}</p>
                         </div>
 
                         <button
                           type="button"
-                          onClick={() => markMessageAsRead(message.id)}
+                          onClick={(event) =>
+                            markMessageAsRead(message.id, event)
+                          }
                           disabled={message.isRead}
+                          style={
+                            message.isRead
+                              ? { color: "#166534", background: "#dcfce7" }
+                              : undefined
+                          }
                         >
-                          {message.isRead ? "خوانده شد" : "Read"}
+                          {message.isRead ? "خوانده شد" : "خواندن"}
                         </button>
                       </article>
                     ))}
+
+                    {recentMessages.length === 0 && (
+                      <article className="innovator-dashboard__notification-item">
+                        <div>
+                          <h4>اعلان جدیدی ندارید</h4>
+                          <p>همه چیز خوانده شده است.</p>
+                        </div>
+                      </article>
+                    )}
                   </div>
                 </div>
               )}
@@ -3325,11 +5437,27 @@ function InnovatorDashboardPage() {
                 aria-expanded={isProfileMenuOpen}
               >
                 <span className="innovator-dashboard__profile-text">
-                  <strong>مهدیه سیفی</strong>
-                  <small>نوع کاربر: فناور</small>
+                  <strong>
+                    {userProfile.fullName ||
+                      `${userProfile.firstName || ""} ${userProfile.lastName || ""}`.trim()}
+                  </strong>
+                  <small>نوع کاربر: {userProfile.level}</small>
                 </span>
 
-                <span className="innovator-dashboard__top-avatar">م</span>
+                {userProfile.avatarPreview ? (
+                  <img
+                    className="innovator-dashboard__top-avatar"
+                    src={userProfile.avatarPreview}
+                    alt={userProfile.fullName || "پروفایل کاربر"}
+                  />
+                ) : (
+                  <span className="innovator-dashboard__top-avatar">
+                    {userProfile.avatarLetter ||
+                      userProfile.firstName?.[0] ||
+                      userProfile.fullName?.[0] ||
+                      "ف"}
+                  </span>
+                )}
 
                 <span className="innovator-dashboard__profile-caret">▾</span>
               </button>
@@ -3367,6 +5495,10 @@ function InnovatorDashboardPage() {
           <SubmitPlanPanel key={`submit-plan-${contentResetKey}`} />
         ) : shouldShowSelectedPlans ? (
           <SelectedPlansPanel key={`selected-plans-${contentResetKey}`} />
+        ) : shouldShowSitePublication ? (
+          <SitePublicationPanel key={`site-publication-${contentResetKey}`} />
+        ) : shouldShowMyActivities ? (
+          <RegisteredActivitiesPanel key={`my-activities-${contentResetKey}`} />
         ) : shouldShowRequests ? (
           <SupportRequestsPanel key={`requests-${contentResetKey}`} />
         ) : shouldShowMessages ? (
@@ -3383,7 +5515,7 @@ function InnovatorDashboardPage() {
           <ProfileEditPanel
             key={`edit-profile-${contentResetKey}`}
             profile={userProfile}
-            onSave={setUserProfile}
+            onSave={saveUserProfile}
             onCancel={() => openInternalPage("profile")}
           />
         ) : (

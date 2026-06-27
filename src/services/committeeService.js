@@ -2,7 +2,11 @@ import { USER_ROLES } from "../constants/roles";
 import { getUsers } from "./authService";
 import { getCalls } from "./callService";
 import { getPlans, getAcceptedPlans, getPlanStats } from "./planService";
-import { getAverageScoreByPlanId, getReviewsByPlanId } from "./reviewService";
+import {
+  getAverageScoreByPlanId,
+  getReviews,
+  getReviewsByPlanId,
+} from "./reviewService";
 import { getTasksByPlanId } from "./taskService";
 
 import {
@@ -10,6 +14,7 @@ import {
   CALL_STATUS_LABELS,
   PLAN_FINAL_STATUS,
   PLAN_FINAL_STATUS_LABELS,
+  PLAN_REVIEW_STATUS,
   PLAN_REVIEW_STATUS_LABELS,
   PLAN_STATUS_LABELS,
   REVIEW_RECOMMENDATION_LABELS,
@@ -22,6 +27,14 @@ function toPersianNumber(value) {
   return String(value).replace(/\d/g, (digit) => PERSIAN_DIGITS[Number(digit)]);
 }
 
+function isReviewerUser(user) {
+  return (
+    user?.role === USER_ROLES.REVIEWER ||
+    user?.role === "reviewer" ||
+    user?.role === "داور"
+  );
+}
+
 function getCommitteeCallStatus(callStatus) {
   if (callStatus === CALL_STATUS.PUBLISHED) {
     return "منتشر شده";
@@ -31,17 +44,133 @@ function getCommitteeCallStatus(callStatus) {
 }
 
 function getCommitteePlanReviewStatus(plan) {
-  return (
-    PLAN_REVIEW_STATUS_LABELS[plan.currentReviewStatus] || "در انتظار بررسی"
-  );
+  const status = plan.currentReviewStatus;
+
+  if (status === "بررسی شده") {
+    return "بررسی شده";
+  }
+
+  if (status === "در انتظار بررسی") {
+    return "در انتظار بررسی";
+  }
+
+  if (status === PLAN_REVIEW_STATUS.REVIEWED || status === "reviewed") {
+    return "بررسی شده";
+  }
+
+  return PLAN_REVIEW_STATUS_LABELS[status] || "در انتظار بررسی";
 }
 
 function getCommitteeFinalStatus(plan) {
-  if (!plan.finalStatus || plan.finalStatus === PLAN_FINAL_STATUS.NONE) {
+  const status = plan.finalStatus;
+
+  if (!status || status === PLAN_FINAL_STATUS.NONE || status === "none") {
     return "";
   }
 
-  return PLAN_FINAL_STATUS_LABELS[plan.finalStatus] || "";
+  const persianStatusMap = {
+    [PLAN_FINAL_STATUS.ACCEPTED]: "قبول",
+    [PLAN_FINAL_STATUS.WEAK_ACCEPTED]: "قبول ضعیف",
+    [PLAN_FINAL_STATUS.REJECTED]: "رد",
+    [PLAN_FINAL_STATUS.WEAK_REJECTED]: "رد ضعیف",
+    [PLAN_FINAL_STATUS.NEEDS_REVISION]: "نیازمند اصلاح",
+    accepted: "قبول",
+    weakAccepted: "قبول ضعیف",
+    weak_accepted: "قبول ضعیف",
+    rejected: "رد",
+    weakRejected: "رد ضعیف",
+    weak_rejected: "رد ضعیف",
+    needsRevision: "نیازمند اصلاح",
+    needs_revision: "نیازمند اصلاح",
+    قبول: "قبول",
+    "قبول ضعیف": "قبول ضعیف",
+    رد: "رد",
+    "رد ضعیف": "رد ضعیف",
+    "نیازمند اصلاح": "نیازمند اصلاح",
+  };
+
+  return persianStatusMap[status] || PLAN_FINAL_STATUS_LABELS[status] || status;
+}
+
+function getReviewerDisplayName(reviewer) {
+  return (
+    reviewer?.fullName ||
+    `${reviewer?.firstName || ""} ${reviewer?.lastName || ""}`.trim() ||
+    reviewer?.name ||
+    "داور"
+  );
+}
+
+function getPlanInnovator(plan) {
+  const users = getUsers();
+  return users.find((user) => user.id === plan.innovatorId) || null;
+}
+
+function getReviewerPossibleIds(reviewer, reviewerIndex = 0) {
+  const orderNumber = reviewerIndex + 1;
+  const paddedOrderNumber = String(orderNumber).padStart(3, "0");
+
+  return new Set(
+    [
+      reviewer?.id,
+      reviewer?.userId,
+      reviewer?.email,
+      `reviewer-${orderNumber}`,
+      `user-reviewer-${orderNumber}`,
+      `reviewer-${paddedOrderNumber}`,
+      `user-reviewer-${paddedOrderNumber}`,
+    ]
+      .filter(Boolean)
+      .map((value) => String(value)),
+  );
+}
+
+function getReviewerPossibleIdsList(reviewers) {
+  return reviewers.flatMap((reviewer, reviewerIndex) =>
+    Array.from(getReviewerPossibleIds(reviewer, reviewerIndex)),
+  );
+}
+
+function doesReviewBelongToReviewer(
+  review,
+  reviewer,
+  reviewerIndex,
+  reviewers,
+) {
+  const reviewReviewerId = String(review?.reviewerId || "");
+  const reviewerIds = getReviewerPossibleIds(reviewer, reviewerIndex);
+
+  if (reviewerIds.has(reviewReviewerId)) {
+    return true;
+  }
+
+  const knownReviewerIds = new Set(getReviewerPossibleIdsList(reviewers));
+
+  if (reviewers.length === 1 && !knownReviewerIds.has(reviewReviewerId)) {
+    return true;
+  }
+
+  return false;
+}
+
+function getReviewerByReviewId(reviewerId) {
+  const users = getUsers();
+  const reviewers = users.filter(isReviewerUser);
+  const normalizedReviewerId = String(reviewerId || "");
+
+  const exactReviewer = reviewers.find(
+    (reviewer) => String(reviewer.id) === normalizedReviewerId,
+  );
+
+  if (exactReviewer) {
+    return exactReviewer;
+  }
+
+  return (
+    reviewers.find((reviewer, reviewerIndex) =>
+      getReviewerPossibleIds(reviewer, reviewerIndex).has(normalizedReviewerId),
+    ) || null
+  );
 }
 
 function getReviewerFeedbackSummary(planId) {
@@ -63,22 +192,56 @@ function getReviewerFeedbackSummary(planId) {
   };
 }
 
-function getReviewerDisplayName(reviewer) {
-  return (
-    reviewer?.fullName ||
-    `${reviewer?.firstName || ""} ${reviewer?.lastName || ""}`.trim() ||
-    "داور"
+function createFallbackReviewerProfiles(reviews) {
+  const reviewerIds = Array.from(
+    new Set(reviews.map((review) => review.reviewerId).filter(Boolean)),
   );
+
+  return reviewerIds.map((reviewerId, index) => ({
+    id: reviewerId,
+    fullName: `داور ${toPersianNumber(index + 1)}`,
+    role: USER_ROLES.REVIEWER,
+    expertise: "ارزیابی طرح‌های فناورانه",
+    email: "ثبت نشده",
+    mobile: "ثبت نشده",
+    organization: "ثبت نشده",
+  }));
 }
 
-function getPlanInnovator(plan) {
+function getCommitteeReviewers() {
   const users = getUsers();
+  const reviews = getReviews();
 
-  return users.find((user) => user.id === plan.innovatorId) || null;
-}
+  const reviewerUsers = users.filter(isReviewerUser);
 
-function getReviewerById(reviewerId) {
-  return getUsers().find((user) => user.id === reviewerId) || null;
+  if (!reviewerUsers.length) {
+    return createFallbackReviewerProfiles(reviews);
+  }
+
+  const knownReviewerIds = new Set(getReviewerPossibleIdsList(reviewerUsers));
+
+  const unknownReviewerIds = Array.from(
+    new Set(
+      reviews
+        .map((review) => review.reviewerId)
+        .filter(
+          (reviewerId) =>
+            reviewerId && !knownReviewerIds.has(String(reviewerId)),
+        ),
+    ),
+  );
+
+  const fallbackReviewers = unknownReviewerIds.map((reviewerId, index) => ({
+    id: reviewerId,
+    fullName: `داور ثبت‌شده ${toPersianNumber(index + 1)}`,
+    role: USER_ROLES.REVIEWER,
+    expertise: "ارزیابی طرح‌های فناورانه",
+    email: "ثبت نشده",
+    mobile: "ثبت نشده",
+    organization: "ثبت نشده",
+  }));
+
+  return [...reviewerUsers, ...fallbackReviewers];
 }
 
 export function getCommitteeCalls() {
@@ -111,6 +274,9 @@ export function getCommitteePlans() {
     const averageScore = getAverageScoreByPlanId(plan.id);
     const finalStatus = getCommitteeFinalStatus(plan);
     const innovator = getPlanInnovator(plan);
+    const committeeReviewStatus = getCommitteePlanReviewStatus(plan);
+    const committeeFeedbackText =
+      plan.committeeFeedback || plan.finalDecisionNote || "";
 
     return {
       id: plan.id,
@@ -131,20 +297,22 @@ export function getCommitteePlans() {
       reviewerScore: averageScore || "",
       reviewerRecommendation: reviewerFeedback?.recommendation || "",
       reviewerFeedback,
-      committeeReviewStatus: getCommitteePlanReviewStatus(plan),
-      committeeReviewScore: "",
-      committeeReviewRecommendation: plan.committeeFeedback
-        ? "بازخورد دبیرخانه ثبت شده"
-        : "",
-      committeeReviewFeedback: plan.committeeFeedback
+      committeeReviewStatus,
+      committeeReviewScore: plan.committeeReviewScore || "",
+      committeeReviewRecommendation:
+        plan.committeeReviewRecommendation ||
+        (committeeFeedbackText ? "بازخورد دبیرخانه ثبت شده" : ""),
+      committeeReviewFeedback: committeeFeedbackText
         ? {
-            text: plan.committeeFeedback,
+            text: committeeFeedbackText,
             createdAt: plan.updatedAt,
           }
         : null,
-      committeeFeedback: plan.finalDecisionNote || "",
+      committeeFeedback: plan.finalDecisionNote || plan.committeeFeedback || "",
       finalStatus,
-      finalStatusDate: finalStatus ? plan.updatedAt : "",
+      finalStatusDate: finalStatus
+        ? plan.finalStatusDate || plan.updatedAt
+        : "",
       resultsPublished: Boolean(plan.resultsPublished),
       proposalFile: plan.proposalFileUrl || "",
       sourceId: plan.id,
@@ -160,8 +328,8 @@ export function getCommitteeAcceptedPlans() {
     trackingId: plan.trackingCode,
     title: plan.title,
     field: plan.field,
-    finalStatus: PLAN_FINAL_STATUS_LABELS[plan.finalStatus] || "قبول شده",
-    finalStatusDate: plan.updatedAt,
+    finalStatus: getCommitteeFinalStatus(plan) || "قبول",
+    finalStatusDate: plan.finalStatusDate || plan.updatedAt,
     deadline: plan.updatedAt,
     proposalFile: plan.proposalFileUrl || "",
     sourceId: plan.id,
@@ -187,51 +355,44 @@ export function getCommitteeTasksByPlanId(planId) {
 }
 
 export function getCommitteeReviewerProfiles() {
-  const users = getUsers();
+  const reviewers = getCommitteeReviewers();
   const plans = getPlans();
+  const reviews = getReviews();
 
-  const reviews = plans.flatMap((plan) =>
-    getReviewsByPlanId(plan.id).map((review) => ({
-      ...review,
-      plan,
-    })),
-  );
+  return reviewers.map((reviewer, reviewerIndex) => {
+    const reviewerReviews = reviews.filter((review) =>
+      doesReviewBelongToReviewer(review, reviewer, reviewerIndex, reviewers),
+    );
 
-  return users
-    .filter((user) => user.role === USER_ROLES.REVIEWER)
-    .map((reviewer) => {
-      const reviewerReviews = reviews.filter(
-        (review) => review.reviewerId === reviewer.id,
-      );
+    const reviewedPlanIds = new Set(
+      reviewerReviews.map((review) => String(review.planId)),
+    );
 
-      const reviewedPlanIds = new Set(
-        reviewerReviews.map((review) => review.planId),
-      );
+    const assignedPlansCount = plans.length;
+    const reviewedPlansCount = reviewedPlanIds.size;
+    const remainingPlans = Math.max(assignedPlansCount - reviewedPlansCount, 0);
 
-      const assignedPlansCount = plans.length;
-
-      return {
-        id: reviewer.id,
-        name: getReviewerDisplayName(reviewer),
-        role: "داور تخصصی",
-        specialty: reviewer.expertise || "ارزیابی طرح‌های فناورانه",
-        email: reviewer.email || "ثبت نشده",
-        phone: reviewer.mobile || "ثبت نشده",
-        organization: reviewer.organization || "ثبت نشده",
-        stats: {
-          assignedPlans: assignedPlansCount,
-          reviewedPlans: reviewedPlanIds.size,
-          feedbacks: reviewerReviews.length,
-          remainingPlans: Math.max(
-            assignedPlansCount - reviewedPlanIds.size,
-            0,
-          ),
-        },
-      };
-    });
+    return {
+      id: reviewer.id,
+      name: getReviewerDisplayName(reviewer),
+      role: "داور تخصصی",
+      specialty: reviewer.expertise || "ارزیابی طرح‌های فناورانه",
+      email: reviewer.email || "ثبت نشده",
+      phone: reviewer.mobile || "ثبت نشده",
+      organization: reviewer.organization || "ثبت نشده",
+      stats: {
+        assignedPlans: assignedPlansCount,
+        reviewedPlans: reviewedPlansCount,
+        feedbacks: reviewerReviews.length,
+        remainingPlans,
+      },
+    };
+  });
 }
 
 export function getCommitteeReviewerFeedbackPlans() {
+  const reviewers = getCommitteeReviewers();
+
   return getPlans()
     .map((plan) => {
       const reviews = getReviewsByPlanId(plan.id);
@@ -248,7 +409,13 @@ export function getCommitteeReviewerFeedbackPlans() {
           organization: innovator?.organization || "ثبت نشده",
         },
         reviewerFeedbacks: reviews.map((review) => {
-          const reviewer = getReviewerById(review.reviewerId);
+          const reviewer =
+            getReviewerByReviewId(review.reviewerId) ||
+            reviewers.find((item, reviewerIndex) =>
+              getReviewerPossibleIds(item, reviewerIndex).has(
+                String(review.reviewerId),
+              ),
+            );
 
           return {
             id: review.id,

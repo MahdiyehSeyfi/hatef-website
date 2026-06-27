@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
+
+import {
+  getCurrentUser,
+  getCurrentUserDashboardPath,
+} from "../../services/authService";
+
 import slide1 from "../../assets/images/slide-1.png";
 import slide2 from "../../assets/images/slide-2.png";
 import slide3 from "../../assets/images/slide-3.png";
 import slide4 from "../../assets/images/slide-4.png";
+
 import "./HeroSlider.css";
 
 const slides = [
@@ -72,6 +80,7 @@ function ArrowIcon({ direction }) {
 }
 
 function HeroSlider() {
+  const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = useState(0);
 
   const activeSlide = slides[activeIndex];
@@ -90,6 +99,19 @@ function HeroSlider() {
 
   const showSelectedSlide = (index) => {
     setActiveIndex(index);
+  };
+
+  const handleSupportButtonClick = () => {
+    const currentUser = getCurrentUser();
+
+    if (!currentUser) {
+      navigate("/auth");
+      return;
+    }
+
+    const dashboardPath = getCurrentUserDashboardPath();
+
+    navigate(dashboardPath && dashboardPath !== "/" ? dashboardPath : "/");
   };
 
   useEffect(() => {
@@ -134,19 +156,20 @@ function HeroSlider() {
           </div>
 
           <div className="hero-slider__buttons">
-            <a
-              href="#support"
+            <button
+              type="button"
               className="hero-slider__button hero-slider__button--primary"
+              onClick={handleSupportButtonClick}
             >
               دریافت حمایت
-            </a>
+            </button>
 
-            <a
-              href="#calls"
+            <Link
+              to="/research-support/calls"
               className="hero-slider__button hero-slider__button--outline"
             >
               فراخوان‌ها
-            </a>
+            </Link>
           </div>
         </div>
       </div>

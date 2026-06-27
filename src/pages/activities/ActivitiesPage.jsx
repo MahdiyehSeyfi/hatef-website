@@ -6,10 +6,10 @@ import ActivitiesCarousel from "../../components/activities/ActivitiesCarousel";
 import ExpandableArticle from "../../components/activities/ExpandableArticle";
 
 import {
-  courseItems,
-  eventItems,
-  getActivitiesByStatus,
-} from "../../data/activitiesData";
+  getPublicActivitiesByStatus,
+  getPublicCourseItems,
+  getPublicEventItems,
+} from "../../services/publicActivityService";
 
 import "./ActivitiesPage.css";
 
@@ -147,7 +147,7 @@ const pageNavigation = [
   },
 ];
 
-function getPageInformation(mode) {
+function getPageInformation(mode, courseItems, eventItems) {
   if (mode === "events") {
     return {
       eyebrow: "رویدادهای تخصصی هاتف",
@@ -156,7 +156,8 @@ function getPageInformation(mode) {
         "فرصتی برای ارتباط پژوهشگران، فناوران، دانشگاه، صنعت و سرمایه‌گذاران",
       primaryStat: eventItems.length,
       primaryLabel: "رویداد ثبت‌شده",
-      secondaryStat: getActivitiesByStatus(eventItems, "registering").length,
+      secondaryStat: getPublicActivitiesByStatus(eventItems, "registering")
+        .length,
       secondaryLabel: "در حال ثبت‌نام",
     };
   }
@@ -169,7 +170,8 @@ function getPageInformation(mode) {
         "آموزش مهارت‌های کاربردی برای توسعه فناوری، مدیریت پروژه و کسب‌وکار",
       primaryStat: courseItems.length,
       primaryLabel: "دوره آموزشی",
-      secondaryStat: getActivitiesByStatus(courseItems, "registering").length,
+      secondaryStat: getPublicActivitiesByStatus(courseItems, "registering")
+        .length,
       secondaryLabel: "ثبت‌نام فعال",
     };
   }
@@ -181,14 +183,16 @@ function getPageInformation(mode) {
     primaryStat: courseItems.length + eventItems.length,
     primaryLabel: "برنامه تخصصی",
     secondaryStat:
-      getActivitiesByStatus(courseItems, "registering").length +
-      getActivitiesByStatus(eventItems, "registering").length,
+      getPublicActivitiesByStatus(courseItems, "registering").length +
+      getPublicActivitiesByStatus(eventItems, "registering").length,
     secondaryLabel: "فرصت ثبت‌نام",
   };
 }
 
 function ActivitiesPage({ mode = "combined" }) {
-  const pageInformation = getPageInformation(mode);
+  const courseItems = getPublicCourseItems();
+  const eventItems = getPublicEventItems();
+  const pageInformation = getPageInformation(mode, courseItems, eventItems);
 
   const sections = [];
 
@@ -216,21 +220,21 @@ function ActivitiesPage({ mode = "combined" }) {
       {
         id: "event-registering",
         title: "در حال ثبت‌نام",
-        items: getActivitiesByStatus(eventItems, "registering"),
+        items: getPublicActivitiesByStatus(eventItems, "registering"),
         viewAllPath: "/events",
         viewAllLabel: "همه برنامه‌ها",
       },
       {
         id: "event-ongoing",
         title: "در حال برگزاری",
-        items: getActivitiesByStatus(eventItems, "ongoing"),
+        items: getPublicActivitiesByStatus(eventItems, "ongoing"),
         viewAllPath: "/events",
         viewAllLabel: "همه برنامه‌ها",
       },
       {
         id: "event-past",
         title: "رویدادهای برگزارشده",
-        items: getActivitiesByStatus(eventItems, "past"),
+        items: getPublicActivitiesByStatus(eventItems, "past"),
         viewAllPath: "/events",
         viewAllLabel: "همه برنامه‌ها",
       },
@@ -242,21 +246,21 @@ function ActivitiesPage({ mode = "combined" }) {
       {
         id: "course-registering",
         title: "در حال ثبت‌نام",
-        items: getActivitiesByStatus(courseItems, "registering"),
+        items: getPublicActivitiesByStatus(courseItems, "registering"),
         viewAllPath: "/events",
         viewAllLabel: "همه برنامه‌ها",
       },
       {
         id: "course-ongoing",
         title: "در حال برگزاری",
-        items: getActivitiesByStatus(courseItems, "ongoing"),
+        items: getPublicActivitiesByStatus(courseItems, "ongoing"),
         viewAllPath: "/events",
         viewAllLabel: "همه برنامه‌ها",
       },
       {
         id: "course-past",
         title: "دوره‌های برگزارشده",
-        items: getActivitiesByStatus(courseItems, "past"),
+        items: getPublicActivitiesByStatus(courseItems, "past"),
         viewAllPath: "/events",
         viewAllLabel: "همه برنامه‌ها",
       },

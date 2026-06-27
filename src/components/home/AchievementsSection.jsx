@@ -1,62 +1,115 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
+
 import bannerImage from "../../assets/images/banner.png";
+import ViewAllButton from "../common/ViewAllButton";
+
+import { allCollaborationProjects } from "../../data/collaborationProjectsData";
+import { getPublishedSuccessfulProjectItems } from "../../services/projectPublicationService";
+
 import "./AchievementsSection.css";
 
-const achievements = [
-  {
-    id: 1,
-    image: bannerImage,
-    title: "فناوری بومی جذب پیشرفته برای پالایش گازهای خطرناک صنعتی",
-    description: [
-      "این دستاورد گامی مهم در مسیر توسعه فناوری‌های دوستدار محیط زیست برای صنایع انرژی‌بر و کاهش انتشار آلاینده‌های خطرناک به حساب می‌آید.",
-      "این دستاورد گامی مهم در مسیر توسعه فناوری‌های بومی برای صنایع انرژی‌بر و کاهش انتشار آلاینده‌های خطرناک به حساب می‌آید.",
-    ],
-  },
-  {
-    id: 2,
-    image: bannerImage,
-    title: "توسعه راهکارهای نوین برای کاهش آلایندگی صنایع بزرگ",
-    description: [
-      "این فناوری با هدف افزایش بازده فرایندهای صنعتی و کاهش اثرات زیست‌محیطی طراحی و توسعه یافته است.",
-      "استفاده از دانش بومی زمینه مناسبی برای توسعه محصولات فناورانه و همکاری میان دانشگاه و صنعت فراهم می‌کند.",
-    ],
-  },
-  {
-    id: 3,
-    image: bannerImage,
-    title: "تجاری‌سازی فناوری‌های پیشرفته و محصولات دانشگاهی",
-    description: [
-      "این طرح با هدف تبدیل نتایج پژوهشی به محصولات قابل استفاده در صنایع مختلف اجرا شده است.",
-      "توسعه این دستاورد می‌تواند به رشد شرکت‌های دانش‌بنیان و ایجاد فرصت‌های جدید سرمایه‌گذاری کمک کند.",
-    ],
-  },
-  {
-    id: 4,
-    image: bannerImage,
-    title: "راهکارهای هوشمند برای توسعه پایدار صنایع انرژی‌بر",
-    description: [
-      "این دستاورد در راستای بهینه‌سازی مصرف منابع و بهبود عملکرد سامانه‌های صنعتی توسعه یافته است.",
-      "فناوری‌های سبز و هوشمند یکی از محورهای اصلی حمایت برنامه هاتف محسوب می‌شوند.",
-    ],
-  },
-];
+function getProjectPath(project) {
+  return `/business/opportunities/${project.id}`;
+}
+
+function getProjectImage(project) {
+  return project?.image || bannerImage;
+}
+
+function getProjectDescription(project) {
+  const firstParagraph =
+    project.summary ||
+    project.description ||
+    project.shortDescription ||
+    "این پروژه در مسیر توسعه فناوری، همکاری صنعتی یا تجاری‌سازی به‌عنوان یکی از خروجی‌های موفق برنامه هاتف معرفی شده است.";
+
+  const secondParagraph =
+    project.successResult ||
+    project.result ||
+    project.field ||
+    project.level ||
+    "این دستاورد نشان‌دهنده ظرفیت طرح‌های فناورانه برای تبدیل شدن به محصول، همکاری یا خروجی قابل ارائه در زیست‌بوم فناوری است.";
+
+  return [firstParagraph, `نتیجه/حوزه: ${secondParagraph}`];
+}
+
+function normalizePublishedProject(project) {
+  return {
+    ...project,
+    image: project.image || bannerImage,
+    successResult:
+      project.successResult ||
+      project.summary ||
+      project.result ||
+      "طرح منتشرشده توسط کمیته هاتف",
+  };
+}
+
+function normalizeStaticProject(project, index) {
+  const results = [
+    "کاهش ۲۸٪ مصرف انرژی",
+    "ورود به مرحله همکاری صنعتی",
+    "استفاده در چند پروژه فناورانه",
+    "کاهش آلایندگی و هزینه عملیاتی",
+    "اتصال تیم فناور به شریک صنعتی",
+    "افزایش پایداری فرآیند تولید",
+  ];
+
+  return {
+    ...project,
+    image: project.image || bannerImage,
+    successYear: index < 2 ? "۱۴۰۵" : "۱۴۰۴",
+    successResult: results[index] || "پروژه موفق برنامه هاتف",
+  };
+}
+
+function getHomeSuccessfulProjects() {
+  const publishedProjects = getPublishedSuccessfulProjectItems().map(
+    normalizePublishedProject,
+  );
+
+  if (publishedProjects.length > 0) {
+    return publishedProjects.slice(0, 6);
+  }
+
+  return allCollaborationProjects.slice(0, 6).map(normalizeStaticProject);
+}
 
 function AchievementsSection() {
+  const projects = useMemo(() => getHomeSuccessfulProjects(), []);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const activeAchievement = achievements[activeIndex];
+  const activeAchievement = projects[activeIndex];
 
   useEffect(() => {
+    if (projects.length <= 1) {
+      return undefined;
+    }
+
     const timer = window.setTimeout(() => {
       setActiveIndex((currentIndex) => {
-        return (currentIndex + 1) % achievements.length;
+        return (currentIndex + 1) % projects.length;
       });
     }, 6000);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [activeIndex]);
+  }, [activeIndex, projects.length]);
+
+  useEffect(() => {
+    if (activeIndex > projects.length - 1) {
+      setActiveIndex(0);
+    }
+  }, [activeIndex, projects.length]);
+
+  if (!activeAchievement) {
+    return null;
+  }
+
+  const activeAchievementPath = getProjectPath(activeAchievement);
+  const activeAchievementDescription = getProjectDescription(activeAchievement);
 
   return (
     <section className="achievements-section" id="achievements">
@@ -74,39 +127,35 @@ function AchievementsSection() {
             key={`achievement-info-${activeAchievement.id}`}
             className="achievement-information"
           >
-            <a
-              href="#achievement-details"
+            <Link
+              to={activeAchievementPath}
               className="achievement-information__title"
             >
               {activeAchievement.title}
-            </a>
+            </Link>
 
             <div className="achievement-information__description">
-              {activeAchievement.description.map((paragraph) => (
+              {activeAchievementDescription.map((paragraph) => (
                 <p key={paragraph}>{paragraph}</p>
               ))}
             </div>
 
             <div className="achievement-information__footer">
-              <a
-                className="achievement-information__button"
-                href="#all-achievements"
-              >
+              <ViewAllButton to="/business/successful-projects">
                 همه دستاوردها
-                <span aria-hidden="true">←</span>
-              </a>
+              </ViewAllButton>
             </div>
           </div>
 
           <div className="achievement-visual">
-            <a
-              href="#achievement-details"
+            <Link
+              to={activeAchievementPath}
               className="achievement-visual__media"
             >
               <img
                 key={`achievement-image-${activeAchievement.id}`}
                 className="achievement-visual__image"
-                src={activeAchievement.image}
+                src={getProjectImage(activeAchievement)}
                 alt={activeAchievement.title}
               />
 
@@ -115,13 +164,13 @@ function AchievementsSection() {
                   مشاهده دستاورد
                 </span>
               </span>
-            </a>
+            </Link>
 
             <div
               className="achievement-visual__dots"
               aria-label="انتخاب دستاورد"
             >
-              {achievements.map((achievement, index) => {
+              {projects.map((achievement, index) => {
                 const isActive = index === activeIndex;
 
                 return (

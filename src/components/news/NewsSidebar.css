@@ -80,3 +80,10 @@
 .news-sidebar__list a:hover .news-sidebar__item-dot {
   background-color: var(--color-accent);
 }
+.news-sidebar__empty {
+  padding: 14px 0;
+  color: #8a94a2;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.9;
+}

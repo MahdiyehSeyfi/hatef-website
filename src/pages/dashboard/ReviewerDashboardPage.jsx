@@ -1,7 +1,42 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
+
+import { getCurrentUser, getUserById } from "../../services/authService";
+import { getCalls } from "../../services/callService";
+import { getPlans } from "../../services/planService";
+import {
+  getReviewerViewedPlanIds,
+  markReviewerPlanViewed,
+} from "../../services/reviewerActivityService";
+import {
+  deleteReview,
+  getReviewsByReviewerId,
+  saveReview,
+} from "../../services/reviewService";
+import {
+  addSupportTicket,
+  deleteSupportTicket,
+  getCurrentUserSupportTickets,
+} from "../../services/supportService";
+import {
+  deleteAllNotificationsForCurrentUser,
+  deleteNotification,
+  getNotificationsForCurrentUser,
+  markAllNotificationsAsReadForCurrentUser,
+  markNotificationAsRead,
+} from "../../services/notificationService";
+
+import {
+  PLAN_REVIEW_STATUS,
+  REVIEW_RECOMMENDATION,
+} from "../../constants/statuses";
+
+import {
+  getCurrentDashboardProfile,
+  saveCurrentDashboardProfile,
+} from "../../services/userProfileService";
 
 import "./InnovatorDashboardPage.css";
 import "./ReviewerDashboardPage.css";
@@ -62,91 +97,159 @@ const REVIEW_FOLDERS = [
   },
 ];
 
-const REVIEW_PLAN_TITLES = [
-  "سامانه هوشمند تشخیص خطای تجهیزات صنعتی",
-  "پلتفرم تحلیل مصرف انرژی ساختمان",
-  "راهکار پایش کیفیت هوای شهری",
-  "دستیار هوشمند ارزیابی پروپوزال",
-  "مدل پیش‌بینی خرابی در شبکه توزیع",
-  "سامانه مدیریت داده‌های آزمایشگاهی",
-  "ابزار بهینه‌سازی مصرف آب در گلخانه",
-  "پلتفرم پایش سلامت تجهیزات پزشکی",
-  "سیستم هوشمند اولویت‌بندی تعمیرات",
-  "راهکار تحلیل ریسک زنجیره تأمین",
-  "سامانه تشخیص ناهنجاری در خطوط تولید",
-  "پلتفرم مدیریت انرژی در واحدهای صنعتی",
-];
+function getReviewerRecommendationText(recommendation) {
+  const recommendationMap = {
+    [REVIEW_RECOMMENDATION.ACCEPT]: "قابل بررسی در مرحله بعد",
+    [REVIEW_RECOMMENDATION.WEAK_ACCEPT]: "قابل بررسی در مرحله بعد",
+    [REVIEW_RECOMMENDATION.REJECT]: "عدم پیشنهاد برای ادامه",
+    [REVIEW_RECOMMENDATION.WEAK_REJECT]: "عدم پیشنهاد برای ادامه",
+    [REVIEW_RECOMMENDATION.NEEDS_REVISION]: "نیازمند اصلاح",
+  };
 
-const REVIEW_PLAN_FIELDS = [
-  "هوش مصنوعی",
-  "انرژی و پایداری",
-  "سلامت دیجیتال",
-  "صنعت و تولید",
-];
+  return recommendationMap[recommendation] || "قابل بررسی در مرحله بعد";
+}
 
-const REVIEW_PLAN_STATUSES = ["در انتظار بررسی", "بررسی شده"];
+function getReviewRecommendationValue(recommendationText) {
+  const recommendationMap = {
+    "قابل بررسی در مرحله بعد": REVIEW_RECOMMENDATION.WEAK_ACCEPT,
+    "نیازمند اصلاح": REVIEW_RECOMMENDATION.NEEDS_REVISION,
+    "دارای اولویت": REVIEW_RECOMMENDATION.ACCEPT,
+    "عدم پیشنهاد برای ادامه": REVIEW_RECOMMENDATION.REJECT,
+  };
 
-const INITIAL_REVIEW_PLANS = Array.from({ length: 36 }, (_, index) => {
-  const planNumber = index + 1;
-  const hasFeedback = [2, 4, 7, 11, 15, 19, 22, 27, 31, 35].includes(
-    planNumber,
+  return (
+    recommendationMap[recommendationText] || REVIEW_RECOMMENDATION.WEAK_ACCEPT
   );
-  const status =
-    hasFeedback || planNumber % 5 === 0 ? "بررسی شده" : "در انتظار بررسی";
-  const folderIds =
-    planNumber % 9 === 0
-      ? ["priority"]
-      : planNumber % 7 === 0
-        ? ["needs-improvement"]
-        : planNumber % 6 === 0
-          ? ["more-review"]
-          : [];
+}
+
+function getReviewFolderIds(review) {
+  if (review?.recommendation === REVIEW_RECOMMENDATION.ACCEPT) {
+    return ["priority"];
+  }
+
+  if (review?.recommendation === REVIEW_RECOMMENDATION.NEEDS_REVISION) {
+    return ["needs-improvement"];
+  }
+
+  return [];
+}
+
+function getPlanFolderIds(plan, review, index) {
+  if (review?.recommendation === REVIEW_RECOMMENDATION.ACCEPT) {
+    return ["priority"];
+  }
+
+  if (review?.recommendation === REVIEW_RECOMMENDATION.NEEDS_REVISION) {
+    return ["needs-improvement"];
+  }
+
+  if (
+    plan.currentReviewStatus === PLAN_REVIEW_STATUS.PENDING &&
+    index % 2 === 0
+  ) {
+    return ["more-review"];
+  }
+
+  return [];
+}
+
+function getReviewerPlanStatus(plan, review, isViewed = false) {
+  if (review || isViewed) {
+    return "بررسی شده";
+  }
+
+  if (plan.currentReviewStatus === PLAN_REVIEW_STATUS.REVIEWED) {
+    return "بررسی شده";
+  }
+
+  return "در انتظار بررسی";
+}
+
+function getPlanHistoryYear(plan) {
+  const submittedAt = String(plan.submittedAt || "");
+
+  if (submittedAt.startsWith("1405") || submittedAt.startsWith("۱۴۰۵")) {
+    return "۱۴۰۵";
+  }
+
+  if (submittedAt.startsWith("1404") || submittedAt.startsWith("۱۴۰۴")) {
+    return "۱۴۰۴";
+  }
+
+  return "۱۴۰۵";
+}
+
+function getPlanCallType(call) {
+  if (!call) {
+    return "فراخوان هاتف";
+  }
+
+  if (call.field === "سلامت دیجیتال") return "فراخوان سلامت دیجیتال";
+  if (call.field === "انرژی و پایداری") return "فراخوان انرژی و پایداری";
+  if (call.field === "تجاری‌سازی") return "فراخوان تجاری‌سازی";
+  return "فراخوان هاتف";
+}
+
+function mapPlanToReviewerCard(
+  plan,
+  index,
+  reviewerReviews,
+  calls,
+  viewedPlanIds = new Set(),
+) {
+  const call = calls.find((item) => item.id === plan.callId);
+  const review = reviewerReviews.find((item) => item.planId === plan.id);
+  const isViewed = viewedPlanIds.has(String(plan.id));
+  const innovator = getUserById(plan.innovatorId);
+  const serial = index + 1;
 
   return {
-    id: planNumber,
-    trackingId: `HTF-1405-${String(planNumber).padStart(4, "0")}`,
-    title: REVIEW_PLAN_TITLES[index % REVIEW_PLAN_TITLES.length],
-    field: REVIEW_PLAN_FIELDS[index % REVIEW_PLAN_FIELDS.length],
-    call: "فراخوان هدایت اعتبارات توسعه فناوری",
+    id: plan.id,
+    trackingId: plan.trackingCode,
+    title: plan.title,
+    field: plan.field,
+    call: call?.title || "فراخوان هاتف",
+    callType: getPlanCallType(call),
+    historyYear: getPlanHistoryYear(plan),
     innovator: {
-      name: ["مهدیه سیفی", "رضا احمدی", "سارا محمدی", "علی رضوانی"][index % 4],
-      organization: [
-        "دانشگاه تهران",
-        "شرکت فناوران نوآور",
-        "هسته پژوهشی داده‌محور",
-        "مرکز رشد فناوری‌های نو",
-      ][index % 4],
-      phone: `0912${String(3000000 + index * 3179).slice(0, 7)}`,
-      email: `innovator${planNumber}@example.com`,
+      name: innovator?.fullName || "فناور ثبت‌شده",
+      organization: innovator?.organization || "تیم فناور",
+      phone: innovator?.mobile || "-",
+      email: innovator?.email || "-",
     },
-    sentAt: `۱۴۰۵/۰۳/${String((planNumber % 24) + 1).padStart(
-      2,
-      "0",
-    )} - ساعت ${String((planNumber % 8) + 9).padStart(2, "0")}:۳۰`,
-    deadline: `۱۴۰۵/۰۴/${String((planNumber % 20) + 5).padStart(
-      2,
-      "0",
-    )} - ساعت ۱۸:۰۰`,
-    status,
-    proposalFile: `${String(planNumber).padStart(2, "0")}-proposal.pdf`,
-    folders: folderIds,
-    score: hasFeedback ? ((planNumber % 5) + 1) * 15 : "",
-    recommendation: hasFeedback
-      ? planNumber % 2 === 0
-        ? "قابل بررسی در مرحله بعد"
-        : "نیازمند اصلاح"
+    sentAt: `${plan.submittedAt || "ثبت نشده"} - ساعت ${String(
+      (serial % 8) + 9,
+    ).padStart(2, "0")}:۳۰`,
+    deadline: call?.deadlineDate
+      ? `${call.deadlineDate} - ساعت ${call.deadlineTime || "۱۸:۰۰"}`
+      : "ددلاین ثبت نشده",
+    status: getReviewerPlanStatus(plan, review, isViewed),
+    proposalFile: plan.proposalFileUrl || `${plan.trackingCode || plan.id}.pdf`,
+    folders: getPlanFolderIds(plan, review, index),
+    reviewId: review?.id || "",
+    score: review?.score || "",
+    recommendation: review
+      ? getReviewerRecommendationText(review.recommendation)
       : "",
-    feedback: hasFeedback
+    feedback: review
       ? {
-          text: "طرح از نظر مسئله‌محوری قابل توجه است، اما برای تصمیم‌گیری دقیق‌تر لازم است مسیر اعتبارسنجی، شاخص‌های فنی و برنامه اجرای پایلوت شفاف‌تر شود.",
-          createdAt: `۱۴۰۵/۰۳/${String((planNumber % 20) + 2).padStart(
-            2,
-            "0",
-          )} - ساعت ۱۲:۱۵`,
+          text: review.feedbackText,
+          createdAt: `${review.createdAt || "ثبت شده"} - بازخورد داور`,
         }
       : null,
   };
-});
+}
+
+function createInitialReviewPlans(reviewerId) {
+  const currentReviewerId = reviewerId || "user-reviewer-1";
+  const calls = getCalls();
+  const reviewerReviews = getReviewsByReviewerId(currentReviewerId);
+  const viewedPlanIds = getReviewerViewedPlanIds(currentReviewerId);
+
+  return getPlans().map((plan, index) =>
+    mapPlanToReviewerCard(plan, index, reviewerReviews, calls, viewedPlanIds),
+  );
+}
 
 const INITIAL_TICKETS = [
   {
@@ -234,14 +337,17 @@ const FAQ_ITEMS = [
   },
 ];
 
-const REVIEWER_PROFILE = {
-  firstName: "مهدی",
-  lastName: "رضایی",
-  phone: "09123450657",
-  email: "reviewer@example.com",
-  role: "داور",
-  memberSince: "عضو از سال ۱۴۰۴ (به مدت ۱ سال)",
-};
+function getReviewerProfile(user) {
+  return {
+    firstName: user?.firstName || "مهدی",
+    lastName: user?.lastName || "رضایی",
+    phone: user?.mobile || "09123450657",
+    email: user?.email || "reviewer@example.com",
+    role: "داور",
+    memberSince: "عضو از سال ۱۴۰۴ (به مدت ۱ سال)",
+    avatarLetter: user?.avatarLetter || "د",
+  };
+}
 
 function MenuIcon() {
   return (
@@ -407,15 +513,11 @@ function getFolderTone(folderId) {
 }
 
 function getHistoryYear(plan) {
-  if (plan.id % 3 === 0) return "۱۴۰۳";
-  if (plan.id % 2 === 0) return "۱۴۰۴";
-  return "۱۴۰۵";
+  return plan.historyYear || "۱۴۰۵";
 }
 
 function getHistoryCallType(plan) {
-  if (plan.field === "سلامت دیجیتال") return "فراخوان سلامت دیجیتال";
-  if (plan.field === "انرژی و پایداری") return "فراخوان انرژی و پایداری";
-  return "فراخوان هاتف";
+  return plan.callType || "فراخوان هاتف";
 }
 
 function ReviewerStatusBadge({ status }) {
@@ -498,7 +600,12 @@ function DashboardPanel({ plans, onOpenFolder }) {
   );
 }
 
-function CurrentPlansPanel({ plans, setPlans, initialFolderFilter = "all" }) {
+function CurrentPlansPanel({
+  plans,
+  setPlans,
+  reviewerId,
+  initialFolderFilter = "all",
+}) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [folderFilter, setFolderFilter] = useState(initialFolderFilter);
   const [searchTerm, setSearchTerm] = useState("");
@@ -554,6 +661,8 @@ function CurrentPlansPanel({ plans, setPlans, initialFolderFilter = "all" }) {
   const openPlan = (planId) => {
     const plan = plans.find((item) => item.id === planId);
 
+    markReviewerPlanViewed(reviewerId, planId);
+
     setPlans((currentPlans) =>
       currentPlans.map((item) =>
         item.id === planId ? { ...item, status: "بررسی شده" } : item,
@@ -593,27 +702,38 @@ function CurrentPlansPanel({ plans, setPlans, initialFolderFilter = "all" }) {
   const saveFeedback = () => {
     if (!selectedPlan || !feedbackText.trim()) return;
 
-    const createdAt = new Date().toLocaleDateString("fa-IR-u-ca-persian", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
+    const savedReview = saveReview({
+      planId: selectedPlan.id,
+      reviewerId,
+      score: Number(score) || 0,
+      recommendation: getReviewRecommendationValue(recommendation),
+      feedbackText: feedbackText.trim(),
     });
 
     setPlans((currentPlans) =>
-      currentPlans.map((plan) =>
-        plan.id === selectedPlan.id
-          ? {
-              ...plan,
-              status: "بررسی شده",
-              recommendation,
-              score,
-              feedback: {
-                text: feedbackText.trim(),
-                createdAt: `${createdAt} - ثبت امروز`,
-              },
-            }
-          : plan,
-      ),
+      currentPlans.map((plan) => {
+        if (plan.id !== selectedPlan.id) return plan;
+
+        const reviewFolderIds = getReviewFolderIds(savedReview);
+        const nextFolders = Array.from(
+          new Set([...plan.folders, ...reviewFolderIds]),
+        );
+
+        return {
+          ...plan,
+          status: "بررسی شده",
+          reviewId: savedReview.id,
+          recommendation: getReviewerRecommendationText(
+            savedReview.recommendation,
+          ),
+          score: savedReview.score,
+          folders: nextFolders,
+          feedback: {
+            text: savedReview.feedbackText,
+            createdAt: `${savedReview.createdAt} - بازخورد داور`,
+          },
+        };
+      }),
     );
   };
 
@@ -624,11 +744,17 @@ function CurrentPlansPanel({ plans, setPlans, initialFolderFilter = "all" }) {
 
     if (!confirmed) return;
 
+    if (selectedPlan.reviewId) {
+      deleteReview(selectedPlan.reviewId);
+    }
+
     setPlans((currentPlans) =>
       currentPlans.map((plan) =>
         plan.id === selectedPlan.id
           ? {
               ...plan,
+              status: "بررسی شده",
+              reviewId: "",
               recommendation: "",
               score: "",
               feedback: null,
@@ -1312,53 +1438,80 @@ function HistoryPanel({ plans }) {
 }
 
 function TicketsPanel() {
-  const [tickets, setTickets] = useState(INITIAL_TICKETS);
-  const [mode, setMode] = useState("list");
-  const [selectedTicketId, setSelectedTicketId] = useState(null);
-  const [ticketTitle, setTicketTitle] = useState("");
-  const [ticketMessage, setTicketMessage] = useState("");
-
-  const selectedTicket = tickets.find(
-    (ticket) => ticket.id === selectedTicketId,
+  const supportRoleName = "داور";
+  const [requests, setRequests] = useState(() =>
+    getCurrentUserSupportTickets(supportRoleName),
   );
+  const [mode, setMode] = useState("list");
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [requestTitle, setRequestTitle] = useState("");
+  const [requestMessage, setRequestMessage] = useState("");
+
+  const refreshRequests = () => {
+    setRequests(getCurrentUserSupportTickets(supportRoleName));
+  };
+
+  const selectedRequest = requests.find(
+    (request) => String(request.id) === String(selectedRequestId),
+  );
+
+  const openNewRequest = () => {
+    setMode("new");
+    setSelectedRequestId(null);
+    setRequestTitle("");
+    setRequestMessage("");
+    refreshRequests();
+  };
 
   const openList = () => {
     setMode("list");
-    setSelectedTicketId(null);
-    setTicketTitle("");
-    setTicketMessage("");
+    setSelectedRequestId(null);
+    setRequestTitle("");
+    setRequestMessage("");
+    refreshRequests();
   };
 
-  const submitTicket = (event) => {
+  const openRequest = (requestId) => {
+    setSelectedRequestId(requestId);
+    setMode("view");
+    refreshRequests();
+  };
+
+  const deleteRequest = (requestId) => {
+    const targetRequest = requests.find(
+      (request) => String(request.id) === String(requestId),
+    );
+
+    if (!targetRequest || targetRequest.seenBySupport) {
+      return;
+    }
+
+    const confirmed = window.confirm("آیا از حذف این درخواست مطمئن هستید؟");
+
+    if (!confirmed) {
+      return;
+    }
+
+    deleteSupportTicket(requestId);
+    refreshRequests();
+  };
+
+  const submitRequest = (event) => {
     event.preventDefault();
 
-    if (!ticketMessage.trim()) return;
+    if (!requestMessage.trim()) {
+      return;
+    }
 
-    setTickets((currentTickets) => [
+    addSupportTicket(
       {
-        id: Date.now(),
-        title: ticketTitle.trim() || "درخواست جدید",
-        message: ticketMessage.trim(),
-        sentAt: getCurrentPersianDateTime(),
-        status: "در انتظار پیگیری",
-        seenBySupport: false,
-        supportReply: "",
-        repliedAt: "",
+        title: requestTitle.trim() || "تیکت جدید",
+        message: requestMessage.trim(),
       },
-      ...currentTickets,
-    ]);
+      supportRoleName,
+    );
 
     openList();
-  };
-
-  const deleteTicket = (ticketId) => {
-    const targetTicket = tickets.find((ticket) => ticket.id === ticketId);
-
-    if (!targetTicket || targetTicket.seenBySupport) return;
-
-    setTickets((currentTickets) =>
-      currentTickets.filter((ticket) => ticket.id !== ticketId),
-    );
   };
 
   if (mode === "new") {
@@ -1369,7 +1522,10 @@ function TicketsPanel() {
             <div>
               <span>تیکت جدید</span>
               <h3>ثبت تیکت پشتیبانی</h3>
-              <p>درخواست پشتیبانی شما به واحد مربوطه ارسال می‌شود.</p>
+              <p>
+                درخواست شما برای کمیته/دبیرخانه ثبت می‌شود و پاسخ آن در همین بخش
+                و در پیام‌ها نمایش داده خواهد شد.
+              </p>
             </div>
 
             <button
@@ -1377,27 +1533,27 @@ function TicketsPanel() {
               className="support-requests__neutral-button"
               onClick={openList}
             >
-              بازگشت
+              بازگشت به درخواست‌ها
             </button>
           </div>
 
-          <form className="support-requests__form" onSubmit={submitTicket}>
+          <form className="support-requests__form" onSubmit={submitRequest}>
             <label>
-              <span>عنوان</span>
+              <span>عنوان درخواست</span>
               <input
                 type="text"
-                value={ticketTitle}
-                onChange={(event) => setTicketTitle(event.target.value)}
-                placeholder="عنوان تیکت"
+                value={requestTitle}
+                onChange={(event) => setRequestTitle(event.target.value)}
+                placeholder="مثلاً مشکل در بارگذاری فایل"
               />
             </label>
 
             <label>
-              <span>متن تیکت</span>
+              <span>متن درخواست</span>
               <textarea
-                value={ticketMessage}
-                onChange={(event) => setTicketMessage(event.target.value)}
-                placeholder="متن پیام خود را وارد کنید..."
+                value={requestMessage}
+                onChange={(event) => setRequestMessage(event.target.value)}
+                placeholder="متن درخواست خود را وارد کنید..."
               />
             </label>
 
@@ -1409,8 +1565,9 @@ function TicketsPanel() {
               >
                 انصراف
               </button>
-              <button type="submit" disabled={!ticketMessage.trim()}>
-                ثبت تیکت
+
+              <button type="submit" disabled={!requestMessage.trim()}>
+                ثبت درخواست
               </button>
             </div>
           </form>
@@ -1419,18 +1576,20 @@ function TicketsPanel() {
     );
   }
 
-  if (mode === "view" && selectedTicket) {
-    const hasReply = Boolean(selectedTicket.supportReply);
-    const canDelete = !selectedTicket.seenBySupport;
+  if (mode === "view" && selectedRequest) {
+    const hasReply = Boolean(
+      selectedRequest.supportReply || selectedRequest.reply,
+    );
+    const canDelete = !selectedRequest.seenBySupport;
 
     return (
       <section className="support-requests">
         <div className="support-requests__panel">
           <div className="support-requests__panel-header">
             <div>
-              <span>جزئیات تیکت</span>
-              <h3>{selectedTicket.title}</h3>
-              <p>ارسال شده در {selectedTicket.sentAt}</p>
+              <span>جزئیات درخواست</span>
+              <h3>{selectedRequest.title}</h3>
+              <p>ارسال شده در {selectedRequest.sentAt}</p>
             </div>
 
             <button
@@ -1438,24 +1597,38 @@ function TicketsPanel() {
               className="support-requests__neutral-button"
               onClick={openList}
             >
-              بازگشت
+              بازگشت به درخواست‌ها
             </button>
+          </div>
+
+          <div className="support-requests__detail-grid support-requests__detail-grid--compact">
+            <div>
+              <span>زمان ارسال</span>
+              <strong>{selectedRequest.sentAt}</strong>
+            </div>
+
+            <div>
+              <span>زمان پاسخ</span>
+              <strong>
+                {hasReply ? selectedRequest.repliedAt : "هنوز پاسخ ثبت نشده"}
+              </strong>
+            </div>
           </div>
 
           <div className="support-requests__conversation">
             <article className="support-requests__message support-requests__message--user">
               <span>پیام شما</span>
-              <p>{selectedTicket.message}</p>
+              <p>{selectedRequest.message}</p>
             </article>
 
             {hasReply ? (
               <article className="support-requests__message support-requests__message--support">
-                <span>پاسخ پشتیبان</span>
-                <p>{selectedTicket.supportReply}</p>
+                <span>پاسخ کمیته/دبیرخانه</span>
+                <p>{selectedRequest.supportReply || selectedRequest.reply}</p>
               </article>
             ) : (
               <article className="support-requests__empty-reply">
-                هنوز پاسخی ثبت نشده است.
+                هنوز پاسخی برای این درخواست ثبت نشده است.
               </article>
             )}
           </div>
@@ -1466,11 +1639,11 @@ function TicketsPanel() {
                 type="button"
                 className="support-requests__delete-button"
                 onClick={() => {
-                  deleteTicket(selectedTicket.id);
+                  deleteRequest(selectedRequest.id);
                   openList();
                 }}
               >
-                حذف تیکت
+                حذف درخواست
               </button>
             </div>
           )}
@@ -1485,27 +1658,28 @@ function TicketsPanel() {
         <div className="support-requests__panel-header">
           <div>
             <span>درخواست‌ها</span>
-            <h3>تیکت‌ها و پشتیبانی</h3>
+            <h3>درخواست‌ها و پشتیبانی</h3>
             <p>
-              تیکت‌های قبلی، وضعیت بررسی و پاسخ‌های پشتیبان نمایش داده می‌شوند.
+              درخواست‌های شما، وضعیت پیگیری و پاسخ‌های کمیته/دبیرخانه در این بخش
+              نمایش داده می‌شود.
             </p>
           </div>
 
-          <button type="button" onClick={() => setMode("new")}>
+          <button type="button" onClick={openNewRequest}>
             ثبت تیکت جدید
           </button>
         </div>
 
         <div className="support-requests__list">
-          {tickets.map((ticket) => {
-            const hasReply = Boolean(ticket.supportReply);
-            const canDelete = !ticket.seenBySupport;
+          {requests.map((request) => {
+            const hasReply = Boolean(request.supportReply || request.reply);
+            const canDelete = !request.seenBySupport;
 
             return (
-              <article className="support-requests__card" key={ticket.id}>
+              <article className="support-requests__card" key={request.id}>
                 <div className="support-requests__card-main">
                   <div className="support-requests__card-title">
-                    <h4>{ticket.title}</h4>
+                    <h4>{request.title}</h4>
                     {hasReply && (
                       <span className="support-requests__reply-badge">
                         پاسخ دریافت شده
@@ -1513,29 +1687,23 @@ function TicketsPanel() {
                     )}
                     {!hasReply && (
                       <span className="support-requests__waiting-badge">
-                        در انتظار پیگیری
+                        {request.status || "در انتظار پیگیری"}
                       </span>
                     )}
                   </div>
 
-                  <p>{ticket.message}</p>
+                  <p>{request.message}</p>
 
                   <div className="support-requests__meta">
-                    <span>ارسال: {ticket.sentAt}</span>
+                    <span>ارسال: {request.sentAt}</span>
                     <span>
-                      پاسخ: {hasReply ? ticket.repliedAt : "در انتظار پاسخ"}
+                      پاسخ: {hasReply ? request.repliedAt : "در انتظار پاسخ"}
                     </span>
                   </div>
                 </div>
 
                 <div className="support-requests__actions">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedTicketId(ticket.id);
-                      setMode("view");
-                    }}
-                  >
+                  <button type="button" onClick={() => openRequest(request.id)}>
                     مشاهده
                   </button>
 
@@ -1543,7 +1711,7 @@ function TicketsPanel() {
                     <button
                       type="button"
                       className="support-requests__delete-button"
-                      onClick={() => deleteTicket(ticket.id)}
+                      onClick={() => deleteRequest(request.id)}
                     >
                       حذف
                     </button>
@@ -1552,6 +1720,12 @@ function TicketsPanel() {
               </article>
             );
           })}
+
+          {requests.length === 0 && (
+            <div className="support-requests__empty-reply">
+              هنوز درخواستی ثبت نشده است.
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -1574,12 +1748,18 @@ function getCurrentPersianDateTime() {
 }
 
 function MessagesPanel() {
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
-  const [selectedMessageId, setSelectedMessageId] = useState(null);
+  const [messages, setMessages] = useState(() =>
+    getNotificationsForCurrentUser(),
+  );
   const [filter, setFilter] = useState("all");
+  const [selectedMessageId, setSelectedMessageId] = useState(null);
+
+  const refreshMessages = () => {
+    setMessages(getNotificationsForCurrentUser());
+  };
 
   const selectedMessage = messages.find(
-    (message) => message.id === selectedMessageId,
+    (message) => String(message.id) === String(selectedMessageId),
   );
 
   const unreadCount = messages.filter((message) => !message.isRead).length;
@@ -1593,26 +1773,30 @@ function MessagesPanel() {
     return true;
   });
 
-  const openMessage = (messageId) => {
-    setSelectedMessageId(messageId);
-    setMessages((currentMessages) =>
-      currentMessages.map((message) =>
-        message.id === messageId ? { ...message, isRead: true } : message,
-      ),
-    );
-  };
-
   const markAllAsRead = () => {
-    setMessages((currentMessages) =>
-      currentMessages.map((message) => ({ ...message, isRead: true })),
-    );
+    markAllNotificationsAsReadForCurrentUser();
+    refreshMessages();
   };
 
-  const deleteMessage = (messageId) => {
-    setMessages((currentMessages) =>
-      currentMessages.filter((message) => message.id !== messageId),
-    );
+  const deleteAllMessages = () => {
+    if (!window.confirm("آیا از حذف همه پیام‌ها مطمئن هستید؟")) return;
+    deleteAllNotificationsForCurrentUser();
     setSelectedMessageId(null);
+    refreshMessages();
+  };
+
+  const openMessage = (messageId) => {
+    markNotificationAsRead(messageId);
+    setSelectedMessageId(messageId);
+    refreshMessages();
+  };
+
+  const removeMessage = (messageId) => {
+    deleteNotification(messageId);
+    if (String(selectedMessageId) === String(messageId)) {
+      setSelectedMessageId(null);
+    }
+    refreshMessages();
   };
 
   if (selectedMessage) {
@@ -1621,17 +1805,22 @@ function MessagesPanel() {
         <div className="messages-panel__panel">
           <div className="messages-panel__panel-header">
             <div>
-              <span>{selectedMessage.category}</span>
+              <span>جزئیات پیام</span>
               <h3>{selectedMessage.title}</h3>
-              <p>{selectedMessage.sentAt}</p>
+              <p>
+                {selectedMessage.category} / {selectedMessage.sentAt}
+              </p>
             </div>
 
             <button
               type="button"
-              className="messages-panel__neutral-button"
-              onClick={() => setSelectedMessageId(null)}
+              className="messages-panel__back-button"
+              onClick={() => {
+                setSelectedMessageId(null);
+                refreshMessages();
+              }}
             >
-              بازگشت به پیام‌ها
+              بازگشت
             </button>
           </div>
 
@@ -1639,7 +1828,6 @@ function MessagesPanel() {
             {selectedMessage.isImportant && (
               <span className="messages-panel__important-badge">مهم</span>
             )}
-
             <p>{selectedMessage.body}</p>
           </article>
         </div>
@@ -1653,7 +1841,11 @@ function MessagesPanel() {
         <div className="messages-panel__panel-header">
           <div>
             <span>پیام‌ها و اعلانات</span>
-            <h3>لیست پیام‌های سامانه</h3>
+            <h3>اعلان‌های سامانه</h3>
+            <p>
+              اعلان‌های مربوط به درخواست‌ها، پاسخ‌ها، وظایف و فعالیت‌های جدید
+              اینجا نمایش داده می‌شود.
+            </p>
           </div>
 
           <div className="messages-panel__header-actions">
@@ -1662,10 +1854,11 @@ function MessagesPanel() {
             </button>
             <button
               type="button"
-              className="messages-panel__delete-all"
-              onClick={() => setMessages([])}
+              className="messages-panel__delete-all-button"
+              onClick={deleteAllMessages}
+              disabled={messages.length === 0}
             >
-              حذف همه
+              ×
             </button>
           </div>
         </div>
@@ -1676,7 +1869,10 @@ function MessagesPanel() {
             className={filter === "all" ? "messages-panel__filter--active" : ""}
             onClick={() => setFilter("all")}
           >
-            همه پیام‌ها <strong>{messages.length}</strong>
+            همه پیام‌ها
+            <span className="messages-panel__filter-count">
+              {messages.length}
+            </span>
           </button>
 
           <button
@@ -1686,7 +1882,8 @@ function MessagesPanel() {
             }
             onClick={() => setFilter("unread")}
           >
-            خوانده‌نشده <strong>{unreadCount}</strong>
+            خوانده‌نشده
+            <span className="messages-panel__filter-count">{unreadCount}</span>
           </button>
 
           <button
@@ -1696,7 +1893,10 @@ function MessagesPanel() {
             }
             onClick={() => setFilter("important")}
           >
-            مهم <strong>{importantCount}</strong>
+            مهم
+            <span className="messages-panel__filter-count">
+              {importantCount}
+            </span>
           </button>
         </div>
 
@@ -1711,11 +1911,9 @@ function MessagesPanel() {
               <div className="messages-panel__card-main">
                 <div className="messages-panel__title-row">
                   <h4>{message.title}</h4>
-
                   {!message.isRead && (
                     <span className="messages-panel__unread-badge">جدید</span>
                   )}
-
                   {message.isImportant && (
                     <span className="messages-panel__important-badge">مهم</span>
                   )}
@@ -1729,14 +1927,19 @@ function MessagesPanel() {
                 </div>
               </div>
 
-              <div className="messages-panel__card-actions">
-                <button type="button" onClick={() => openMessage(message.id)}>
-                  مشاهده پیام
+              <div className="messages-panel__card-actions messages-panel__actions">
+                <button
+                  type="button"
+                  className="messages-panel__view-button"
+                  onClick={() => openMessage(message.id)}
+                >
+                  مشاهده
                 </button>
                 <button
                   type="button"
-                  className="messages-panel__remove-message"
-                  onClick={() => deleteMessage(message.id)}
+                  className="messages-panel__delete-message-button messages-panel__remove-button messages-panel__remove-message"
+                  onClick={() => removeMessage(message.id)}
+                  aria-label="حذف پیام"
                 >
                   ×
                 </button>
@@ -1859,21 +2062,31 @@ function ProfilePanel({ profile, onEdit }) {
 
         <div className="reviewer-dashboard__profile-head">
           <span>پروفایل کاربری</span>
-          <div className="reviewer-dashboard__profile-avatar">د</div>
+          {profile.avatarPreview ? (
+            <img
+              className="reviewer-dashboard__profile-avatar"
+              src={profile.avatarPreview}
+              alt={profile.fullName || "پروفایل کاربر"}
+            />
+          ) : (
+            <div className="reviewer-dashboard__profile-avatar">
+              {profile.avatarLetter}
+            </div>
+          )}
           <h3>
-            {profile.firstName} {profile.lastName}
+            {profile.fullName ||
+              `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
           </h3>
           <p>{profile.role}</p>
         </div>
 
         <div className="reviewer-dashboard__profile-grid">
           <article>
-            <span>نام</span>
-            <strong>{profile.firstName}</strong>
-          </article>
-          <article>
-            <span>نام خانوادگی</span>
-            <strong>{profile.lastName}</strong>
+            <span>نام و نام خانوادگی</span>
+            <strong>
+              {profile.fullName ||
+                `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
+            </strong>
           </article>
           <article>
             <span>ایمیل</span>
@@ -1897,11 +2110,40 @@ function ProfilePanel({ profile, onEdit }) {
   );
 }
 
-function EditProfilePanel({ profile, onCancel }) {
+function EditProfilePanel({ profile, onSave, onCancel }) {
   const [formValues, setFormValues] = useState(profile);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [message, setMessage] = useState("");
 
   const updateField = (field, value) => {
     setFormValues((current) => ({ ...current, [field]: value }));
+  };
+
+  const updatePasswordField = (field, value) => {
+    setPasswordData((current) => ({ ...current, [field]: value }));
+  };
+
+  const submitProfile = () => {
+    try {
+      const savedProfile = onSave(formValues, passwordData);
+      setFormValues(savedProfile || formValues);
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setMessage(
+        passwordData.newPassword
+          ? "اطلاعات پروفایل و رمز عبور با موفقیت ذخیره شد."
+          : "تغییرات پروفایل با موفقیت ذخیره شد.",
+      );
+    } catch (error) {
+      setMessage(error?.message || "ذخیره تغییرات با خطا روبه‌رو شد.");
+    }
   };
 
   return (
@@ -1965,15 +2207,33 @@ function EditProfilePanel({ profile, onCancel }) {
           <div className="reviewer-dashboard__profile-form-grid">
             <label>
               <span>رمز عبور فعلی</span>
-              <input type="password" />
+              <input
+                type="password"
+                value={passwordData.currentPassword}
+                onChange={(event) =>
+                  updatePasswordField("currentPassword", event.target.value)
+                }
+              />
             </label>
             <label>
               <span>رمز عبور جدید</span>
-              <input type="password" />
+              <input
+                type="password"
+                value={passwordData.newPassword}
+                onChange={(event) =>
+                  updatePasswordField("newPassword", event.target.value)
+                }
+              />
             </label>
             <label>
               <span>تکرار رمز عبور جدید</span>
-              <input type="password" />
+              <input
+                type="password"
+                value={passwordData.confirmPassword}
+                onChange={(event) =>
+                  updatePasswordField("confirmPassword", event.target.value)
+                }
+              />
             </label>
           </div>
         </div>
@@ -1982,8 +2242,12 @@ function EditProfilePanel({ profile, onCancel }) {
           <button type="button" onClick={onCancel}>
             انصراف
           </button>
-          <button type="button">ذخیره تغییرات</button>
+          <button type="button" onClick={submitProfile}>
+            ذخیره تغییرات
+          </button>
         </div>
+
+        {message && <p className="profile-panel__message">{message}</p>}
       </div>
     </section>
   );
@@ -1991,6 +2255,20 @@ function EditProfilePanel({ profile, onCancel }) {
 
 function ReviewerDashboardPage() {
   const navigate = useNavigate();
+  const currentUser = getCurrentUser();
+  const [reviewerProfile, setReviewerProfile] = useState(() =>
+    getCurrentDashboardProfile(getReviewerProfile(currentUser)),
+  );
+
+  const saveReviewerProfile = (nextProfile, passwordData = {}) => {
+    const savedProfile = saveCurrentDashboardProfile(
+      nextProfile,
+      getReviewerProfile(currentUser),
+      passwordData,
+    );
+    setReviewerProfile(savedProfile);
+    return savedProfile;
+  };
 
   const [activeSection, setActiveSection] = useState("dashboard");
   const [activeSubItem, setActiveSubItem] = useState("");
@@ -1999,15 +2277,39 @@ function ReviewerDashboardPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [recentMessages, setRecentMessages] = useState(
-    INITIAL_MESSAGES.slice(0, 3),
+  const notificationMenuRef = useRef(null);
+  const [recentMessages, setRecentMessages] = useState(() =>
+    getNotificationsForCurrentUser().slice(0, 3),
   );
-  const [reviewPlans, setReviewPlans] = useState(INITIAL_REVIEW_PLANS);
+  const [reviewPlans, setReviewPlans] = useState(() =>
+    createInitialReviewPlans(currentUser?.id),
+  );
   const [initialFolderFilter, setInitialFolderFilter] = useState("all");
 
   const unreadMessagesCount = recentMessages.filter(
     (item) => !item.isRead,
   ).length;
+
+  useEffect(() => {
+    if (!isNotificationOpen) {
+      return undefined;
+    }
+
+    const closeOnOutsideClick = (event) => {
+      if (
+        notificationMenuRef.current &&
+        !notificationMenuRef.current.contains(event.target)
+      ) {
+        setIsNotificationOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+    };
+  }, [isNotificationOpen]);
 
   const currentTitle = useMemo(() => {
     if (activeSection === "plan-management") {
@@ -2080,12 +2382,57 @@ function ReviewerDashboardPage() {
     resetCurrentContent();
   };
 
-  const markMessageAsRead = (messageId) => {
-    setRecentMessages((currentMessages) =>
-      currentMessages.map((message) =>
-        message.id === messageId ? { ...message, isRead: true } : message,
-      ),
-    );
+  const refreshRecentMessages = () => {
+    setRecentMessages(getNotificationsForCurrentUser().slice(0, 3));
+  };
+
+  const markMessageAsRead = (messageId, event) => {
+    event?.stopPropagation();
+    markNotificationAsRead(messageId);
+    refreshRecentMessages();
+  };
+
+  const markAllRecentMessagesAsRead = (event) => {
+    event?.stopPropagation();
+    markAllNotificationsAsReadForCurrentUser();
+    refreshRecentMessages();
+  };
+
+  const openMessagesCenter = (event) => {
+    event?.stopPropagation();
+    setIsNotificationOpen(false);
+    setActiveSection("messages");
+    setActiveSubItem("");
+    setOpenMenuId("");
+    resetCurrentContent();
+  };
+
+  const openNotificationTarget = (message) => {
+    markNotificationAsRead(message.id);
+    refreshRecentMessages();
+    setIsNotificationOpen(false);
+
+    if (message.sourceType === "plan" || message.sourceType === "review") {
+      setActiveSection("plan-management");
+      setActiveSubItem("current-plans");
+      setOpenMenuId("plan-management");
+      setInitialFolderFilter("all");
+      resetCurrentContent();
+      return;
+    }
+
+    if (message.sourceType === "support-ticket") {
+      setActiveSection("requests");
+      setActiveSubItem("");
+      setOpenMenuId("");
+      resetCurrentContent();
+      return;
+    }
+
+    setActiveSection("messages");
+    setActiveSubItem("");
+    setOpenMenuId("");
+    resetCurrentContent();
   };
 
   const openProfile = () => {
@@ -2135,6 +2482,7 @@ function ReviewerDashboardPage() {
           key={`current-plans-${contentResetKey}-${initialFolderFilter}`}
           plans={reviewPlans}
           setPlans={setReviewPlans}
+          reviewerId={currentUser?.id || "user-reviewer-1"}
           initialFolderFilter={initialFolderFilter}
         />
       );
@@ -2156,7 +2504,7 @@ function ReviewerDashboardPage() {
       return (
         <ProfilePanel
           key={`profile-${contentResetKey}`}
-          profile={REVIEWER_PROFILE}
+          profile={reviewerProfile}
           onEdit={openEditProfile}
         />
       );
@@ -2166,7 +2514,8 @@ function ReviewerDashboardPage() {
       return (
         <EditProfilePanel
           key={`edit-profile-${contentResetKey}`}
-          profile={REVIEWER_PROFILE}
+          profile={reviewerProfile}
+          onSave={saveReviewerProfile}
           onCancel={openProfile}
         />
       );
@@ -2273,7 +2622,10 @@ function ReviewerDashboardPage() {
           </div>
 
           <div className="innovator-dashboard__topbar-actions">
-            <div className="innovator-dashboard__notification-menu">
+            <div
+              className="innovator-dashboard__notification-menu"
+              ref={notificationMenuRef}
+            >
               <button
                 type="button"
                 className="innovator-dashboard__notification-trigger"
@@ -2292,6 +2644,50 @@ function ReviewerDashboardPage() {
                 <div className="innovator-dashboard__notification-dropdown">
                   <div className="innovator-dashboard__notification-header">
                     <strong>پیام‌های اخیر</strong>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={openMessagesCenter}
+                        title="رفتن به پیام‌ها و اعلانات"
+                        style={{
+                          width: "30px",
+                          height: "30px",
+                          border: "0",
+                          borderRadius: "999px",
+                          background: "#e8f8ff",
+                          cursor: "pointer",
+                        }}
+                      >
+                        📨
+                      </button>
+                      <button
+                        type="button"
+                        onClick={markAllRecentMessagesAsRead}
+                        disabled={unreadMessagesCount === 0}
+                        style={{
+                          height: "30px",
+                          border: "0",
+                          borderRadius: "999px",
+                          padding: "0 10px",
+                          color: unreadMessagesCount ? "#0e7ca8" : "#64748b",
+                          background: unreadMessagesCount
+                            ? "#e8f8ff"
+                            : "#e9edf2",
+                          fontFamily: "inherit",
+                          fontSize: "10px",
+                          fontWeight: 900,
+                          cursor: unreadMessagesCount ? "pointer" : "default",
+                        }}
+                      >
+                        خواندن همه
+                      </button>
+                    </div>
                     <small>{unreadMessagesCount} خوانده‌نشده</small>
                   </div>
 
@@ -2304,6 +2700,22 @@ function ReviewerDashboardPage() {
                             ? "innovator-dashboard__notification-item--read"
                             : ""
                         }`}
+                        onClick={() => openNotificationTarget(message)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            openNotificationTarget(message);
+                          }
+                        }}
+                        style={{
+                          cursor: "pointer",
+                          border: message.isRead
+                            ? "1px solid #bbf7d0"
+                            : "1px solid transparent",
+                          background: message.isRead ? "#f0fdf4" : undefined,
+                          opacity: message.isRead ? 1 : undefined,
+                        }}
                       >
                         <div>
                           <h4>{message.title}</h4>
@@ -2312,13 +2724,29 @@ function ReviewerDashboardPage() {
 
                         <button
                           type="button"
-                          onClick={() => markMessageAsRead(message.id)}
+                          onClick={(event) =>
+                            markMessageAsRead(message.id, event)
+                          }
                           disabled={message.isRead}
+                          style={
+                            message.isRead
+                              ? { color: "#166534", background: "#dcfce7" }
+                              : undefined
+                          }
                         >
-                          {message.isRead ? "خوانده شد" : "Read"}
+                          {message.isRead ? "خوانده شد" : "خواندن"}
                         </button>
                       </article>
                     ))}
+
+                    {recentMessages.length === 0 && (
+                      <article className="innovator-dashboard__notification-item">
+                        <div>
+                          <h4>اعلان جدیدی ندارید</h4>
+                          <p>همه چیز خوانده شده است.</p>
+                        </div>
+                      </article>
+                    )}
                   </div>
                 </div>
               )}
@@ -2336,12 +2764,25 @@ function ReviewerDashboardPage() {
               >
                 <span className="innovator-dashboard__profile-text">
                   <strong>
-                    {REVIEWER_PROFILE.firstName} {REVIEWER_PROFILE.lastName}
+                    {reviewerProfile.fullName ||
+                      `${reviewerProfile.firstName || ""} ${reviewerProfile.lastName || ""}`.trim()}
                   </strong>
-                  <small>نوع کاربر: {REVIEWER_PROFILE.role}</small>
+                  <small>نوع کاربر: {reviewerProfile.role}</small>
                 </span>
 
-                <span className="innovator-dashboard__top-avatar">د</span>
+                {reviewerProfile.avatarPreview ? (
+                  <img
+                    className="innovator-dashboard__top-avatar"
+                    src={reviewerProfile.avatarPreview}
+                    alt={reviewerProfile.fullName || "پروفایل کاربر"}
+                  />
+                ) : (
+                  <span className="innovator-dashboard__top-avatar">
+                    {reviewerProfile.avatarLetter ||
+                      reviewerProfile.fullName?.[0] ||
+                      "د"}
+                  </span>
+                )}
 
                 <span className="innovator-dashboard__profile-caret">▾</span>
               </button>

@@ -1,7 +1,34 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
+
+import {
+  addBusinessCollaborationRequest,
+  BUSINESS_REQUESTS_STORAGE_KEY,
+  deleteBusinessCollaborationRequest,
+  getCurrentBusinessCollaborationRequests,
+} from "../../services/businessService";
+
+import {
+  addSupportTicket,
+  deleteSupportTicket,
+  getCurrentUserSupportTickets,
+} from "../../services/supportService";
+import {
+  deleteAllNotificationsForCurrentUser,
+  deleteNotification,
+  getNotificationsForCurrentUser,
+  markAllNotificationsAsReadForCurrentUser,
+  markNotificationAsRead,
+} from "../../services/notificationService";
+
+import { getPublishedCommercialOpportunityProjects } from "../../services/projectPublicationService";
+
+import {
+  getCurrentDashboardProfile,
+  saveCurrentDashboardProfile,
+} from "../../services/userProfileService";
 
 import "./BusinessDashboardPage.css";
 
@@ -356,6 +383,75 @@ const BUSINESS_OPPORTUNITIES = [
   },
 ];
 
+function findProjectIndicatorValue(project, label, fallback = "") {
+  const targetIndicator = (project.indicators || []).find(
+    (indicator) => indicator.label === label,
+  );
+
+  return targetIndicator?.value || fallback;
+}
+
+function mapPublishedProjectToBusinessOpportunity(project, index = 0) {
+  const cooperationNeeds = Array.isArray(project.cooperationNeeds)
+    ? project.cooperationNeeds.filter(Boolean)
+    : [];
+
+  const collaborationType = cooperationNeeds[0] || "همکاری تجاری";
+  const investmentNeed = findProjectIndicatorValue(
+    project,
+    "نیاز به سرمایه",
+    "",
+  );
+  const collaborationReadiness = findProjectIndicatorValue(
+    project,
+    "آمادگی همکاری",
+    "",
+  );
+  const commercializationCapacity = findProjectIndicatorValue(
+    project,
+    "ظرفیت تجاری‌سازی",
+    "",
+  );
+
+  return {
+    id: `introduced-commercial-${project.id}`,
+    sourceProjectId: project.id,
+    isIntroducedCommercial: true,
+    title: project.title || "موقعیت تجاری معرفی‌شده",
+    field: project.field || "سایر حوزه‌های فناورانه",
+    category: project.field || "سایر حوزه‌ها",
+    collaborationType,
+    stage: "منتشر شده برای همکار تجاری",
+    date: project.date || "منتشر شده",
+    status: index === 0 ? "جدید" : "منتشر شده",
+    estimatedSupport: investmentNeed,
+    collaborationReadiness,
+    commercializationCapacity,
+    summary:
+      project.summary ||
+      "این موقعیت تجاری پس از بررسی کمیته برای همکاری با همکاران تجاری منتشر شده است.",
+    description: project.description || "",
+    descriptionHtml: project.descriptionHtml || "",
+    requirements: cooperationNeeds,
+    tags: [
+      "معرفی‌شده توسط کمیته",
+      project.publicationType || "موقعیت تجاری",
+      project.field || "",
+      collaborationType,
+    ].filter(Boolean),
+    reports: Array.isArray(project.reports) ? project.reports : [],
+  };
+}
+
+function getAllBusinessOpportunities() {
+  const publishedCommercialOpportunities =
+    getPublishedCommercialOpportunityProjects().map((project, index) =>
+      mapPublishedProjectToBusinessOpportunity(project, index),
+    );
+
+  return [...publishedCommercialOpportunities, ...BUSINESS_OPPORTUNITIES];
+}
+
 const INITIAL_FAVORITES = [
   {
     opportunityId: 2,
@@ -585,12 +681,8 @@ ${opportunity.summary}`,
   )}`;
 }
 
-const COLLABORATION_REQUESTS_STORAGE_KEY =
-  "business-dashboard-collaboration-requests";
-
 function createCollaborationRequest(opportunity) {
   return {
-    id: Date.now(),
     opportunityId: opportunity.id,
     title: `درخواست همکاری برای ${opportunity.title}`,
     opportunityTitle: opportunity.title,
@@ -606,19 +698,7 @@ function createCollaborationRequest(opportunity) {
 }
 
 function loadStoredCollaborationRequests() {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  try {
-    const storedValue = window.localStorage.getItem(
-      COLLABORATION_REQUESTS_STORAGE_KEY,
-    );
-
-    return storedValue ? JSON.parse(storedValue) : [];
-  } catch {
-    return [];
-  }
+  return getCurrentBusinessCollaborationRequests();
 }
 
 const OPPORTUNITY_DETAIL_VISUALS = {
@@ -655,6 +735,31 @@ function getOpportunityVisual(opportunity) {
 }
 
 function getOpportunityIndicators(opportunity) {
+  if (opportunity.isIntroducedCommercial) {
+    return [
+      {
+        label: "حوزه همکاری",
+        value: opportunity.category,
+      },
+      {
+        label: "نوع همکاری",
+        value: opportunity.collaborationType,
+      },
+      {
+        label: "نیاز به سرمایه",
+        value: opportunity.estimatedSupport,
+      },
+      {
+        label: "آمادگی همکاری",
+        value: opportunity.collaborationReadiness,
+      },
+      {
+        label: "ظرفیت تجاری‌سازی",
+        value: opportunity.commercializationCapacity,
+      },
+    ].filter((indicator) => indicator.value);
+  }
+
   return [
     {
       label: "حوزه همکاری",
@@ -726,6 +831,26 @@ function getOpportunitySupportPackage(opportunity) {
 }
 
 function getOpportunityReports(opportunity) {
+  const uploadedReports = Array.isArray(opportunity.reports)
+    ? opportunity.reports.filter(Boolean)
+    : [];
+
+  if (uploadedReports.length) {
+    return uploadedReports.map((report, index) => ({
+      id: report.id || `uploaded-report-${index + 1}`,
+      title: report.title || `گزارش ${index + 1}`,
+      status: report.status || "فایل بارگذاری‌شده",
+      type: report.fileUrl ? "file" : report.type || "text",
+      text: report.text || "",
+      fileName: report.fileName || "",
+      fileUrl: report.fileUrl || "",
+    }));
+  }
+
+  if (opportunity.isIntroducedCommercial) {
+    return [];
+  }
+
   return [
     {
       id: "business-summary",
@@ -818,22 +943,57 @@ function OpportunityReportsTabs({ reports }) {
   );
 }
 
+function OpportunityRichText({ html, text }) {
+  if (html) {
+    return (
+      <div
+        className="business-opportunity-detail__rich-text"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  }
+
+  return <p>{text}</p>;
+}
+
+function getIntroducedInfoItems(opportunity) {
+  return [
+    { label: "حوزه", value: opportunity.field },
+    { label: "نوع همکاری", value: opportunity.collaborationType },
+    { label: "نیاز به سرمایه", value: opportunity.estimatedSupport },
+    { label: "آمادگی همکاری", value: opportunity.collaborationReadiness },
+    { label: "ظرفیت تجاری‌سازی", value: opportunity.commercializationCapacity },
+    { label: "وضعیت", value: opportunity.stage },
+    { label: "تاریخ انتشار", value: opportunity.date },
+  ].filter((item) => item.value);
+}
+
 function OpportunityDetailPage({
   opportunity,
+  opportunities = BUSINESS_OPPORTUNITIES,
   isRequested = false,
   onRequestCooperation,
 }) {
   const [isFavorite, setIsFavorite] = useState(false);
+  const isIntroducedCommercial = Boolean(opportunity.isIntroducedCommercial);
   const visual = getOpportunityVisual(opportunity);
   const indicators = getOpportunityIndicators(opportunity);
   const roadmap = getOpportunityRoadmap(opportunity);
   const outputs = getOpportunityOutputs(opportunity);
   const supportPackage = getOpportunitySupportPackage(opportunity);
   const reports = getOpportunityReports(opportunity);
-  const relatedItems = BUSINESS_OPPORTUNITIES.filter(
-    (item) =>
-      item.category === opportunity.category && item.id !== opportunity.id,
-  ).slice(0, 3);
+  const infoItems = isIntroducedCommercial
+    ? getIntroducedInfoItems(opportunity)
+    : [];
+  const relatedItems = isIntroducedCommercial
+    ? []
+    : opportunities
+        .filter(
+          (item) =>
+            item.category === opportunity.category &&
+            item.id !== opportunity.id,
+        )
+        .slice(0, 3);
 
   return (
     <main className="business-opportunity-detail-page" dir="rtl">
@@ -926,30 +1086,41 @@ function OpportunityDetailPage({
             <h2>اطلاعات کلیدی موقعیت</h2>
 
             <dl>
-              <div>
-                <dt>حوزه</dt>
-                <dd>{opportunity.field}</dd>
-              </div>
+              {isIntroducedCommercial ? (
+                infoItems.map((item) => (
+                  <div key={item.label}>
+                    <dt>{item.label}</dt>
+                    <dd>{item.value}</dd>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div>
+                    <dt>حوزه</dt>
+                    <dd>{opportunity.field}</dd>
+                  </div>
 
-              <div>
-                <dt>نوع همکاری</dt>
-                <dd>{opportunity.collaborationType}</dd>
-              </div>
+                  <div>
+                    <dt>نوع همکاری</dt>
+                    <dd>{opportunity.collaborationType}</dd>
+                  </div>
 
-              <div>
-                <dt>محل اجرا</dt>
-                <dd>{opportunity.location}</dd>
-              </div>
+                  <div>
+                    <dt>محل اجرا</dt>
+                    <dd>{opportunity.location}</dd>
+                  </div>
 
-              <div>
-                <dt>متولی پیگیری</dt>
-                <dd>{opportunity.owner}</dd>
-              </div>
+                  <div>
+                    <dt>متولی پیگیری</dt>
+                    <dd>{opportunity.owner}</dd>
+                  </div>
 
-              <div>
-                <dt>مدت همکاری</dt>
-                <dd>{opportunity.duration}</dd>
-              </div>
+                  <div>
+                    <dt>مدت همکاری</dt>
+                    <dd>{opportunity.duration}</dd>
+                  </div>
+                </>
+              )}
             </dl>
 
             <button
@@ -969,24 +1140,28 @@ function OpportunityDetailPage({
               {isRequested ? "✓ درخواست ثبت شده - لغو" : "ثبت درخواست همکاری"}
             </button>
 
-            <a
-              href={getOpportunityProposalHref(opportunity)}
-              download={`${opportunity.title}.txt`}
-              className="business-opportunity-detail__side-download"
-            >
-              دانلود پروپوزال موقعیت
-            </a>
+            {!isIntroducedCommercial && (
+              <a
+                href={getOpportunityProposalHref(opportunity)}
+                download={`${opportunity.title}.txt`}
+                className="business-opportunity-detail__side-download"
+              >
+                دانلود پروپوزال موقعیت
+              </a>
+            )}
           </div>
 
-          <div className="business-opportunity-detail__info-card business-opportunity-detail__info-card--tinted">
-            <h2>نیازمندی‌های همکاری</h2>
+          {opportunity.requirements.length > 0 && (
+            <div className="business-opportunity-detail__info-card business-opportunity-detail__info-card--tinted">
+              <h2>نیازمندی‌های همکاری</h2>
 
-            <ul>
-              {opportunity.requirements.map((need) => (
-                <li key={need}>{need}</li>
-              ))}
-            </ul>
-          </div>
+              <ul>
+                {opportunity.requirements.map((need) => (
+                  <li key={need}>{need}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </aside>
 
         <div className="business-opportunity-detail__main">
@@ -995,80 +1170,89 @@ function OpportunityDetailPage({
               eyebrow="شرح موقعیت"
               title="توضیحات موقعیت تجاری"
             />
-            <p>{opportunity.summary}</p>
-          </section>
-
-          <section className="business-opportunity-detail__three-grid">
-            <article>
-              <span>چالش اصلی</span>
-              <h3>مسئله‌ای که این موقعیت حل می‌کند</h3>
-              <p>{opportunity.challenge}</p>
-            </article>
-
-            <article>
-              <span>راهکار پیشنهادی</span>
-              <h3>مدل پیشنهادی حل مسئله</h3>
-              <p>{opportunity.solution}</p>
-            </article>
-
-            <article>
-              <span>ارزش تجاری</span>
-              <h3>ظرفیت بازار و توسعه همکاری</h3>
-              <p>{opportunity.businessValue}</p>
-            </article>
-          </section>
-
-          <section>
-            <OpportunityDetailSectionTitle
-              eyebrow="مسیر اجرا"
-              title="نقشه پیشنهادی همکاری"
+            <OpportunityRichText
+              html={opportunity.descriptionHtml}
+              text={opportunity.description || opportunity.summary}
             />
+          </section>
 
-            <div className="business-opportunity-detail__roadmap">
-              {roadmap.map((step, index) => (
-                <article key={step}>
-                  <span>{index + 1}</span>
-                  <p>{step}</p>
+          {!isIntroducedCommercial && (
+            <>
+              <section className="business-opportunity-detail__three-grid">
+                <article>
+                  <span>چالش اصلی</span>
+                  <h3>مسئله‌ای که این موقعیت حل می‌کند</h3>
+                  <p>{opportunity.challenge}</p>
                 </article>
-              ))}
-            </div>
-          </section>
 
-          <section className="business-opportunity-detail__two-grid">
-            <article>
+                <article>
+                  <span>راهکار پیشنهادی</span>
+                  <h3>مدل پیشنهادی حل مسئله</h3>
+                  <p>{opportunity.solution}</p>
+                </article>
+
+                <article>
+                  <span>ارزش تجاری</span>
+                  <h3>ظرفیت بازار و توسعه همکاری</h3>
+                  <p>{opportunity.businessValue}</p>
+                </article>
+              </section>
+
+              <section>
+                <OpportunityDetailSectionTitle
+                  eyebrow="مسیر اجرا"
+                  title="نقشه پیشنهادی همکاری"
+                />
+
+                <div className="business-opportunity-detail__roadmap">
+                  {roadmap.map((step, index) => (
+                    <article key={step}>
+                      <span>{index + 1}</span>
+                      <p>{step}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="business-opportunity-detail__two-grid">
+                <article>
+                  <OpportunityDetailSectionTitle
+                    eyebrow="خروجی‌ها"
+                    title="خروجی‌های مورد انتظار"
+                  />
+
+                  <ul>
+                    {outputs.map((output) => (
+                      <li key={output}>{output}</li>
+                    ))}
+                  </ul>
+                </article>
+
+                <article>
+                  <OpportunityDetailSectionTitle
+                    eyebrow="حمایت"
+                    title="بسته حمایت و همراهی"
+                  />
+
+                  <ul>
+                    {supportPackage.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </article>
+              </section>
+            </>
+          )}
+
+          {reports.length > 0 && (
+            <section>
               <OpportunityDetailSectionTitle
-                eyebrow="خروجی‌ها"
-                title="خروجی‌های مورد انتظار"
+                eyebrow="مستندات"
+                title="گزارش‌ها و اطلاعات تکمیلی"
               />
-
-              <ul>
-                {outputs.map((output) => (
-                  <li key={output}>{output}</li>
-                ))}
-              </ul>
-            </article>
-
-            <article>
-              <OpportunityDetailSectionTitle
-                eyebrow="حمایت"
-                title="بسته حمایت و همراهی"
-              />
-
-              <ul>
-                {supportPackage.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </article>
-          </section>
-
-          <section>
-            <OpportunityDetailSectionTitle
-              eyebrow="مستندات"
-              title="گزارش‌ها و اطلاعات تکمیلی"
-            />
-            <OpportunityReportsTabs reports={reports} />
-          </section>
+              <OpportunityReportsTabs reports={reports} />
+            </section>
+          )}
         </div>
       </section>
 
@@ -1107,35 +1291,49 @@ function OpportunityDetailPage({
 function DashboardHomePanel({
   collaborationRequestsCount = 0,
   collaborationRequests = [],
+  favoritesCount = 0,
+  opportunities = BUSINESS_OPPORTUNITIES,
   onOpenOpportunity,
 }) {
+  const activeOpportunitiesCount = opportunities.filter(
+    (item) => item.status !== "غیرفعال",
+  ).length;
+  const answeredRequestsCount = collaborationRequests.filter(
+    (request) => request.status === "پاسخ داده شده",
+  ).length;
+  const trackingRequestsCount = collaborationRequests.filter(
+    (request) =>
+      request.status === "در حال پیگیری" ||
+      request.status === "نیازمند اطلاعات بیشتر",
+  ).length;
+
   const stats = [
     {
-      label: "موقعیت‌های مشاهده‌شده",
-      value: "۸",
-      hint: "در ۳۰ روز اخیر",
+      label: "موقعیت‌های فعال",
+      value: activeOpportunitiesCount.toString(),
+      hint: "موقعیت‌های قابل مشاهده",
     },
     {
       label: "علاقه‌مندی‌ها",
-      value: INITIAL_FAVORITES.length.toString(),
+      value: favoritesCount.toString(),
       hint: "موقعیت ذخیره‌شده",
     },
     {
       label: "درخواست‌های همکاری",
       value: collaborationRequestsCount.toString(),
-      hint: "ثبت‌شده در پنل",
+      hint: "ثبت‌شده توسط این حساب",
     },
     {
-      label: "حمایت‌های انجام‌شده",
-      value: "۲",
-      hint: "همکاری ثبت‌شده",
+      label: "در حال پیگیری/پاسخ",
+      value: (trackingRequestsCount + answeredRequestsCount).toString(),
+      hint: "درخواست‌های فعال یا پاسخ‌داده‌شده",
     },
   ];
 
   const recentRequest = collaborationRequests[0];
-  const newOpportunities = BUSINESS_OPPORTUNITIES.filter(
-    (item) => item.status === "جدید",
-  ).slice(0, 3);
+  const newOpportunities = opportunities
+    .filter((item) => item.status === "جدید" || item.status === "منتشر شده")
+    .slice(0, 3);
 
   return (
     <section className="dashboard-home business-dashboard-home business-dashboard-home--simple">
@@ -1159,7 +1357,9 @@ function DashboardHomePanel({
           {recentRequest ? (
             <div className="business-dashboard-home__request-card">
               <div>
-                <strong>{recentRequest.opportunityTitle}</strong>
+                <strong>
+                  {recentRequest.opportunityTitle || recentRequest.title}
+                </strong>
                 <p>{recentRequest.message}</p>
               </div>
 
@@ -1209,6 +1409,7 @@ function DashboardHomePanel({
 
 function OpportunitiesPanel({
   favoriteIds,
+  opportunities = BUSINESS_OPPORTUNITIES,
   onToggleFavorite,
   onOpenOpportunity,
 }) {
@@ -1221,24 +1422,21 @@ function OpportunitiesPanel({
 
   const categories = [
     "all",
-    ...new Set(BUSINESS_OPPORTUNITIES.map((item) => item.category)),
+    ...new Set(opportunities.map((item) => item.category)),
   ];
-  const stages = [
-    "all",
-    ...new Set(BUSINESS_OPPORTUNITIES.map((item) => item.stage)),
-  ];
+  const stages = ["all", ...new Set(opportunities.map((item) => item.stage))];
   const collaborationTypes = [
     "all",
-    ...new Set(BUSINESS_OPPORTUNITIES.map((item) => item.collaborationType)),
+    ...new Set(opportunities.map((item) => item.collaborationType)),
   ];
   const locations = [
     "all",
-    ...new Set(BUSINESS_OPPORTUNITIES.map((item) => item.location)),
+    ...new Set(opportunities.map((item) => item.location)),
   ];
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
 
-  const filteredOpportunities = BUSINESS_OPPORTUNITIES.filter((item) => {
+  const filteredOpportunities = opportunities.filter((item) => {
     const matchesSearch =
       !normalizedSearch ||
       [
@@ -1458,8 +1656,13 @@ function OpportunitiesPanel({
   );
 }
 
-function FavoritesPanel({ favoriteIds, onToggleFavorite, onOpenOpportunity }) {
-  const favoriteItems = BUSINESS_OPPORTUNITIES.filter((item) =>
+function FavoritesPanel({
+  favoriteIds,
+  opportunities = BUSINESS_OPPORTUNITIES,
+  onToggleFavorite,
+  onOpenOpportunity,
+}) {
+  const favoriteItems = opportunities.filter((item) =>
     favoriteIds.includes(item.id),
   );
 
@@ -1565,12 +1768,14 @@ function CollaborationRequestsPanel({ requests, onOpenOpportunity }) {
           <div className="support-requests__detail-grid support-requests__detail-grid--compact">
             <div>
               <span>موقعیت تجاری</span>
-              <strong>{selectedRequest.opportunityTitle}</strong>
+              <strong>
+                {selectedRequest.opportunityTitle || selectedRequest.title}
+              </strong>
             </div>
 
             <div>
               <span>نوع همکاری</span>
-              <strong>{selectedRequest.collaborationType}</strong>
+              <strong>{selectedRequest.collaborationType || "همکاری"}</strong>
             </div>
 
             <div>
@@ -1675,14 +1880,21 @@ function CollaborationRequestsPanel({ requests, onOpenOpportunity }) {
 }
 
 function SupportRequestsPanel() {
-  const [requests, setRequests] = useState(INITIAL_SUPPORT_REQUESTS);
+  const supportRoleName = "همکار تجاری";
+  const [requests, setRequests] = useState(() =>
+    getCurrentUserSupportTickets(supportRoleName),
+  );
   const [mode, setMode] = useState("list");
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [requestTitle, setRequestTitle] = useState("");
   const [requestMessage, setRequestMessage] = useState("");
 
+  const refreshRequests = () => {
+    setRequests(getCurrentUserSupportTickets(supportRoleName));
+  };
+
   const selectedRequest = requests.find(
-    (request) => request.id === selectedRequestId,
+    (request) => String(request.id) === String(selectedRequestId),
   );
 
   const openNewRequest = () => {
@@ -1690,6 +1902,7 @@ function SupportRequestsPanel() {
     setSelectedRequestId(null);
     setRequestTitle("");
     setRequestMessage("");
+    refreshRequests();
   };
 
   const openList = () => {
@@ -1697,15 +1910,19 @@ function SupportRequestsPanel() {
     setSelectedRequestId(null);
     setRequestTitle("");
     setRequestMessage("");
+    refreshRequests();
   };
 
   const openRequest = (requestId) => {
     setSelectedRequestId(requestId);
     setMode("view");
+    refreshRequests();
   };
 
   const deleteRequest = (requestId) => {
-    const targetRequest = requests.find((request) => request.id === requestId);
+    const targetRequest = requests.find(
+      (request) => String(request.id) === String(requestId),
+    );
 
     if (!targetRequest || targetRequest.seenBySupport) {
       return;
@@ -1717,9 +1934,8 @@ function SupportRequestsPanel() {
       return;
     }
 
-    setRequests((currentRequests) =>
-      currentRequests.filter((request) => request.id !== requestId),
-    );
+    deleteSupportTicket(requestId);
+    refreshRequests();
   };
 
   const submitRequest = (event) => {
@@ -1729,18 +1945,14 @@ function SupportRequestsPanel() {
       return;
     }
 
-    const newRequest = {
-      id: Date.now(),
-      title: requestTitle.trim() || "درخواست جدید",
-      message: requestMessage.trim(),
-      sentAt: getCurrentPersianDateTime(),
-      status: "در انتظار پیگیری",
-      seenBySupport: false,
-      supportReply: "",
-      repliedAt: "",
-    };
+    addSupportTicket(
+      {
+        title: requestTitle.trim() || "درخواست جدید",
+        message: requestMessage.trim(),
+      },
+      supportRoleName,
+    );
 
-    setRequests((currentRequests) => [newRequest, ...currentRequests]);
     openList();
   };
 
@@ -1750,11 +1962,11 @@ function SupportRequestsPanel() {
         <div className="support-requests__panel">
           <div className="support-requests__panel-header">
             <div>
-              <span>تیکت جدید</span>
-              <h3>ثبت تیکت پشتیبانی</h3>
+              <span>درخواست جدید</span>
+              <h3>ثبت درخواست پشتیبانی</h3>
               <p>
-                درخواست شما به‌صورت متنی ثبت می‌شود و پس از مشاهده توسط پشتیبان،
-                امکان حذف آن وجود نخواهد داشت.
+                درخواست شما برای کمیته/دبیرخانه ثبت می‌شود و پاسخ آن در همین بخش
+                و در پیام‌ها نمایش داده خواهد شد.
               </p>
             </div>
 
@@ -1774,7 +1986,7 @@ function SupportRequestsPanel() {
                 type="text"
                 value={requestTitle}
                 onChange={(event) => setRequestTitle(event.target.value)}
-                placeholder="مثلاً سوال درباره شرایط همکاری"
+                placeholder="مثلاً مشکل در بارگذاری فایل"
               />
             </label>
 
@@ -1807,8 +2019,10 @@ function SupportRequestsPanel() {
   }
 
   if (mode === "view" && selectedRequest) {
+    const hasReply = Boolean(
+      selectedRequest.supportReply || selectedRequest.reply,
+    );
     const canDelete = !selectedRequest.seenBySupport;
-    const hasReply = Boolean(selectedRequest.supportReply);
 
     return (
       <section className="support-requests">
@@ -1851,8 +2065,8 @@ function SupportRequestsPanel() {
 
             {hasReply ? (
               <article className="support-requests__message support-requests__message--support">
-                <span>پاسخ پشتیبان</span>
-                <p>{selectedRequest.supportReply}</p>
+                <span>پاسخ کمیته/دبیرخانه</span>
+                <p>{selectedRequest.supportReply || selectedRequest.reply}</p>
               </article>
             ) : (
               <article className="support-requests__empty-reply">
@@ -1885,22 +2099,22 @@ function SupportRequestsPanel() {
       <div className="support-requests__panel">
         <div className="support-requests__panel-header">
           <div>
-            <span>تیکت‌ها و پشتیبانی</span>
-            <h3>تیکت‌های پشتیبانی شما</h3>
+            <span>درخواست‌ها</span>
+            <h3>درخواست‌ها و پشتیبانی</h3>
             <p>
-              درخواست‌های قبلی، وضعیت بررسی و پاسخ‌های پشتیبان در این بخش نمایش
-              داده می‌شوند.
+              درخواست‌های شما، وضعیت پیگیری و پاسخ‌های کمیته/دبیرخانه در این بخش
+              نمایش داده می‌شود.
             </p>
           </div>
 
           <button type="button" onClick={openNewRequest}>
-            ثبت تیکت جدید
+            ثبت درخواست جدید
           </button>
         </div>
 
         <div className="support-requests__list">
           {requests.map((request) => {
-            const hasReply = Boolean(request.supportReply);
+            const hasReply = Boolean(request.supportReply || request.reply);
             const canDelete = !request.seenBySupport;
 
             return (
@@ -1908,22 +2122,14 @@ function SupportRequestsPanel() {
                 <div className="support-requests__card-main">
                   <div className="support-requests__card-title">
                     <h4>{request.title}</h4>
-
                     {hasReply && (
                       <span className="support-requests__reply-badge">
                         پاسخ دریافت شده
                       </span>
                     )}
-
-                    {!hasReply && request.status === "در انتظار پیگیری" && (
+                    {!hasReply && (
                       <span className="support-requests__waiting-badge">
-                        در انتظار پیگیری
-                      </span>
-                    )}
-
-                    {!hasReply && request.status === "در حال پیگیری" && (
-                      <span className="support-requests__progress-badge">
-                        در حال پیگیری
+                        {request.status || "در انتظار پیگیری"}
                       </span>
                     )}
                   </div>
@@ -1956,6 +2162,12 @@ function SupportRequestsPanel() {
               </article>
             );
           })}
+
+          {requests.length === 0 && (
+            <div className="support-requests__empty-reply">
+              هنوز درخواستی ثبت نشده است.
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -1963,12 +2175,18 @@ function SupportRequestsPanel() {
 }
 
 function MessagesPanel() {
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
-  const [selectedMessageId, setSelectedMessageId] = useState(null);
+  const [messages, setMessages] = useState(() =>
+    getNotificationsForCurrentUser(),
+  );
   const [filter, setFilter] = useState("all");
+  const [selectedMessageId, setSelectedMessageId] = useState(null);
+
+  const refreshMessages = () => {
+    setMessages(getNotificationsForCurrentUser());
+  };
 
   const selectedMessage = messages.find(
-    (message) => message.id === selectedMessageId,
+    (message) => String(message.id) === String(selectedMessageId),
   );
 
   const unreadCount = messages.filter((message) => !message.isRead).length;
@@ -1977,56 +2195,35 @@ function MessagesPanel() {
   ).length;
 
   const filteredMessages = messages.filter((message) => {
-    if (filter === "unread") {
-      return !message.isRead;
-    }
-
-    if (filter === "important") {
-      return message.isImportant;
-    }
-
+    if (filter === "unread") return !message.isRead;
+    if (filter === "important") return message.isImportant;
     return true;
   });
 
-  const openMessage = (messageId) => {
-    setSelectedMessageId(messageId);
-
-    setMessages((currentMessages) =>
-      currentMessages.map((message) =>
-        message.id === messageId ? { ...message, isRead: true } : message,
-      ),
-    );
-  };
-
-  const closeMessage = () => {
-    setSelectedMessageId(null);
-  };
-
   const markAllAsRead = () => {
-    setMessages((currentMessages) =>
-      currentMessages.map((message) => ({ ...message, isRead: true })),
-    );
-  };
-
-  const deleteMessage = (messageId) => {
-    setMessages((currentMessages) =>
-      currentMessages.filter((message) => message.id !== messageId),
-    );
-
-    if (selectedMessageId === messageId) {
-      setSelectedMessageId(null);
-    }
+    markAllNotificationsAsReadForCurrentUser();
+    refreshMessages();
   };
 
   const deleteAllMessages = () => {
-    const confirmed = window.confirm("آیا از حذف همه پیام‌ها مطمئن هستید؟");
-
-    if (!confirmed) {
-      return;
-    }
-
-    setMessages([]);
+    if (!window.confirm("آیا از حذف همه پیام‌ها مطمئن هستید؟")) return;
+    deleteAllNotificationsForCurrentUser();
     setSelectedMessageId(null);
+    refreshMessages();
+  };
+
+  const openMessage = (messageId) => {
+    markNotificationAsRead(messageId);
+    setSelectedMessageId(messageId);
+    refreshMessages();
+  };
+
+  const removeMessage = (messageId) => {
+    deleteNotification(messageId);
+    if (String(selectedMessageId) === String(messageId)) {
+      setSelectedMessageId(null);
+    }
+    refreshMessages();
   };
 
   if (selectedMessage) {
@@ -2035,17 +2232,22 @@ function MessagesPanel() {
         <div className="messages-panel__panel">
           <div className="messages-panel__panel-header">
             <div>
-              <span>{selectedMessage.category}</span>
+              <span>جزئیات پیام</span>
               <h3>{selectedMessage.title}</h3>
-              <p>{selectedMessage.sentAt}</p>
+              <p>
+                {selectedMessage.category} / {selectedMessage.sentAt}
+              </p>
             </div>
 
             <button
               type="button"
-              className="messages-panel__neutral-button"
-              onClick={closeMessage}
+              className="messages-panel__back-button"
+              onClick={() => {
+                setSelectedMessageId(null);
+                refreshMessages();
+              }}
             >
-              بازگشت به پیام‌ها
+              بازگشت
             </button>
           </div>
 
@@ -2053,7 +2255,6 @@ function MessagesPanel() {
             {selectedMessage.isImportant && (
               <span className="messages-panel__important-badge">مهم</span>
             )}
-
             <p>{selectedMessage.body}</p>
           </article>
         </div>
@@ -2067,10 +2268,10 @@ function MessagesPanel() {
         <div className="messages-panel__panel-header">
           <div>
             <span>پیام‌ها و اعلانات</span>
-            <h3>لیست پیام‌های سامانه</h3>
+            <h3>اعلان‌های سامانه</h3>
             <p>
-              اعلان‌ها، یادآوری‌ها و پیام‌های مرتبط با موقعیت‌ها و درخواست‌های
-              شما در این بخش قرار می‌گیرند.
+              اعلان‌های مربوط به درخواست‌ها، پاسخ‌ها، وظایف و فعالیت‌های جدید
+              اینجا نمایش داده می‌شود.
             </p>
           </div>
 
@@ -2078,14 +2279,13 @@ function MessagesPanel() {
             <button type="button" onClick={markAllAsRead}>
               خواندن همه
             </button>
-
             <button
               type="button"
-              className="messages-panel__trash-button"
+              className="messages-panel__delete-all-button"
               onClick={deleteAllMessages}
-              aria-label="حذف همه پیام‌ها"
+              disabled={messages.length === 0}
             >
-              🗑
+              ×
             </button>
           </div>
         </div>
@@ -2097,7 +2297,9 @@ function MessagesPanel() {
             onClick={() => setFilter("all")}
           >
             همه پیام‌ها
-            <span>{messages.length}</span>
+            <span className="messages-panel__filter-count">
+              {messages.length}
+            </span>
           </button>
 
           <button
@@ -2108,7 +2310,7 @@ function MessagesPanel() {
             onClick={() => setFilter("unread")}
           >
             خوانده‌نشده
-            <span>{unreadCount}</span>
+            <span className="messages-panel__filter-count">{unreadCount}</span>
           </button>
 
           <button
@@ -2119,7 +2321,9 @@ function MessagesPanel() {
             onClick={() => setFilter("important")}
           >
             مهم
-            <span>{importantCount}</span>
+            <span className="messages-panel__filter-count">
+              {importantCount}
+            </span>
           </button>
         </div>
 
@@ -2134,11 +2338,9 @@ function MessagesPanel() {
               <div className="messages-panel__card-main">
                 <div className="messages-panel__title-row">
                   <h4>{message.title}</h4>
-
                   {!message.isRead && (
                     <span className="messages-panel__unread-badge">جدید</span>
                   )}
-
                   {message.isImportant && (
                     <span className="messages-panel__important-badge">مهم</span>
                   )}
@@ -2152,19 +2354,18 @@ function MessagesPanel() {
                 </div>
               </div>
 
-              <div className="messages-panel__actions">
+              <div className="messages-panel__card-actions messages-panel__actions">
                 <button
                   type="button"
                   className="messages-panel__view-button"
                   onClick={() => openMessage(message.id)}
                 >
-                  مشاهده پیام
+                  مشاهده
                 </button>
-
                 <button
                   type="button"
-                  className="messages-panel__remove-button"
-                  onClick={() => deleteMessage(message.id)}
+                  className="messages-panel__delete-message-button messages-panel__remove-button messages-panel__remove-message"
+                  onClick={() => removeMessage(message.id)}
                   aria-label="حذف پیام"
                 >
                   ×
@@ -2291,9 +2492,17 @@ function ProfilePanel({ profile, onEdit }) {
     <section className="profile-panel">
       <div className="profile-panel__card">
         <div className="profile-panel__hero-card">
-          <div className="profile-panel__avatar profile-panel__avatar--large">
-            {profile.avatarLetter}
-          </div>
+          {profile.avatarPreview ? (
+            <img
+              className="profile-panel__avatar profile-panel__avatar--large"
+              src={profile.avatarPreview}
+              alt={profile.fullName || "پروفایل کاربر"}
+            />
+          ) : (
+            <div className="profile-panel__avatar profile-panel__avatar--large">
+              {profile.avatarLetter}
+            </div>
+          )}
 
           <div>
             <span>پروفایل کاربری</span>
@@ -2308,13 +2517,11 @@ function ProfilePanel({ profile, onEdit }) {
 
         <div className="profile-panel__info-grid">
           <article>
-            <span>نام</span>
-            <strong>{profile.firstName}</strong>
-          </article>
-
-          <article>
-            <span>نام خانوادگی</span>
-            <strong>{profile.lastName}</strong>
+            <span>نام و نام خانوادگی</span>
+            <strong>
+              {profile.fullName ||
+                `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
+            </strong>
           </article>
 
           <article>
@@ -2367,17 +2574,49 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
     }));
   };
 
+  const handleAvatarChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateField("avatarPreview", String(reader.result || ""));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const saveProfile = (event) => {
     event.preventDefault();
 
+    const fullName =
+      formData.fullName ||
+      `${formData.firstName || ""} ${formData.lastName || ""}`.trim();
+
     const updatedProfile = {
       ...formData,
-      fullName: `${formData.firstName} ${formData.lastName}`,
-      avatarLetter: formData.firstName?.[0] || profile.avatarLetter,
+      fullName,
+      avatarLetter:
+        formData.firstName?.[0] ||
+        formData.fullName?.[0] ||
+        profile.avatarLetter,
     };
 
-    onSave(updatedProfile);
-    setMessage("اطلاعات پروفایل با موفقیت ذخیره شد.");
+    try {
+      const savedProfile = onSave(updatedProfile, passwordData);
+      setFormData(savedProfile || updatedProfile);
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setMessage(
+        passwordData.newPassword
+          ? "اطلاعات پروفایل و رمز عبور با موفقیت ذخیره شد."
+          : "اطلاعات پروفایل با موفقیت ذخیره شد.",
+      );
+    } catch (error) {
+      setMessage(error?.message || "ذخیره تغییرات با خطا روبه‌رو شد.");
+    }
   };
 
   return (
@@ -2395,15 +2634,27 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
         </div>
 
         <div className="profile-panel__avatar-edit">
-          <div className="profile-panel__avatar profile-panel__avatar--normal">
-            {formData.avatarLetter}
-          </div>
+          {formData.avatarPreview ? (
+            <img
+              className="profile-panel__avatar profile-panel__avatar--normal"
+              src={formData.avatarPreview}
+              alt={formData.fullName || "تصویر پروفایل"}
+            />
+          ) : (
+            <div className="profile-panel__avatar profile-panel__avatar--normal">
+              {formData.avatarLetter}
+            </div>
+          )}
 
           <div>
             <span>تصویر پروفایل</span>
             <label>
               انتخاب تصویر
-              <input type="file" accept="image/*" />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+              />
             </label>
           </div>
         </div>
@@ -2620,8 +2871,23 @@ function BusinessDashboardPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [recentMessages, setRecentMessages] = useState(INITIAL_RECENT_MESSAGES);
-  const [userProfile, setUserProfile] = useState(BUSINESS_PROFILE);
+  const notificationMenuRef = useRef(null);
+  const [recentMessages, setRecentMessages] = useState(() =>
+    getNotificationsForCurrentUser().slice(0, 3),
+  );
+  const [userProfile, setUserProfile] = useState(() =>
+    getCurrentDashboardProfile(BUSINESS_PROFILE),
+  );
+
+  const saveUserProfile = (nextProfile, passwordData = {}) => {
+    const savedProfile = saveCurrentDashboardProfile(
+      nextProfile,
+      BUSINESS_PROFILE,
+      passwordData,
+    );
+    setUserProfile(savedProfile);
+    return savedProfile;
+  };
   const [favoriteIds, setFavoriteIds] = useState(() =>
     INITIAL_FAVORITES.map((item) => item.opportunityId),
   );
@@ -2629,10 +2895,15 @@ function BusinessDashboardPage() {
     loadStoredCollaborationRequests,
   );
 
+  const allBusinessOpportunities = useMemo(
+    () => getAllBusinessOpportunities(),
+    [contentResetKey],
+  );
+
   const opportunityQueryId = new URLSearchParams(window.location.search).get(
     "opportunity",
   );
-  const opportunityDetail = BUSINESS_OPPORTUNITIES.find(
+  const opportunityDetail = allBusinessOpportunities.find(
     (item) => String(item.id) === opportunityQueryId,
   );
 
@@ -2644,20 +2915,38 @@ function BusinessDashboardPage() {
   const unreadMessagesCount = recentMessages.filter(
     (item) => !item.isRead,
   ).length;
+
+  useEffect(() => {
+    if (!isNotificationOpen) {
+      return undefined;
+    }
+
+    const closeOnOutsideClick = (event) => {
+      if (
+        notificationMenuRef.current &&
+        !notificationMenuRef.current.contains(event.target)
+      ) {
+        setIsNotificationOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+    };
+  }, [isNotificationOpen]);
   const requestedOpportunityIds = collaborationRequests.map(
     (request) => request.opportunityId,
   );
 
   useEffect(() => {
-    window.localStorage.setItem(
-      COLLABORATION_REQUESTS_STORAGE_KEY,
-      JSON.stringify(collaborationRequests),
-    );
-  }, [collaborationRequests]);
+    setCollaborationRequests(loadStoredCollaborationRequests());
+  }, []);
 
   useEffect(() => {
     const handleStorageChange = (event) => {
-      if (event.key !== COLLABORATION_REQUESTS_STORAGE_KEY) {
+      if (event.key !== BUSINESS_REQUESTS_STORAGE_KEY) {
         return;
       }
 
@@ -2682,30 +2971,28 @@ function BusinessDashboardPage() {
   };
 
   const toggleCollaborationRequest = (opportunityId) => {
-    const targetOpportunity = BUSINESS_OPPORTUNITIES.find(
-      (item) => item.id === opportunityId,
+    const targetOpportunity = allBusinessOpportunities.find(
+      (item) => String(item.id) === String(opportunityId),
     );
 
     if (!targetOpportunity) {
       return;
     }
 
-    setCollaborationRequests((currentRequests) => {
-      const alreadyRequested = currentRequests.some(
-        (request) => request.opportunityId === opportunityId,
-      );
+    const existingRequest = collaborationRequests.find(
+      (request) => String(request.opportunityId) === String(opportunityId),
+    );
 
-      if (alreadyRequested) {
-        return currentRequests.filter(
-          (request) => request.opportunityId !== opportunityId,
-        );
-      }
+    if (existingRequest) {
+      deleteBusinessCollaborationRequest(existingRequest.id);
+      setCollaborationRequests(loadStoredCollaborationRequests());
+      return;
+    }
 
-      return [
-        createCollaborationRequest(targetOpportunity),
-        ...currentRequests,
-      ];
-    });
+    addBusinessCollaborationRequest(
+      createCollaborationRequest(targetOpportunity),
+    );
+    setCollaborationRequests(loadStoredCollaborationRequests());
   };
 
   const openOpportunityInNewTab = (opportunityId) => {
@@ -2756,12 +3043,53 @@ function BusinessDashboardPage() {
     resetCurrentContent();
   };
 
-  const markMessageAsRead = (messageId) => {
-    setRecentMessages((currentMessages) =>
-      currentMessages.map((message) =>
-        message.id === messageId ? { ...message, isRead: true } : message,
-      ),
-    );
+  const refreshRecentMessages = () => {
+    setRecentMessages(getNotificationsForCurrentUser().slice(0, 3));
+  };
+
+  const markMessageAsRead = (messageId, event) => {
+    event?.stopPropagation();
+    markNotificationAsRead(messageId);
+    refreshRecentMessages();
+  };
+
+  const markAllRecentMessagesAsRead = (event) => {
+    event?.stopPropagation();
+    markAllNotificationsAsReadForCurrentUser();
+    refreshRecentMessages();
+  };
+
+  const openMessagesCenter = (event) => {
+    event?.stopPropagation();
+    setIsNotificationOpen(false);
+    setActiveSection("messages");
+    setActiveSubItem("");
+    setOpenMenuId("");
+    resetCurrentContent();
+  };
+
+  const openNotificationTarget = (message) => {
+    markNotificationAsRead(message.id);
+    refreshRecentMessages();
+    setIsNotificationOpen(false);
+
+    if (message.sourceType === "business-collaboration-request") {
+      setActiveSection("requests");
+      setActiveSubItem("collaboration-requests");
+      setOpenMenuId("requests");
+      resetCurrentContent();
+      return;
+    }
+
+    if (message.sourceType === "support-ticket") {
+      setActiveSection("requests");
+      setActiveSubItem("support-tickets");
+      setOpenMenuId("requests");
+      resetCurrentContent();
+      return;
+    }
+
+    openInternalPage("messages");
   };
 
   const shouldShowDashboard = activeSection === "dashboard";
@@ -2780,7 +3108,10 @@ function BusinessDashboardPage() {
     return (
       <OpportunityDetailPage
         opportunity={opportunityDetail}
-        isRequested={requestedOpportunityIds.includes(opportunityDetail.id)}
+        opportunities={allBusinessOpportunities}
+        isRequested={requestedOpportunityIds.some(
+          (itemId) => String(itemId) === String(opportunityDetail.id),
+        )}
         onRequestCooperation={() =>
           toggleCollaborationRequest(opportunityDetail.id)
         }
@@ -2884,7 +3215,10 @@ function BusinessDashboardPage() {
           </div>
 
           <div className="innovator-dashboard__topbar-actions">
-            <div className="innovator-dashboard__notification-menu">
+            <div
+              className="innovator-dashboard__notification-menu"
+              ref={notificationMenuRef}
+            >
               <button
                 type="button"
                 className="innovator-dashboard__notification-trigger"
@@ -2903,6 +3237,50 @@ function BusinessDashboardPage() {
                 <div className="innovator-dashboard__notification-dropdown">
                   <div className="innovator-dashboard__notification-header">
                     <strong>پیام‌های اخیر</strong>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={openMessagesCenter}
+                        title="رفتن به پیام‌ها و اعلانات"
+                        style={{
+                          width: "30px",
+                          height: "30px",
+                          border: "0",
+                          borderRadius: "999px",
+                          background: "#e8f8ff",
+                          cursor: "pointer",
+                        }}
+                      >
+                        📨
+                      </button>
+                      <button
+                        type="button"
+                        onClick={markAllRecentMessagesAsRead}
+                        disabled={unreadMessagesCount === 0}
+                        style={{
+                          height: "30px",
+                          border: "0",
+                          borderRadius: "999px",
+                          padding: "0 10px",
+                          color: unreadMessagesCount ? "#0e7ca8" : "#64748b",
+                          background: unreadMessagesCount
+                            ? "#e8f8ff"
+                            : "#e9edf2",
+                          fontFamily: "inherit",
+                          fontSize: "10px",
+                          fontWeight: 900,
+                          cursor: unreadMessagesCount ? "pointer" : "default",
+                        }}
+                      >
+                        خواندن همه
+                      </button>
+                    </div>
                     <small>{unreadMessagesCount} خوانده‌نشده</small>
                   </div>
 
@@ -2915,21 +3293,53 @@ function BusinessDashboardPage() {
                             ? "innovator-dashboard__notification-item--read"
                             : ""
                         }`}
+                        onClick={() => openNotificationTarget(message)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            openNotificationTarget(message);
+                          }
+                        }}
+                        style={{
+                          cursor: "pointer",
+                          border: message.isRead
+                            ? "1px solid #bbf7d0"
+                            : "1px solid transparent",
+                          background: message.isRead ? "#f0fdf4" : undefined,
+                          opacity: message.isRead ? 1 : undefined,
+                        }}
                       >
                         <div>
                           <h4>{message.title}</h4>
-                          <p>{message.time}</p>
+                          <p>{message.sentAt}</p>
                         </div>
 
                         <button
                           type="button"
-                          onClick={() => markMessageAsRead(message.id)}
+                          onClick={(event) =>
+                            markMessageAsRead(message.id, event)
+                          }
                           disabled={message.isRead}
+                          style={
+                            message.isRead
+                              ? { color: "#166534", background: "#dcfce7" }
+                              : undefined
+                          }
                         >
-                          {message.isRead ? "خوانده شد" : "Read"}
+                          {message.isRead ? "خوانده شد" : "خواندن"}
                         </button>
                       </article>
                     ))}
+
+                    {recentMessages.length === 0 && (
+                      <article className="innovator-dashboard__notification-item">
+                        <div>
+                          <h4>اعلان جدیدی ندارید</h4>
+                          <p>همه چیز خوانده شده است.</p>
+                        </div>
+                      </article>
+                    )}
                   </div>
                 </div>
               )}
@@ -2950,9 +3360,19 @@ function BusinessDashboardPage() {
                   <small>نوع کاربر: {userProfile.role}</small>
                 </span>
 
-                <span className="innovator-dashboard__top-avatar">
-                  {userProfile.avatarLetter}
-                </span>
+                {userProfile.avatarPreview ? (
+                  <img
+                    className="innovator-dashboard__top-avatar"
+                    src={userProfile.avatarPreview}
+                    alt={userProfile.fullName || "پروفایل کاربر"}
+                  />
+                ) : (
+                  <span className="innovator-dashboard__top-avatar">
+                    {userProfile.avatarLetter ||
+                      userProfile.fullName?.[0] ||
+                      "ه"}
+                  </span>
+                )}
 
                 <span className="innovator-dashboard__profile-caret">▾</span>
               </button>
@@ -2989,12 +3409,15 @@ function BusinessDashboardPage() {
             key={`dashboard-${contentResetKey}`}
             collaborationRequestsCount={collaborationRequests.length}
             collaborationRequests={collaborationRequests}
+            favoritesCount={favoriteIds.length}
+            opportunities={allBusinessOpportunities}
             onOpenOpportunity={openOpportunityInNewTab}
           />
         ) : shouldShowOpportunities ? (
           <OpportunitiesPanel
             key={`opportunities-${contentResetKey}`}
             favoriteIds={favoriteIds}
+            opportunities={allBusinessOpportunities}
             onToggleFavorite={toggleFavorite}
             onOpenOpportunity={openOpportunityInNewTab}
           />
@@ -3002,6 +3425,7 @@ function BusinessDashboardPage() {
           <FavoritesPanel
             key={`favorites-${contentResetKey}`}
             favoriteIds={favoriteIds}
+            opportunities={allBusinessOpportunities}
             onToggleFavorite={toggleFavorite}
             onOpenOpportunity={openOpportunityInNewTab}
           />
@@ -3027,7 +3451,7 @@ function BusinessDashboardPage() {
           <ProfileEditPanel
             key={`edit-profile-${contentResetKey}`}
             profile={userProfile}
-            onSave={setUserProfile}
+            onSave={saveUserProfile}
             onCancel={() => openInternalPage("profile")}
           />
         ) : (

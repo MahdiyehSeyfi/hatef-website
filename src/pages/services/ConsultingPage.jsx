@@ -257,9 +257,12 @@ function ConsultingPage() {
         </section>
 
         <ContactFormSection
+          id="consulting-request-form"
           title="فرم تماس"
           submitLabel="ثبت درخواست"
-          statusMessage="درخواست مشاوره شما در نسخه نمایشی ثبت شد. ارسال واقعی پس از اتصال به سرور فعال می‌شود."
+          sourceType="service"
+          sourceTitle="خدمات مشاوره"
+          statusMessage="درخواست مشاوره شما ثبت شد و برای بررسی به دبیرخانه ارسال شد."
         />
 
         <section className="service-faq" id="service-faq">

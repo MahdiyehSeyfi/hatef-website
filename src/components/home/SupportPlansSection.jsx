@@ -1,29 +1,141 @@
+import { Link, useNavigate } from "react-router";
+
 import bannerImage from "../../assets/images/banner.png";
+import ViewAllButton from "../common/ViewAllButton";
+
+import {
+  getCurrentUser,
+  getCurrentUserDashboardPath,
+} from "../../services/authService";
+
+import { getCalls, getPublishedCalls } from "../../services/callService";
+import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
+
 import "./SupportPlansSection.css";
 
-const previousPlans = [
-  {
-    id: 1,
-    number: "۳",
-    title: "عنوان برگزیده سال ۱۴۰۴–۱۴۰۵",
-    description:
-      "فراخوان اولین دوره هدایت اعتبارات توسعه فناوری (هاتف) و حمایت از طرح‌های فناورانه",
-  },
-  {
-    id: 2,
-    number: "۳",
-    title: "عنوان برگزیده سال ۱۴۰۴–۱۴۰۵",
-    description:
-      "فراخوان اولین دوره هدایت اعتبارات توسعه فناوری (هاتف) و حمایت از طرح‌های فناورانه",
-  },
-  {
-    id: 3,
-    number: "۳",
-    title: "عنوان برگزیده سال ۱۴۰۴–۱۴۰۵",
-    description:
-      "فراخوان اولین دوره هدایت اعتبارات توسعه فناوری (هاتف) و حمایت از طرح‌های فناورانه",
-  },
-];
+const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+
+function toPersianNumber(value) {
+  return String(value).replace(/\d/g, (digit) => PERSIAN_DIGITS[Number(digit)]);
+}
+
+function getCallPath(call) {
+  return `/research-support/calls/${call.id}`;
+}
+
+function getCallCategory(call) {
+  return call.field ? `با محوریت ${call.field}` : "فراخوان برنامه هاتف";
+}
+
+function getCallDeadline(call) {
+  if (!call.deadlineDate && !call.deadlineTime) {
+    return "مهلت ارسال مشخص نشده است";
+  }
+
+  if (call.deadlineDate && call.deadlineTime) {
+    return `مهلت تا: ${call.deadlineDate} ساعت ${call.deadlineTime}`;
+  }
+
+  return `مهلت تا: ${call.deadlineDate || call.deadlineTime}`;
+}
+
+function getCallStatusLabel(call) {
+  if (call.status === CALL_STATUS.PUBLISHED) {
+    return "در حال دریافت طرح‌ها";
+  }
+
+  return CALL_STATUS_LABELS[call.status] || "وضعیت نامشخص";
+}
+
+function getCallDescription(call) {
+  return (
+    call.description ||
+    call.summary ||
+    call.moreDescription ||
+    "فراخوان برنامه هاتف با هدف حمایت از طرح‌ها و محصولات فناورانه دانشگاهی منتشر شده است."
+  );
+}
+
+function getCallTimeValue(call) {
+  const possibleDateValues = [
+    call.publishedAt,
+    call.updatedAt,
+    call.createdAt,
+    call.startDate,
+    call.deadlineDate,
+  ];
+
+  for (const value of possibleDateValues) {
+    const time = Date.parse(value);
+
+    if (!Number.isNaN(time)) {
+      return time;
+    }
+  }
+
+  return 0;
+}
+
+function sortCallsNewestFirst(calls) {
+  return [...calls].sort((firstCall, secondCall) => {
+    return getCallTimeValue(secondCall) - getCallTimeValue(firstCall);
+  });
+}
+
+function hasCurrentYearFlag(call) {
+  return Boolean(
+    call.isCurrentYear ||
+    call.isCurrentYearField ||
+    call.isCurrentField ||
+    call.currentYear ||
+    call.currentField ||
+    call.showInCurrentFields ||
+    call.isCurrentSupportPlan ||
+    call.isFeatured ||
+    call.featured ||
+    call.currentAxis ||
+    call.isAnnualPriority,
+  );
+}
+
+function getMainCall() {
+  const publishedCalls = sortCallsNewestFirst(getPublishedCalls());
+  const allCalls = sortCallsNewestFirst(getCalls());
+
+  const currentYearPublishedCall = publishedCalls.find(hasCurrentYearFlag);
+
+  if (currentYearPublishedCall) {
+    return currentYearPublishedCall;
+  }
+
+  const currentYearCall = allCalls.find(hasCurrentYearFlag);
+
+  if (currentYearCall) {
+    return currentYearCall;
+  }
+
+  return publishedCalls[0] || allCalls[0] || null;
+}
+
+function getPreviousCalls(mainCall) {
+  if (!mainCall) {
+    return [];
+  }
+
+  return sortCallsNewestFirst(getCalls())
+    .filter((call) => call.id !== mainCall.id)
+    .slice(0, 3);
+}
+
+function getCallNumber(call, calls) {
+  const index = calls.findIndex((item) => item.id === call.id);
+
+  if (index === -1) {
+    return "۱";
+  }
+
+  return toPersianNumber(index + 1);
+}
 
 function SectionSubheading({ title, warning = false }) {
   return (
@@ -43,7 +155,63 @@ function SectionSubheading({ title, warning = false }) {
   );
 }
 
+function EmptySupportPlans() {
+  return (
+    <section className="support-plans" id="calls">
+      <div className="container">
+        <header className="support-plans__header">
+          <h2>طرح حمایتی هاتف</h2>
+          <span className="support-plans__header-accent" />
+        </header>
+
+        <SectionSubheading title="محورهای سال جاری" />
+
+        <p
+          style={{
+            width: "min(100%, var(--support-content-width))",
+            margin: "28px auto 0",
+            color: "#454d58",
+            fontSize: "14px",
+            lineHeight: "2",
+            textAlign: "right",
+          }}
+        >
+          هنوز فراخوانی توسط دبیرخانه ثبت یا منتشر نشده است.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 function SupportPlansSection() {
+  const navigate = useNavigate();
+
+  const allCalls = getCalls();
+  const mainCall = getMainCall();
+
+  if (!mainCall) {
+    return <EmptySupportPlans />;
+  }
+
+  const previousCalls = getPreviousCalls(mainCall);
+  const mainCallPath = getCallPath(mainCall);
+  const mainCallNumber = getCallNumber(mainCall, allCalls);
+
+  const handleSupportRequestClick = (event) => {
+    event.preventDefault();
+
+    const currentUser = getCurrentUser();
+
+    if (!currentUser) {
+      navigate("/auth");
+      return;
+    }
+
+    const dashboardPath = getCurrentUserDashboardPath();
+
+    navigate(dashboardPath && dashboardPath !== "/" ? dashboardPath : "/");
+  };
+
   return (
     <section className="support-plans" id="calls">
       <div className="container">
@@ -59,29 +227,32 @@ function SupportPlansSection() {
             <img
               className="current-plan__image"
               src={bannerImage}
-              alt="فراخوان حمایت از توسعه فناوری"
+              alt={mainCall.title}
             />
 
             <div className="current-plan__overlay">
               <div className="current-plan__overlay-content">
-                <h3>فراخوان اولین دوره هدایت اعتبارات توسعه فناوری (هاتف)</h3>
+                <h3>{mainCall.title}</h3>
 
-                <p>
-                  فراخوان اولین دوره هدایت اعتبارات توسعه فناوری و حمایت از
-                  توسعه طرح‌ها و محصولات فناورانه دانشگاهی
-                </p>
+                <p>{getCallDescription(mainCall)}</p>
 
                 <div className="current-plan__overlay-actions">
                   <a
-                    href="#call-registration"
+                    href={mainCallPath}
                     className="current-plan__overlay-primary"
+                    onClick={handleSupportRequestClick}
                   >
                     شرکت در هاتف
                   </a>
 
                   <div className="current-plan__overlay-secondary-actions">
-                    <a href="#registration-guide">راهنمای ثبت‌نام</a>
-                    <a href="#eligibility-conditions">شرایط احراز</a>
+                    <Link to="/research-support/guide-eligibility#registration-guide">
+                      راهنمای ثبت‌نام
+                    </Link>
+
+                    <Link to="/research-support/guide-eligibility#eligibility">
+                      شرایط احراز
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -90,23 +261,25 @@ function SupportPlansSection() {
 
           <div className="current-plan__information">
             <div className="current-plan__title">
-              <span className="current-plan__number">۲</span>
+              <span className="current-plan__number">{mainCallNumber}</span>
 
-              <a href="#call-details" className="current-plan__title-link">
-                فراخوان اولین دوره هدایت اعتبارات توسعه فناوری (هاتف) ۱۴۰۴–۱۴۰۵
-              </a>
+              <Link to={mainCallPath} className="current-plan__title-link">
+                {mainCall.title}
+              </Link>
 
               <span className="current-plan__category">
-                با محوریت هوش مصنوعی
+                {getCallCategory(mainCall)}
               </span>
             </div>
 
             <div className="current-plan__details">
               <span className="current-plan__deadline">
-                مهلت تا: ۱۴۰۵/۰۵/۰۵
+                {getCallDeadline(mainCall)}
               </span>
 
-              <span className="current-plan__status">در حال دریافت طرح‌ها</span>
+              <span className="current-plan__status">
+                {getCallStatusLabel(mainCall)}
+              </span>
             </div>
           </div>
         </article>
@@ -115,53 +288,70 @@ function SupportPlansSection() {
           <SectionSubheading title="فراخوان‌های دوره‌های پیشین" warning />
         </div>
 
-        <div className="previous-plans">
-          {previousPlans.map((plan) => (
-            <article className="previous-plan-card" key={plan.id}>
-              <a
-                href="#previous-call-details"
-                className="previous-plan-card__media"
-              >
-                <img
-                  className="previous-plan-card__image"
-                  src={bannerImage}
-                  alt={plan.title}
-                />
+        {previousCalls.length > 0 ? (
+          <div className="previous-plans">
+            {previousCalls.map((call) => {
+              const previousCallPath = getCallPath(call);
+              const previousCallNumber = getCallNumber(call, allCalls);
 
-                <div className="previous-plan-card__overlay">
-                  <h4>{plan.title}</h4>
-                  <p>{plan.description}</p>
+              return (
+                <article className="previous-plan-card" key={call.id}>
+                  <Link
+                    to={previousCallPath}
+                    className="previous-plan-card__media"
+                  >
+                    <img
+                      className="previous-plan-card__image"
+                      src={bannerImage}
+                      alt={call.title}
+                    />
 
-                  <span className="previous-plan-card__overlay-button">
-                    مشاهده
-                    <span aria-hidden="true">←</span>
-                  </span>
-                </div>
-              </a>
+                    <div className="previous-plan-card__overlay">
+                      <h4>{call.title}</h4>
+                      <p>{getCallDescription(call)}</p>
 
-              <div className="previous-plan-card__body">
-                <a
-                  href="#previous-call-details"
-                  className="previous-plan-card__title"
-                >
-                  <span className="previous-plan-card__number">
-                    {plan.number}
-                  </span>
+                      <span className="previous-plan-card__overlay-button">
+                        مشاهده جزئیات
+                        <span aria-hidden="true">←</span>
+                      </span>
+                    </div>
+                  </Link>
 
-                  <span>{plan.title}</span>
-                </a>
+                  <div className="previous-plan-card__body">
+                    <Link
+                      to={previousCallPath}
+                      className="previous-plan-card__title"
+                    >
+                      <span className="previous-plan-card__number">
+                        {previousCallNumber}
+                      </span>
 
-                <p>{plan.description}</p>
-              </div>
-            </article>
-          ))}
-        </div>
+                      <span>{call.title}</span>
+                    </Link>
+
+                    <p>{getCallDescription(call)}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <p
+            style={{
+              width: "min(100%, var(--support-content-width))",
+              margin: "30px auto 0",
+              color: "#454d58",
+              fontSize: "14px",
+              lineHeight: "2",
+              textAlign: "right",
+            }}
+          >
+            هنوز فراخوانی برای دوره‌های پیشین ثبت نشده است.
+          </p>
+        )}
 
         <div className="support-plans__footer">
-          <a href="#all-calls" className="support-plans__view-all">
-            مشاهده همه
-            <span aria-hidden="true">←</span>
-          </a>
+          <ViewAllButton to="/research-support/calls#previous-calls" />
         </div>
       </div>
     </section>

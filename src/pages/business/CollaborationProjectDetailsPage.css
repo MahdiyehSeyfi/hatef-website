@@ -832,3 +832,131 @@
     grid-template-columns: 270px minmax(0, 1fr);
   }
 }
+
+/* Dynamic site-publication preview support */
+.collab-project-details__summary-grid--dynamic {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin: 64px 0 56px;
+}
+
+.collab-project-details__summary-grid--dynamic article {
+  min-height: 108px;
+  padding: 18px 16px;
+}
+
+.collab-project-details__summary-grid--dynamic strong {
+  font-size: 25px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.collab-project-details__summary-grid--dynamic span {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.collab-project-details__rich-text {
+  color: #303942;
+  font-size: 14px;
+  line-height: 2.35;
+  text-align: justify;
+  overflow-wrap: anywhere;
+}
+
+.collab-project-details__rich-text p {
+  margin: 0 0 16px;
+}
+
+.collab-project-details__rich-text h1,
+.collab-project-details__rich-text h2,
+.collab-project-details__rich-text h3 {
+  margin: 0 0 16px;
+  color: #111111;
+  font-weight: 900;
+  line-height: 1.8;
+}
+
+.collab-project-details__rich-text a {
+  color: var(--color-primary);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.collab-project-details__rich-text ul,
+.collab-project-details__rich-text ol {
+  margin: 0 0 16px;
+  padding-right: 22px;
+}
+
+.collab-project-details__report-download {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  color: #ffffff;
+  background-color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.8;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.collab-project-details__report-empty-text {
+  color: #7a828a;
+}
+
+@media (max-width: 1280px) {
+  .collab-project-details__summary-grid--dynamic {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* v7 related projects: match original card proportions, 4 cards per row */
+.collab-project-details__related-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 26px;
+}
+
+.collab-project-details__related-grid a {
+  border-radius: 0;
+}
+
+.collab-project-details__related-grid img {
+  height: 178px;
+}
+
+.collab-project-details__related-grid span {
+  margin: 16px 18px 8px;
+}
+
+.collab-project-details__related-grid h3 {
+  min-height: 70px;
+  padding: 0 18px 18px;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+@media (max-width: 1450px) {
+  .collab-project-details__related-grid {
+    gap: 22px;
+  }
+
+  .collab-project-details__related-grid img {
+    height: 158px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .collab-project-details__related-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

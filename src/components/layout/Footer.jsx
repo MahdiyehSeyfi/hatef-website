@@ -1,16 +1,44 @@
+import { Link } from "react-router";
+
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
+
 import "./Footer.css";
 
-const firstLinks = [
-  { label: "فراخوان‌ها", href: "#calls" },
-  { label: "آیین‌نامه‌ها", href: "/documents/regulations" },
-  { label: "فرم‌ها", href: "/documents/forms" },
-  { label: "طرح‌های برگزیده", href: "#selected-projects" },
-];
-
-const secondLinks = [
-  { label: "درباره ما", href: "#about" },
-  { label: "تماس با ما", href: "/contact" },
+const footerColumns = [
+  {
+    title: "حمایت پژوهشی",
+    links: [
+      { label: "فراخوان‌های حمایت", to: "/research-support/calls" },
+      { label: "محورهای سال جاری", to: "/research-support/current-fields" },
+      {
+        label: "راهنمای ثبت‌نام",
+        to: "/research-support/guide-eligibility#registration-guide",
+      },
+      {
+        label: "فرآیند داوری و ارزیابی",
+        to: "/research-support/review-evaluation",
+      },
+    ],
+  },
+  {
+    title: "همکاری تجاری",
+    links: [
+      { label: "معرفی همکاری تجاری", to: "/business/collaboration" },
+      { label: "فرصت‌های همکاری", to: "/business/opportunities" },
+      {
+        label: "پروژه‌های موفق و دستاوردها",
+        to: "/business/successful-projects",
+      },
+    ],
+  },
+  {
+    title: "رویدادها و دوره‌ها",
+    links: [
+      { label: "همه رویدادها", to: "/events" },
+      { label: "آرشیو رویدادها", to: "/events/all" },
+      { label: "همه دوره‌ها", to: "/courses/all" },
+    ],
+  },
 ];
 
 function InstagramIcon() {
@@ -130,40 +158,54 @@ function Footer() {
   return (
     <footer className="site-footer">
       <div className="site-footer__overlay" />
+      <span className="site-footer__orb site-footer__orb--first" />
+      <span className="site-footer__orb site-footer__orb--second" />
 
       <div className="container site-footer__content">
-        <div className="site-footer__links">
-          <ul>
-            {firstLinks.map((link) => (
-              <li key={link.label}>
-                <a href={link.href}>
-                  <span />
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
+        <div className="site-footer__brand">
+          <div className="site-footer__logo-frame">
+            <img
+              className="site-footer__logo"
+              src={universityLogo}
+              alt="لوگوی دانشگاه تهران"
+            />
+          </div>
 
-          <ul>
-            {secondLinks.map((link) => (
-              <li key={link.label}>
-                <a href={link.href}>
-                  <span />
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="site-footer__contact">
-          <h3>دبیرخانه برنامه هدایت اعتبارات توسعه فناوری (هاتف)</h3>
+          <h2>برنامه هاتف</h2>
 
           <p>
-            <span>پست الکترونیکی:</span>
-
-            <a href="mailto:uthatef@ut.ac.ir">uthatef@ut.ac.ir</a>
+            هدایت اعتبارات توسعه فناوری با هدف اتصال دانشگاه، صنعت و زیست‌بوم
+            نوآوری
           </p>
+        </div>
+
+        <nav className="site-footer__links" aria-label="لینک‌های فوتر">
+          {footerColumns.map((column) => (
+            <div className="site-footer__link-column" key={column.title}>
+              <h3>{column.title}</h3>
+
+              <ul>
+                {column.links.map((link) => (
+                  <li key={link.label}>
+                    <Link to={link.to}>
+                      <span />
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
+
+        <div className="site-footer__contact-card">
+          <span className="site-footer__contact-badge">دبیرخانه هاتف</span>
+
+          <h3>ارتباط با برنامه هدایت اعتبارات توسعه فناوری</h3>
+
+          <a className="site-footer__email" href="mailto:uthatef@ut.ac.ir">
+            uthatef@ut.ac.ir
+          </a>
 
           <div className="site-footer__socials" aria-label="شبکه‌های اجتماعی">
             {socialLinks.map(({ id, label, href, Icon }) => (
@@ -178,16 +220,12 @@ function Footer() {
             ))}
           </div>
         </div>
+      </div>
 
-        <div className="site-footer__brand">
-          <img
-            className="site-footer__logo"
-            src={universityLogo}
-            alt="لوگوی دانشگاه تهران"
-          />
+      <div className="container site-footer__bottom">
+        <p>کلیه حقوق متعلق به دانشگاه تهران است.</p>
 
-          <p>کلیه حقوق متعلق به دانشگاه تهران است.</p>
-        </div>
+        <Link to="/auth">ورود به سامانه</Link>
       </div>
     </footer>
   );

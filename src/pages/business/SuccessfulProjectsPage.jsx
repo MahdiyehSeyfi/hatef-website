@@ -3,6 +3,7 @@ import { Link } from "react-router";
 
 import bannerImage from "../../assets/images/banner.png";
 import { allCollaborationProjects } from "../../data/collaborationProjectsData";
+import { getPublishedSuccessfulProjectItems } from "../../services/projectPublicationService";
 
 import "./SuccessfulProjectsPage.css";
 
@@ -283,6 +284,60 @@ function ProjectsSection() {
   );
 }
 
+function PublishedIntroducedProjectsSection() {
+  const [visibleCount, setVisibleCount] = useState(4);
+  const publishedProjects = getPublishedSuccessfulProjectItems().map(
+    (project) => ({
+      ...project,
+      successYear: project.date || "ثبت شده",
+      successResult: project.summary || "طرح منتشرشده توسط کمیته هاتف",
+    }),
+  );
+
+  const visibleProjects = publishedProjects.slice(0, visibleCount);
+  const hasMore = visibleCount < publishedProjects.length;
+
+  if (!publishedProjects.length) {
+    return null;
+  }
+
+  return (
+    <section
+      className="successful-projects__section"
+      id="introduced-successful-projects"
+    >
+      <div className="successful-projects__container">
+        <SectionHeading
+          title="طرح‌های منتشرشده هاتف"
+          subtitle="طرح‌هایی که پس از تکمیل اطلاعات توسط فناور و تایید کمیته در بخش پروژه‌ها و دستاوردها منتشر شده‌اند."
+        />
+
+        <div className="successful-projects__cards">
+          {visibleProjects.map((project) => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+        </div>
+
+        {hasMore && (
+          <div className="successful-projects__more-wrap">
+            <button
+              type="button"
+              className="successful-projects__more"
+              onClick={() =>
+                setVisibleCount((current) =>
+                  Math.min(current + 4, publishedProjects.length),
+                )
+              }
+            >
+              مشاهده بیشتر
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function SuccessArticle() {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -360,6 +415,8 @@ function SuccessfulProjectsPage() {
       <AchievementsSection />
 
       <ProjectsSection />
+
+      <PublishedIntroducedProjectsSection />
 
       <SuccessArticle />
     </main>

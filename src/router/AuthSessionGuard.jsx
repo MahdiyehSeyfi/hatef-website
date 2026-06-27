@@ -9,7 +9,15 @@ function AuthSessionGuard() {
   useEffect(() => {
     function handleDocumentClick(event) {
       const logoutElement = event.target.closest?.(
-        "[data-auth-logout='true'], .innovator-dashboard__profile-logout",
+        [
+          "[data-auth-logout='true']",
+          ".innovator-dashboard__profile-logout",
+          ".business-dashboard__profile-logout",
+          ".reviewer-dashboard__profile-logout",
+          ".instructor-dashboard__profile-logout",
+          ".committee-dashboard__profile-logout",
+          ".committee-secretariat-dashboard__profile-logout",
+        ].join(", "),
       );
 
       if (!logoutElement) {
@@ -17,8 +25,10 @@ function AuthSessionGuard() {
       }
 
       event.preventDefault();
+      event.stopPropagation();
+
       logoutUser();
-      navigate("/auth", { replace: true });
+      navigate("/", { replace: true });
     }
 
     document.addEventListener("click", handleDocumentClick);

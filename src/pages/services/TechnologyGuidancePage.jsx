@@ -255,9 +255,12 @@ function TechnologyGuidancePage() {
         </section>
 
         <ContactFormSection
+          id="technology-guidance-request-form"
           title="فرم تماس"
           submitLabel="ثبت درخواست"
-          statusMessage="درخواست شما در نسخه نمایشی ثبت شد. ارسال واقعی پس از اتصال به سرور فعال می‌شود."
+          sourceType="service"
+          sourceTitle="راهبری و هدایت فناور"
+          statusMessage="درخواست راهبری و هدایت فناور شما ثبت شد و برای بررسی به دبیرخانه ارسال شد."
         />
 
         <section className="service-faq" id="service-faq">

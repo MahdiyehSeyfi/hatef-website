@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 import searchIcon from "../../assets/icons/search.svg";
+
+import {
+  getCurrentUser,
+  getCurrentUserDashboardPath,
+} from "../../services/authService";
 
 import "./Header.css";
 
@@ -392,12 +397,85 @@ function NavigationItem({ item, nested = false, onNavigate }) {
   );
 }
 
+function getUserFullName(user = {}) {
+  const fullName = String(user.fullName || user.name || "").trim();
+
+  if (fullName) {
+    return fullName;
+  }
+
+  return `${user.firstName || ""} ${user.lastName || ""}`.trim();
+}
+
+function getUserAvatarLetter(user = {}) {
+  const fullName = getUserFullName(user);
+  return user.avatarLetter || user.firstName?.[0] || fullName?.[0] || "ک";
+}
+
+function AccountMenuLink({ currentUser, onNavigate }) {
+  const dashboardPath = currentUser ? getCurrentUserDashboardPath() : "/auth";
+
+  if (!currentUser) {
+    return (
+      <SmartLink
+        href="/auth"
+        className="site-header__login"
+        onClick={onNavigate}
+      >
+        ورود | ثبت‌نام
+      </SmartLink>
+    );
+  }
+
+  const fullName = getUserFullName(currentUser) || "حساب کاربری";
+  const avatarPreview = currentUser.avatarPreview || currentUser.avatar || "";
+
+  return (
+    <SmartLink
+      href={dashboardPath}
+      className="site-header__login site-header__account"
+      onClick={onNavigate}
+      aria-label={`ورود به حساب کاربری ${fullName}`}
+      title={fullName}
+    >
+      <span className="site-header__account-avatar">
+        {avatarPreview ? (
+          <img src={avatarPreview} alt="" />
+        ) : (
+          <span>{getUserAvatarLetter(currentUser)}</span>
+        )}
+      </span>
+
+      <span className="site-header__account-name">{fullName}</span>
+    </SmartLink>
+  );
+}
+
 function Header() {
   const navigate = useNavigate();
 
+  const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isMenuLocked, setIsMenuLocked] = useState(false);
+
+  useEffect(() => {
+    const refreshCurrentUser = () => {
+      setCurrentUser(getCurrentUser());
+    };
+
+    refreshCurrentUser();
+
+    window.addEventListener("storage", refreshCurrentUser);
+    window.addEventListener("focus", refreshCurrentUser);
+    window.addEventListener("hatef-auth-change", refreshCurrentUser);
+
+    return () => {
+      window.removeEventListener("storage", refreshCurrentUser);
+      window.removeEventListener("focus", refreshCurrentUser);
+      window.removeEventListener("hatef-auth-change", refreshCurrentUser);
+    };
+  }, []);
 
   const normalizedQuery = searchQuery.trim();
 
@@ -505,13 +583,10 @@ function Header() {
               <img src={searchIcon} alt="" />
             </button>
 
-            <SmartLink
-              href="/auth"
-              className="site-header__login"
-              onClick={closeNavigationMenu}
-            >
-              ورود | ثبت‌نام
-            </SmartLink>
+            <AccountMenuLink
+              currentUser={currentUser}
+              onNavigate={closeNavigationMenu}
+            />
           </div>
         </div>
       </header>

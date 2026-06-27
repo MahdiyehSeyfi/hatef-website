@@ -7,6 +7,10 @@ import {
   newProjects,
   shiningProjects,
 } from "../../data/collaborationProjectsData";
+import {
+  getPublishedSuccessfulProjectItems,
+  SITE_PUBLICATION_DISPLAY_GROUPS,
+} from "../../services/projectPublicationService";
 
 import "./CollaborationOpportunitiesPage.css";
 
@@ -15,6 +19,32 @@ const articleParagraphs = [
   "طرح‌های معرفی‌شده در این صفحه بر اساس وضعیت توسعه، آمادگی برای همکاری، ظرفیت تجاری‌سازی و امکان جذب سرمایه یا شریک صنعتی دسته‌بندی شده‌اند.",
   "در بخش طرح‌های درخشان، پروژه‌هایی نمایش داده می‌شوند که از نظر بلوغ، کیفیت و ظرفیت همکاری در وضعیت مناسب‌تری قرار دارند. طرح‌های جدید، فرصت‌هایی هستند که به‌تازگی وارد مسیر معرفی شده‌اند و طرح‌های در حال رشد نیز پروژه‌هایی‌اند که در مسیر تکمیل، توسعه بازار یا جذب همکار قرار دارند.",
 ];
+
+const INTRODUCED_GROUPS = {
+  shining: SITE_PUBLICATION_DISPLAY_GROUPS[0],
+  newest: SITE_PUBLICATION_DISPLAY_GROUPS[1],
+  growing: SITE_PUBLICATION_DISPLAY_GROUPS[2],
+};
+
+function projectBelongsToGroup(project, groupTitle) {
+  if (Array.isArray(project.displayGroups)) {
+    return project.displayGroups.includes(groupTitle);
+  }
+
+  return project.group === groupTitle || project.badge === groupTitle;
+}
+
+function mergeGroupProjects(dynamicProjects, groupTitle, staticProjects) {
+  const introducedProjects = dynamicProjects
+    .filter((project) => projectBelongsToGroup(project, groupTitle))
+    .map((project) => ({
+      ...project,
+      badge: groupTitle,
+      button: project.button || "مشاهده جزئیات",
+    }));
+
+  return [...introducedProjects, ...staticProjects];
+}
 
 function SectionHeading({ title, subtitle }) {
   return (
@@ -140,6 +170,27 @@ function OpportunitiesArticle() {
 }
 
 function CollaborationOpportunitiesPage() {
+  const introducedProjects = getPublishedSuccessfulProjectItems();
+  const shiningGroupProjects = mergeGroupProjects(
+    introducedProjects,
+    INTRODUCED_GROUPS.shining,
+    shiningProjects,
+  );
+  const newGroupProjects = mergeGroupProjects(
+    introducedProjects,
+    INTRODUCED_GROUPS.newest,
+    newProjects,
+  );
+  const growingGroupProjects = mergeGroupProjects(
+    introducedProjects,
+    INTRODUCED_GROUPS.growing,
+    growingProjects,
+  );
+  const totalProjects =
+    shiningGroupProjects.length +
+    newGroupProjects.length +
+    growingGroupProjects.length;
+
   return (
     <main className="collab-opportunities">
       <section className="collab-opportunities__hero">
@@ -167,7 +218,7 @@ function CollaborationOpportunitiesPage() {
 
           <div className="collab-opportunities__hero-stats">
             <div>
-              <strong>۱۲</strong>
+              <strong>{totalProjects}</strong>
               <span>طرح قابل همکاری</span>
             </div>
 
@@ -188,21 +239,21 @@ function CollaborationOpportunitiesPage() {
         id="shining-projects"
         title="طرح‌های درخشان"
         subtitle="طرح‌هایی با ظرفیت بالاتر برای همکاری، سرمایه‌گذاری یا تجاری‌سازی سریع‌تر."
-        projects={shiningProjects}
+        projects={shiningGroupProjects}
       />
 
       <ProjectSection
         id="new-projects"
         title="طرح‌های جدید"
         subtitle="فرصت‌هایی که به‌تازگی وارد مسیر معرفی، بررسی و توسعه همکاری شده‌اند."
-        projects={newProjects}
+        projects={newGroupProjects}
       />
 
       <ProjectSection
         id="growing-projects"
         title="طرح‌های در حال رشد"
         subtitle="طرح‌هایی که در مسیر تکمیل، توسعه بازار، جذب همکار یا ارتقای محصول قرار دارند."
-        projects={growingProjects}
+        projects={growingGroupProjects}
       />
 
       <OpportunitiesArticle />

@@ -1,10 +1,29 @@
-import { useEffect, useState } from "react";
-import { Link, Navigate, useParams } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Link,
+  Navigate,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router";
 
 import ActivitiesCarousel from "../../components/activities/ActivitiesCarousel";
 import ExpandableArticle from "../../components/activities/ExpandableArticle";
 
-import { courseItems, getCourseById } from "../../data/activitiesData";
+import {
+  getPublicCourseById,
+  getPublicCourseItems,
+  isPreviewAllowedForInstructorActivity,
+} from "../../services/publicActivityService";
+
+import {
+  addActivityRegistration,
+  consumePendingActivityRegistrationForActivity,
+  getActivityRegistrationStats,
+  isRegisteredForActivity,
+  savePendingActivityRegistration,
+} from "../../services/activityRegistrationService";
+import { getCurrentUser } from "../../services/authService";
 
 import facebookIcon from "../../assets/icons/contact/facebook.svg";
 import instagramIcon from "../../assets/icons/contact/instagram.svg";
@@ -139,40 +158,7 @@ function CheckIcon() {
   );
 }
 
-const courseMeta = [
-  {
-    id: 1,
-    title: "مدت دوره",
-    value: "۶ هفته",
-    Icon: ClockIcon,
-  },
-  {
-    id: 2,
-    title: "تاریخ برگزاری",
-    value: "۱۴۰۵/۰۵/۰۵",
-    Icon: CalendarIcon,
-  },
-  {
-    id: 3,
-    title: "نوع برگزاری",
-    value: "حضوری",
-    Icon: LocationIcon,
-  },
-  {
-    id: 4,
-    title: "سطح دوره",
-    value: "پیشرفته",
-    Icon: LevelIcon,
-  },
-  {
-    id: 5,
-    title: "ظرفیت دوره",
-    value: "۲۰ نفر",
-    Icon: UsersIcon,
-  },
-];
-
-const learningOutcomes = [
+const defaultLearningOutcomes = [
   {
     id: 1,
     title: "طراحی برنامه مدیریت سبز",
@@ -200,7 +186,7 @@ const learningOutcomes = [
   },
 ];
 
-const courseModules = [
+const defaultCourseModules = [
   {
     id: 1,
     title: "بخش اول: مبانی و اصول مدیریت سبز",
@@ -221,7 +207,7 @@ const courseModules = [
   },
 ];
 
-const courseBenefits = [
+const defaultCourseBenefits = [
   {
     id: 1,
     title: "محتوای کاربردی",
@@ -244,15 +230,9 @@ const courseBenefits = [
     title: "گواهی پایان دوره",
     description: "پس از تکمیل دوره و پروژه نهایی، گواهی شرکت صادر می‌شود.",
   },
-  {
-    id: 5,
-    title: "شبکه‌سازی حرفه‌ای",
-    description:
-      "فرصتی برای ارتباط با پژوهشگران، مدیران و فعالان فناوری فراهم می‌شود.",
-  },
 ];
 
-const frequentlyAskedQuestions = [
+const defaultFrequentlyAskedQuestions = [
   {
     id: 1,
     title: "آیا برای شرکت در دوره پیش‌نیاز خاصی وجود دارد؟",
@@ -280,55 +260,216 @@ const articleParagraphs = [
 ];
 
 const socialLinks = [
-  {
-    id: 1,
-    label: "فیسبوک",
-    icon: facebookIcon,
-  },
-  {
-    id: 2,
-    label: "واتساپ",
-    icon: whatsappIcon,
-  },
-  {
-    id: 3,
-    label: "توییتر",
-    icon: twitterIcon,
-  },
-  {
-    id: 4,
-    label: "اینستاگرام",
-    icon: instagramIcon,
-  },
-  {
-    id: 5,
-    label: "تلگرام",
-    icon: telegramIcon,
-  },
+  { id: 1, label: "فیسبوک", icon: facebookIcon },
+  { id: 2, label: "واتساپ", icon: whatsappIcon },
+  { id: 3, label: "توییتر", icon: twitterIcon },
+  { id: 4, label: "اینستاگرام", icon: instagramIcon },
+  { id: 5, label: "تلگرام", icon: telegramIcon },
 ];
+
+function getStatusLabel(status) {
+  if (status === "registering") return "در حال ثبت‌نام";
+  if (status === "ongoing") return "در حال برگزاری";
+  if (status === "past") return "برگزار شده";
+  return "در حال ثبت‌نام";
+}
+
+function getActionLabel(status) {
+  if (status === "registering") return "شرکت در این دوره";
+  if (status === "ongoing") return "مشاهده اطلاعات دوره";
+  return "مشاهده گزارش دوره";
+}
+
+function splitParagraphs(value, fallbackParagraphs = []) {
+  const paragraphs = String(value || "")
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return paragraphs.length ? paragraphs : fallbackParagraphs;
+}
+
+function normalizeItems(items, fallbackItems) {
+  return Array.isArray(items) && items.length ? items : fallbackItems;
+}
+
+function getItemTitle(item, fallback = "عنوان") {
+  return item.title || item.question || item.name || fallback;
+}
+
+function getItemDescription(item, fallback = "") {
+  return (
+    item.description || item.content || item.answer || item.role || fallback
+  );
+}
+
+function createInitials(name) {
+  return (
+    String(name || "مدرس")
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join(" ") || "م"
+  );
+}
+
+function getCapacityLabel(capacity) {
+  return capacity ? `${capacity} نفر` : "تعیین نشده";
+}
+
+function getRegistrationMessage(reason) {
+  const messageMap = {
+    created: "ثبت‌نام شما با موفقیت ثبت شد.",
+    duplicate: "شما قبلاً برای این دوره ثبت‌نام کرده‌اید.",
+    capacity_full: "ظرفیت این دوره تکمیل شده است.",
+    login_required: "برای ثبت‌نام ابتدا وارد حساب کاربری شوید.",
+    activity_not_found: "دوره موردنظر پیدا نشد.",
+  };
+
+  return messageMap[reason] || "ثبت‌نام انجام نشد. لطفاً دوباره تلاش کنید.";
+}
 
 function CourseDetailsPage() {
   const { courseId } = useParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isPreviewMode = searchParams.get("preview") === "committee";
+  const includePreview =
+    isPreviewMode && isPreviewAllowedForInstructorActivity();
 
-  const course = getCourseById(courseId);
+  const course = getPublicCourseById(courseId, { includePreview });
+  const currentUser = getCurrentUser();
 
   const [openModule, setOpenModule] = useState(0);
   const [openQuestion, setOpenQuestion] = useState(null);
+  const [registrationNotice, setRegistrationNotice] = useState("");
+  const [registrationVersion, setRegistrationVersion] = useState(0);
 
   useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [courseId]);
+
+  useEffect(() => {
+    if (!registrationNotice) return undefined;
+    const timer = window.setTimeout(() => setRegistrationNotice(""), 4200);
+    return () => window.clearTimeout(timer);
+  }, [registrationNotice]);
+
+  useEffect(() => {
+    if (!course || !currentUser || isPreviewMode) {
+      return;
+    }
+
+    if (!consumePendingActivityRegistrationForActivity(course)) {
+      return;
+    }
+
+    const result = addActivityRegistration(course);
+    setRegistrationNotice(getRegistrationMessage(result.reason));
+
+    if (result.success) {
+      setRegistrationVersion((current) => current + 1);
+    }
+  }, [course, currentUser, isPreviewMode]);
+
+  const registrationStats = useMemo(
+    () => getActivityRegistrationStats(course || {}),
+    [course, registrationVersion],
+  );
+  const alreadyRegistered = course ? isRegisteredForActivity(course) : false;
+  const canRegister =
+    course?.status === "registering" &&
+    !isPreviewMode &&
+    !registrationStats.isFull;
 
   if (!course) {
     return <Navigate to="/courses/all" replace />;
   }
 
-  const relatedCourses = courseItems
+  const handleCourseRegistration = () => {
+    if (!currentUser) {
+      savePendingActivityRegistration(course, `/courses/${course.id}`);
+      navigate("/auth");
+      return;
+    }
+
+    const result = addActivityRegistration(course);
+
+    setRegistrationNotice(getRegistrationMessage(result.reason));
+
+    if (result.success) {
+      setRegistrationVersion((current) => current + 1);
+    }
+  };
+
+  const allCourses = getPublicCourseItems({ includePreview });
+  const relatedCourses = allCourses
     .filter((item) => item.id !== course.id)
     .slice(0, 8);
+
+  const statusLabel = getStatusLabel(course.status);
+  const actionLabel = getActionLabel(course.status);
+  const summaryParagraphs = splitParagraphs(course.summary, [
+    "این دوره با هدف توسعه مهارت‌های کاربردی در حوزه مدیریت فناوری، توسعه پایدار و تجاری‌سازی دستاوردهای دانشگاهی طراحی شده است.",
+    "شرکت‌کنندگان در طول دوره با تمرین‌های عملی، مطالعات موردی و پروژه‌های واقعی آشنا خواهند شد.",
+  ]);
+  const introParagraphs = splitParagraphs(course.introText, [
+    "این دوره بر موضوعات کاربردی مدیریت سبز، بهینه‌سازی منابع، توسعه فناوری‌های دوستدار محیط زیست و طراحی راهکارهای قابل اجرا تمرکز دارد.",
+    "شرکت‌کنندگان می‌آموزند چگونه یک مسئله واقعی را تحلیل کرده و برای آن برنامه‌ای مرحله‌بندی‌شده، قابل سنجش و اجرایی تدوین کنند.",
+  ]);
+  const courseAudiences = normalizeItems(course.audiences, [
+    { title: "پژوهشگران" },
+    { title: "دانشجویان" },
+    { title: "مدیران" },
+    { title: "فعالان فناوری" },
+  ]);
+  const learningOutcomes = normalizeItems(
+    course.outcomes,
+    defaultLearningOutcomes,
+  );
+  const courseModules = normalizeItems(course.modules, defaultCourseModules);
+  const courseInstructors = normalizeItems(course.instructors, [
+    { name: course.instructor, role: "مدرس دوره" },
+  ]);
+  const courseBenefits = normalizeItems(course.benefits, defaultCourseBenefits);
+  const frequentlyAskedQuestions = normalizeItems(
+    course.faqs,
+    defaultFrequentlyAskedQuestions,
+  );
+
+  const courseMeta = [
+    {
+      id: 1,
+      title: "مدت دوره",
+      value: course.duration || "تعیین نشده",
+      Icon: ClockIcon,
+    },
+    {
+      id: 2,
+      title: "تاریخ برگزاری",
+      value: course.startDate || "تعیین نشده",
+      Icon: CalendarIcon,
+    },
+    {
+      id: 3,
+      title: "نوع برگزاری",
+      value: course.format || "تعیین نشده",
+      Icon: LocationIcon,
+    },
+    {
+      id: 4,
+      title: "سطح دوره",
+      value: course.level || "عمومی",
+      Icon: LevelIcon,
+    },
+    {
+      id: 5,
+      title: "مدرس دوره",
+      value: course.instructor || "مدرس هاتف",
+      Icon: UsersIcon,
+    },
+  ];
 
   return (
     <div className="course-details-page">
@@ -347,7 +488,7 @@ function CourseDetailsPage() {
               <img src={course.image} alt={course.title} />
 
               <div className="course-details-hero__badges">
-                <span>در حال ثبت‌نام</span>
+                <span>{statusLabel}</span>
                 <span>{course.startDate}</span>
               </div>
             </div>
@@ -359,21 +500,15 @@ function CourseDetailsPage() {
 
               <h1>{course.title}</h1>
 
-              <p>
-                این دوره با هدف توسعه مهارت‌های کاربردی در حوزه مدیریت فناوری،
-                توسعه پایدار و تجاری‌سازی دستاوردهای دانشگاهی طراحی شده است.
-              </p>
-
-              <p>
-                شرکت‌کنندگان در طول دوره با تمرین‌های عملی، مطالعات موردی و
-                پروژه‌های واقعی آشنا خواهند شد.
-              </p>
+              {summaryParagraphs.slice(0, 2).map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
 
               <a
                 href="#course-registration"
                 className="course-details-hero__button"
               >
-                شرکت در این دوره
+                {actionLabel}
               </a>
             </div>
           </div>
@@ -404,7 +539,7 @@ function CourseDetailsPage() {
                 id="course-registration"
               >
                 <div className="course-registration-card__header">
-                  <span>در حال ثبت‌نام</span>
+                  <span>{statusLabel}</span>
                   <span>ظرفیت محدود</span>
                 </div>
 
@@ -415,30 +550,25 @@ function CourseDetailsPage() {
                     <dt>مدرس دوره:</dt>
                     <dd>{course.instructor}</dd>
                   </div>
-
                   <div>
                     <dt>مدت دوره:</dt>
-                    <dd>۱۲۰ ساعت</dd>
+                    <dd>{course.duration || "تعیین نشده"}</dd>
                   </div>
-
                   <div>
                     <dt>نوع دوره:</dt>
-                    <dd>تخصصی و پیشرفته</dd>
+                    <dd>{course.format || "تعیین نشده"}</dd>
                   </div>
-
                   <div>
-                    <dt>تاریخ ثبت‌نام:</dt>
-                    <dd>{course.startDate}</dd>
+                    <dt>سطح دوره:</dt>
+                    <dd>{course.level || "عمومی"}</dd>
                   </div>
-
                   <div>
-                    <dt>زمان برگزاری:</dt>
-                    <dd>یکشنبه و سه‌شنبه، ساعت ۱۰:۳۰</dd>
+                    <dt>تاریخ شروع:</dt>
+                    <dd>{course.startDate || "تعیین نشده"}</dd>
                   </div>
-
                   <div>
                     <dt>محل برگزاری:</dt>
-                    <dd>دانشگاه تهران، دانشکده مدیریت</dd>
+                    <dd>{course.location || "تعیین نشده"}</dd>
                   </div>
                 </dl>
 
@@ -446,31 +576,64 @@ function CourseDetailsPage() {
                   <h3>مناسب برای:</h3>
 
                   <div>
-                    <span>
-                      <CheckIcon />
-                      مدیران
-                    </span>
-                    <span>
-                      <CheckIcon />
-                      پژوهشگران
-                    </span>
-                    <span>
-                      <CheckIcon />
-                      دانشجویان
-                    </span>
-                    <span>
-                      <CheckIcon />
-                      فعالان فناوری
-                    </span>
+                    {courseAudiences.map((audience, index) => (
+                      <span key={`${audience.title}-${index}`}>
+                        <CheckIcon />
+                        {audience.title}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
-                <a
-                  href="#register-form"
-                  className="course-registration-card__button"
-                >
-                  شرکت در این دوره
-                </a>
+                {registrationNotice && (
+                  <p
+                    style={{
+                      margin: "16px 0 0",
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      background: "#f0fdf4",
+                      color: "#166534",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      lineHeight: 1.9,
+                    }}
+                  >
+                    {registrationNotice}
+                  </p>
+                )}
+
+                {course.status === "registering" && !isPreviewMode ? (
+                  <button
+                    type="button"
+                    className="course-registration-card__button"
+                    onClick={handleCourseRegistration}
+                    disabled={!canRegister || alreadyRegistered}
+                    style={{
+                      border: 0,
+                      width: "100%",
+                      opacity: !canRegister || alreadyRegistered ? 0.55 : 1,
+                      cursor:
+                        !canRegister || alreadyRegistered
+                          ? "not-allowed"
+                          : "pointer",
+                    }}
+                  >
+                    {registrationStats.isFull
+                      ? "ظرفیت تکمیل شده"
+                      : alreadyRegistered
+                        ? "قبلاً ثبت‌نام کرده‌اید"
+                        : actionLabel}
+                  </button>
+                ) : (
+                  <a
+                    href="#course-registration"
+                    className="course-registration-card__button"
+                  >
+                    {isPreviewMode
+                      ? "پیش‌نمایش ثبت‌نام غیرفعال است"
+                      : actionLabel}
+                  </a>
+                )}
               </div>
 
               <div className="course-details-share">
@@ -495,48 +658,37 @@ function CourseDetailsPage() {
                 <span className="course-content-section__eyebrow">
                   معرفی دوره
                 </span>
-
-                <h2>محورهای پژوهشی سال جاری</h2>
-
-                <p>
-                  این دوره بر موضوعات کاربردی مدیریت سبز، بهینه‌سازی منابع،
-                  توسعه فناوری‌های دوستدار محیط زیست و طراحی راهکارهای قابل اجرا
-                  تمرکز دارد.
-                </p>
-
-                <p>
-                  شرکت‌کنندگان می‌آموزند چگونه یک مسئله واقعی را تحلیل کرده و
-                  برای آن برنامه‌ای مرحله‌بندی‌شده، قابل سنجش و اجرایی تدوین
-                  کنند.
-                </p>
+                <h2>{course.introTitle || "محورهای پژوهشی سال جاری"}</h2>
+                {introParagraphs.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
               </section>
 
               <section className="course-content-section">
                 <span className="course-content-section__eyebrow">
                   دستاوردهای آموزشی
                 </span>
-
                 <h2>در این دوره چه می‌آموزید؟</h2>
 
                 <div className="course-learning-outcomes">
-                  {learningOutcomes.map((outcome) => (
+                  {learningOutcomes.map((outcome, index) => (
                     <article
                       className="course-learning-outcome"
-                      key={outcome.id}
+                      key={`${getItemTitle(outcome)}-${index}`}
                     >
                       <span
                         className={`course-learning-outcome__icon ${
-                          outcome.available
-                            ? ""
-                            : "course-learning-outcome__icon--unavailable"
+                          outcome.available === false
+                            ? "course-learning-outcome__icon--unavailable"
+                            : ""
                         }`}
                       >
                         <CheckIcon />
                       </span>
 
                       <div>
-                        <h3>{outcome.title}</h3>
-                        <p>{outcome.description}</p>
+                        <h3>{getItemTitle(outcome, "دستاورد آموزشی")}</h3>
+                        <p>{getItemDescription(outcome)}</p>
                       </div>
                     </article>
                   ))}
@@ -547,7 +699,6 @@ function CourseDetailsPage() {
                 <span className="course-content-section__eyebrow">
                   برنامه آموزشی
                 </span>
-
                 <h2>سرفصل‌های دوره</h2>
 
                 <div className="course-modules">
@@ -556,22 +707,20 @@ function CourseDetailsPage() {
 
                     return (
                       <article
-                        className={`course-module ${
-                          isOpen ? "course-module--open" : ""
-                        }`}
-                        key={module.id}
+                        className={`course-module ${isOpen ? "course-module--open" : ""}`}
+                        key={`${getItemTitle(module)}-${index}`}
                       >
                         <button
                           type="button"
                           onClick={() => setOpenModule(isOpen ? null : index)}
                           aria-expanded={isOpen}
                         >
-                          <span>{module.title}</span>
+                          <span>{getItemTitle(module, "سرفصل دوره")}</span>
                           <i aria-hidden="true">{isOpen ? "−" : "+"}</i>
                         </button>
 
                         <div className="course-module__content">
-                          <p>{module.content}</p>
+                          <p>{getItemDescription(module)}</p>
                         </div>
                       </article>
                     );
@@ -583,46 +732,22 @@ function CourseDetailsPage() {
                 <span className="course-content-section__eyebrow">
                   تیم آموزشی
                 </span>
-
                 <h2>مدرسان دوره</h2>
 
                 <div className="course-instructors">
-                  <article className="course-instructor">
-                    <span className="course-instructor__avatar">م س</span>
-
-                    <div>
-                      <h3>مهدیه سیفی</h3>
-                      <p>مدرس مدیریت فناوری و توسعه پایدار</p>
-                    </div>
-                  </article>
-
-                  <article className="course-instructor">
-                    <span className="course-instructor__avatar">ع ر</span>
-
-                    <div>
-                      <h3>علی رضایی</h3>
-                      <p>مشاور تجاری‌سازی و مدیریت پروژه</p>
-                    </div>
-                  </article>
-                </div>
-              </section>
-
-              <section className="course-content-section">
-                <span className="course-content-section__eyebrow">
-                  مزایای شرکت
-                </span>
-
-                <h2>چرا در این دوره شرکت کنیم؟</h2>
-
-                <div className="course-benefits">
-                  {courseBenefits.map((benefit) => (
-                    <article className="course-benefit" key={benefit.id}>
-                      <span>
-                        <CheckIcon />
+                  {courseInstructors.map((instructor, index) => (
+                    <article
+                      className="course-instructor"
+                      key={`${instructor.name}-${index}`}
+                    >
+                      <span className="course-instructor__avatar">
+                        {createInitials(instructor.name)}
                       </span>
 
-                      <h3>{benefit.title}</h3>
-                      <p>{benefit.description}</p>
+                      <div>
+                        <h3>{instructor.name || course.instructor}</h3>
+                        <p>{instructor.role || "مدرس دوره"}</p>
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -630,10 +755,31 @@ function CourseDetailsPage() {
 
               <section className="course-content-section">
                 <span className="course-content-section__eyebrow">
-                  پرسش‌های متداول
+                  مزایای شرکت
                 </span>
+                <h2>چرا این دوره؟</h2>
 
-                <h2>سؤالات متداول دوره</h2>
+                <div className="course-benefits">
+                  {courseBenefits.map((benefit, index) => (
+                    <article
+                      className="course-benefit"
+                      key={`${getItemTitle(benefit)}-${index}`}
+                    >
+                      <span>
+                        <CheckIcon />
+                      </span>
+                      <h3>{getItemTitle(benefit, "مزیت دوره")}</h3>
+                      <p>{getItemDescription(benefit)}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="course-content-section">
+                <span className="course-content-section__eyebrow">
+                  سوالات متداول
+                </span>
+                <h2>پرسش‌های رایج درباره دوره</h2>
 
                 <div className="course-faq">
                   {frequentlyAskedQuestions.map((question, index) => {
@@ -641,22 +787,20 @@ function CourseDetailsPage() {
 
                     return (
                       <article
-                        className={`course-faq__item ${
-                          isOpen ? "course-faq__item--open" : ""
-                        }`}
-                        key={question.id}
+                        className={`course-faq__item ${isOpen ? "course-faq__item--open" : ""}`}
+                        key={`${getItemTitle(question)}-${index}`}
                       >
                         <button
                           type="button"
                           onClick={() => setOpenQuestion(isOpen ? null : index)}
                           aria-expanded={isOpen}
                         >
-                          <span>{question.title}</span>
+                          <span>{getItemTitle(question, "سوال متداول")}</span>
                           <i aria-hidden="true">{isOpen ? "−" : "+"}</i>
                         </button>
 
                         <div className="course-faq__answer">
-                          <p>{question.content}</p>
+                          <p>{getItemDescription(question, "پاسخ سوال")}</p>
                         </div>
                       </article>
                     );
@@ -671,16 +815,16 @@ function CourseDetailsPage() {
       <section className="course-related-section">
         <div className="course-details-page__container">
           <ActivitiesCarousel
-            key={`related-${course.id}`}
-            title="دیگر دوره‌های هاتف"
+            title="دوره‌های دیگر هاتف"
             items={relatedCourses}
             viewAllPath="/courses/all"
+            viewAllLabel="همه دوره‌ها"
           />
         </div>
       </section>
 
       <ExpandableArticle
-        title="درباره دوره‌های توانمندسازی هاتف"
+        title="درباره دوره‌های هاتف"
         paragraphs={articleParagraphs}
       />
     </div>

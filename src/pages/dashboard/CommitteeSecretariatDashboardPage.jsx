@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
@@ -12,9 +12,277 @@ import {
   getCommitteeReviewerProfiles,
   getCommitteeTasksByPlanId,
 } from "../../services/committeeService";
+import {
+  markPlanFinalReviewStarted,
+  publishPlanBusinessOpportunity,
+  publishPlanResults,
+  savePlanBusinessOpportunityDetails,
+  savePlanFinalDecision,
+} from "../../services/planService";
+import {
+  SITE_PUBLICATION_DESTINATIONS,
+  SITE_PUBLICATION_DISPLAY_GROUPS,
+  SITE_PUBLICATION_STATUS,
+  cancelSitePublicationCandidate,
+  getPlanSitePublicationRequestByPlanId,
+  getSitePublicationRequests,
+  publishSitePublicationRequest,
+  returnSitePublicationForRevision,
+  saveSitePublicationPreviewItem,
+  upsertSitePublicationCandidateFromPlan,
+} from "../../services/projectPublicationService";
+import {
+  addTask as addTaskToService,
+  updateTask as updateTaskInService,
+} from "../../services/taskService";
+import {
+  getBusinessCollaborationRequests,
+  getBusinessOpportunityOverviews,
+  getBusinessPartnerProfiles,
+  markBusinessCollaborationRequestTracking,
+  saveBusinessCollaborationRequestReply,
+} from "../../services/businessService";
+import {
+  getInstructorActivities,
+  saveInstructorActivityDecision,
+  INSTRUCTOR_ACTIVITY_STATUS,
+} from "../../services/instructorActivityService";
+import { getActivityRegistrationStats } from "../../services/activityRegistrationService";
+import {
+  createExecutionOrder,
+  getCommitteeExecutionOrders,
+} from "../../services/executionOrderService";
+import {
+  createNewsItem,
+  deleteNewsItem,
+  getCommitteeNewsItems,
+  publishNewsItem,
+  publishNewsRevision,
+  saveNewsDraftRevision,
+  updateNewsItem,
+  saveNewsPreviewItem,
+  NEWS_CATEGORY_OPTIONS,
+} from "../../services/newsService";
+
+import {
+  getSupportTickets,
+  markSupportTicketSeen,
+  saveSupportTicketReply,
+  SUPPORT_TICKETS_UPDATED_EVENT,
+} from "../../services/supportService";
+import {
+  getContactRequests,
+  markContactRequestTracking,
+  CONTACT_REQUESTS_UPDATED_EVENT,
+} from "../../services/contactRequestService";
+import {
+  deleteAllCommitteeNotifications,
+  deleteNotification,
+  getCommitteeNotifications,
+  markAllCommitteeNotificationsAsRead,
+  markNotificationAsRead,
+} from "../../services/notificationService";
+
+import {
+  deleteCommitteePersonalPlanNote,
+  getCommitteePersonalPlanNote,
+  markCommitteePersonalPlanViewed,
+  saveCommitteePersonalPlanNote,
+  toggleCommitteePersonalPlanFolder,
+} from "../../services/committeeWorkspaceService";
+
+import {
+  getCurrentDashboardProfile,
+  saveCurrentDashboardProfile,
+} from "../../services/userProfileService";
 
 import "./InnovatorDashboardPage.css";
 import "./CommitteeSecretariatDashboardPage.css";
+
+function mergeCommitteePersonalWorkspace(plans) {
+  return plans.map((plan) => {
+    const note = getCommitteePersonalPlanNote(plan.sourceId || plan.id);
+
+    if (!note) {
+      return plan;
+    }
+
+    return {
+      ...plan,
+      folders: Array.isArray(note.folders) ? note.folders : plan.folders || [],
+      committeeReviewStatus: note.viewed
+        ? "بررسی شده"
+        : plan.committeeReviewStatus,
+      committeeReviewScore: note.score || "",
+      committeeReviewRecommendation: note.recommendation || "",
+      committeeReviewFeedback: note.feedbackText
+        ? {
+            text: note.feedbackText,
+            createdAt: note.updatedAt || note.createdAt || "ثبت‌شده",
+          }
+        : null,
+    };
+  });
+}
+
+function getCommitteeWorkspacePlans() {
+  return mergeCommitteePersonalWorkspace(getCommitteePlans());
+}
+
+function isNeedsRevisionFinalStatus(status) {
+  return ["نیازمند اصلاح", "needsRevision", "needs_revision"].includes(status);
+}
+
+function isCommitteeClosedPublishedPlan(plan) {
+  return Boolean(
+    plan?.resultsPublished &&
+    plan?.finalStatus &&
+    !isNeedsRevisionFinalStatus(plan.finalStatus),
+  );
+}
+
+function isCommitteeActiveWorkflowPlan(plan) {
+  return !isCommitteeClosedPublishedPlan(plan);
+}
+
+function getNormalizedActivityStatus(status) {
+  if (
+    [
+      "در انتظار بررسی",
+      "در انتظار تایید",
+      "pending",
+      "awaiting",
+      "waiting",
+    ].includes(status)
+  ) {
+    return INSTRUCTOR_ACTIVITY_STATUS.PENDING;
+  }
+
+  if (["منتشر شده", "published"].includes(status)) {
+    return INSTRUCTOR_ACTIVITY_STATUS.PUBLISHED;
+  }
+
+  if (["رد شده", "rejected"].includes(status)) {
+    return INSTRUCTOR_ACTIVITY_STATUS.REJECTED;
+  }
+
+  if (["نیازمند اصلاح", "needsRevision", "needs_revision"].includes(status)) {
+    return INSTRUCTOR_ACTIVITY_STATUS.NEEDS_REVISION;
+  }
+
+  return status || INSTRUCTOR_ACTIVITY_STATUS.PENDING;
+}
+
+function getActivityModerationStatusClass(status) {
+  const normalizedStatus = getNormalizedActivityStatus(status);
+
+  if (normalizedStatus === INSTRUCTOR_ACTIVITY_STATUS.PUBLISHED) {
+    return "published";
+  }
+
+  if (normalizedStatus === INSTRUCTOR_ACTIVITY_STATUS.REJECTED) {
+    return "rejected";
+  }
+
+  if (normalizedStatus === INSTRUCTOR_ACTIVITY_STATUS.NEEDS_REVISION) {
+    return "revision";
+  }
+
+  return "pending";
+}
+
+function getExecutionOrderStatusClass(status) {
+  if (status === "قبول شده" || status === "accepted") {
+    return "published";
+  }
+
+  if (status === "رد شده" || status === "rejected") {
+    return "rejected";
+  }
+
+  if (status === "بایگانی شده" || status === "archived") {
+    return "archived";
+  }
+
+  return "pending";
+}
+
+function getActivityTypeLabel(type) {
+  if (type === "event") {
+    return "رویداد";
+  }
+
+  if (type === "course") {
+    return "دوره";
+  }
+
+  return type || "دوره";
+}
+
+function getActivityInstructorName(activity) {
+  return activity?.instructor || activity?.instructorName || "مدرس هاتف";
+}
+
+function getActivityField(activity) {
+  return (
+    activity?.field ||
+    activity?.category ||
+    activity?.courseCategory ||
+    activity?.eventCategory ||
+    "آموزش و رویداد"
+  );
+}
+
+function getActivityStartDate(activity) {
+  return (
+    activity?.startDate ||
+    activity?.startAt ||
+    activity?.date ||
+    activity?.eventDate ||
+    activity?.createdAt ||
+    "ثبت نشده"
+  );
+}
+
+function getActivityCapacity(activity) {
+  if (activity?.capacity) {
+    return activity.capacity;
+  }
+
+  if (activity?.maxParticipants) {
+    return `${toPersianDigits(activity.maxParticipants)} نفر`;
+  }
+
+  return "ثبت نشده";
+}
+
+function isPendingInstructorActivity(activity) {
+  return (
+    getNormalizedActivityStatus(activity?.status) ===
+    INSTRUCTOR_ACTIVITY_STATUS.PENDING
+  );
+}
+
+function isPublishedInstructorActivity(activity) {
+  return (
+    getNormalizedActivityStatus(activity?.status) ===
+    INSTRUCTOR_ACTIVITY_STATUS.PUBLISHED
+  );
+}
+
+function isRejectedInstructorActivity(activity) {
+  return (
+    getNormalizedActivityStatus(activity?.status) ===
+    INSTRUCTOR_ACTIVITY_STATUS.REJECTED
+  );
+}
+
+function isNeedsRevisionInstructorActivity(activity) {
+  return (
+    getNormalizedActivityStatus(activity?.status) ===
+    INSTRUCTOR_ACTIVITY_STATUS.NEEDS_REVISION
+  );
+}
 
 const NAV_ITEMS = [
   {
@@ -57,6 +325,10 @@ const NAV_ITEMS = [
       {
         id: "accepted-plans",
         label: "طرح‌های قبول شده",
+      },
+      {
+        id: "introduced-plans",
+        label: "طرح‌های معرفی شده",
       },
       {
         id: "plans-history",
@@ -129,6 +401,21 @@ const NAV_ITEMS = [
     ],
   },
   {
+    id: "news-management",
+    label: "اخبار",
+    icon: "📰",
+    subItems: [
+      {
+        id: "create-news",
+        label: "ثبت جدید",
+      },
+      {
+        id: "news-history",
+        label: "تاریخچه اخبار",
+      },
+    ],
+  },
+  {
     id: "messages",
     label: "پیام‌ها و اعلانات",
     icon: "🔔",
@@ -170,6 +457,15 @@ const SECTION_DATA = {
     title: "تاریخچه درخواست‌ها",
     description: "درخواست‌هایی که پاسخ دبیرخانه برای آن‌ها ارسال شده است.",
   },
+  "create-news": {
+    title: "ثبت خبر جدید",
+    description:
+      "خبرهای رسمی سایت را ثبت کنید و آن‌ها را به‌صورت پیش‌نویس یا منتشرشده ذخیره کنید.",
+  },
+  "news-history": {
+    title: "تاریخچه اخبار",
+    description: "خبرهای ثبت‌شده توسط دبیرخانه را مرور، منتشر یا حذف کنید.",
+  },
   "calls-management": {
     title: "مدیریت فراخوان‌ها",
     description:
@@ -194,6 +490,11 @@ const SECTION_DATA = {
     title: "طرح‌های قبول شده",
     description:
       "این بخش در مرحله بعد برای مدیریت طرح‌های قبول و قبول ضعیف تکمیل می‌شود.",
+  },
+  "introduced-plans": {
+    title: "طرح‌های معرفی شده",
+    description:
+      "بررسی اطلاعات تکمیل‌شده توسط فناور برای موقعیت‌های تجاری و پروژه‌های موفق.",
   },
   "plans-history": {
     title: "تاریخچه طرح‌ها",
@@ -1853,14 +2154,121 @@ function DashboardPanel({
   );
 }
 
+function normalizeReceivedRequestStatus(status) {
+  if (status === "جدید") {
+    return "در انتظار پیگیری";
+  }
+
+  return status || "در انتظار پیگیری";
+}
+
+function mapSupportTicketToReceivedRequest(ticket) {
+  const isSiteContactTicket = ticket.sourceType === "site-contact-form";
+  const sourceTitle = ticket.sourceTitle || ticket.relatedTitle || "";
+  const baseUserLevel = ticket.userLevel || ticket.userRole || "کاربر سامانه";
+
+  return {
+    ...ticket,
+    requestSource: "support-ticket",
+    originalId: ticket.id,
+    status: normalizeReceivedRequestStatus(ticket.status),
+    title: ticket.title || "درخواست پشتیبانی",
+    message: ticket.message || "",
+    userName: ticket.userName || "کاربر سامانه",
+    userLevel:
+      isSiteContactTicket && sourceTitle
+        ? `${baseUserLevel} / ${sourceTitle}`
+        : baseUserLevel,
+    sentAt: ticket.sentAt || ticket.createdAt || "",
+    supportReply: ticket.supportReply || ticket.reply || "",
+    reply: ticket.supportReply || ticket.reply || "",
+    sourceType: ticket.sourceType || "support-ticket",
+    sourceTitle,
+    relatedId: ticket.relatedId || "",
+    relatedTitle: ticket.relatedTitle || "",
+    sortTimestamp: Number(
+      ticket.createdAtTimestamp || ticket.sentAtTimestamp || 0,
+    ),
+  };
+}
+
+function mapContactRequestToReceivedRequest(request) {
+  const contactDetails = [
+    `نام: ${request.fullName || "کاربر سایت"}`,
+    request.email ? `ایمیل: ${request.email}` : "",
+    request.phone ? `شماره تماس: ${request.phone}` : "",
+    request.sourceTitle ? `بخش ارسال‌کننده فرم: ${request.sourceTitle}` : "",
+    request.relatedTitle ? `مورد مرتبط: ${request.relatedTitle}` : "",
+    "",
+    request.message || "",
+  ].filter((line) => line !== "");
+
+  return {
+    id: `contact-${request.id}`,
+    originalId: request.id,
+    requestSource: "contact-form",
+    userId: request.id,
+    userName: request.email
+      ? `${request.fullName || "کاربر سایت"} / ${request.email}`
+      : request.fullName || "کاربر سایت",
+    userRole: request.sourceTitle || "فرم تماس سایت",
+    userLevel: request.sourceTitle || "فرم تماس سایت",
+    title: request.subject || "درخواست تماس",
+    message: contactDetails.join("\n"),
+    sentAt: request.createdAt || "",
+    status: normalizeReceivedRequestStatus(request.status),
+    seenBySupport: request.status !== "جدید",
+    supportReply: request.reply || "",
+    reply: request.reply || "",
+    repliedAt: request.repliedAt || "",
+    sourceType: request.sourceType || "contact",
+    sourceTitle: request.sourceTitle || "فرم تماس سایت",
+    relatedId: request.relatedId || "",
+    relatedTitle: request.relatedTitle || "",
+    pageUrl: request.pageUrl || "",
+    pagePath: request.pagePath || "",
+    sortTimestamp: Number(request.createdAtTimestamp || 0),
+  };
+}
+
+function getReceivedRequestsForCommittee() {
+  const supportRequests = getSupportTickets().map(
+    mapSupportTicketToReceivedRequest,
+  );
+  const contactRequests = getContactRequests().map(
+    mapContactRequestToReceivedRequest,
+  );
+
+  return [...supportRequests, ...contactRequests].sort((first, second) => {
+    const firstTimestamp = Number(first.sortTimestamp || 0);
+    const secondTimestamp = Number(second.sortTimestamp || 0);
+
+    if (firstTimestamp !== secondTimestamp) {
+      return secondTimestamp - firstTimestamp;
+    }
+
+    return String(second.sentAt || "").localeCompare(
+      String(first.sentAt || ""),
+    );
+  });
+}
+
+function isContactFormRequest(request) {
+  return request?.requestSource === "contact-form";
+}
+
 function ReceivedRequestsPanel({ mode, requests, setRequests }) {
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState("all");
 
+  const refreshRequests = () => {
+    setRequests(getReceivedRequestsForCommittee());
+  };
+
   const selectedRequest = requests.find(
-    (request) => request.id === selectedRequestId,
+    (request) => String(request.id) === String(selectedRequestId),
   );
 
   const userLevels = useMemo(
@@ -1891,55 +2299,65 @@ function ReceivedRequestsPanel({ mode, requests, setRequests }) {
   }, [levelFilter, mode, requests, searchTerm]);
 
   const openRequest = (requestId) => {
-    const targetRequest = requests.find((request) => request.id === requestId);
+    const targetRequest = requests.find(
+      (request) => String(request.id) === String(requestId),
+    );
 
     if (!targetRequest) return;
 
     if (targetRequest.status === "در انتظار پیگیری") {
-      setRequests((currentRequests) =>
-        currentRequests.map((request) =>
-          request.id === requestId
-            ? { ...request, status: "در حال پیگیری" }
-            : request,
-        ),
-      );
+      if (isContactFormRequest(targetRequest)) {
+        markContactRequestTracking(targetRequest.originalId);
+      } else {
+        markSupportTicketSeen(targetRequest.originalId || requestId);
+      }
+
+      refreshRequests();
     }
 
     setSelectedRequestId(requestId);
-    setReplyText(targetRequest.reply || "");
+    setReplyText(targetRequest.supportReply || targetRequest.reply || "");
   };
 
   const closeDetail = () => {
     setSelectedRequestId(null);
     setReplyText("");
+    refreshRequests();
   };
 
   const submitReply = () => {
-    if (!selectedRequest || !replyText.trim()) return;
+    if (
+      !selectedRequest ||
+      !replyText.trim() ||
+      isContactFormRequest(selectedRequest)
+    )
+      return;
 
-    setRequests((currentRequests) =>
-      currentRequests.map((request) =>
-        request.id === selectedRequest.id
-          ? {
-              ...request,
-              status: "پاسخ داده شده",
-              reply: replyText.trim(),
-              repliedAt: getCurrentPersianDateTime(),
-            }
-          : request,
-      ),
+    saveSupportTicketReply(
+      selectedRequest.originalId || selectedRequest.id,
+      replyText.trim(),
     );
 
+    refreshRequests();
     closeDetail();
   };
 
   if (selectedRequest) {
+    const hasReply = Boolean(
+      selectedRequest.supportReply || selectedRequest.reply,
+    );
+    const isGuestContactRequest = isContactFormRequest(selectedRequest);
+
     return (
       <section className="committee-dashboard__panel committee-dashboard__request-detail">
         <div className="committee-dashboard__panel-header committee-dashboard__detail-header">
           <div>
             <span>
-              {mode === "history" ? "مشاهده پاسخ" : "پاسخ به درخواست"}
+              {isGuestContactRequest
+                ? "مشاهده درخواست فرم تماس"
+                : mode === "history"
+                  ? "مشاهده پاسخ"
+                  : "پاسخ به درخواست"}
             </span>
             <h3>{selectedRequest.title}</h3>
             <p>
@@ -1978,34 +2396,47 @@ function ReceivedRequestsPanel({ mode, requests, setRequests }) {
           <p>{selectedRequest.message}</p>
         </div>
 
-        {selectedRequest.status === "پاسخ داده شده" && (
+        {hasReply && (
           <div className="committee-dashboard__reply-view">
             <span>پاسخ ارسال‌شده</span>
-            <p>{selectedRequest.reply}</p>
+            <p>{selectedRequest.supportReply || selectedRequest.reply}</p>
             <small>{selectedRequest.repliedAt}</small>
           </div>
         )}
 
-        {selectedRequest.status !== "پاسخ داده شده" && (
-          <div className="committee-dashboard__reply-box">
-            <label>
-              <span>پاسخ دبیرخانه</span>
-              <textarea
-                value={replyText}
-                onChange={(event) => setReplyText(event.target.value)}
-                placeholder="پاسخ نهایی را برای کاربر بنویسید..."
-              />
-            </label>
-
-            <button
-              type="button"
-              disabled={!replyText.trim()}
-              onClick={submitReply}
-            >
-              ارسال پاسخ
-            </button>
+        {isGuestContactRequest && (
+          <div className="committee-dashboard__reply-view">
+            <span>پیگیری خارج از سامانه</span>
+            <p>
+              این درخواست توسط کاربر مهمان و از فرم تماس سایت ثبت شده است. چون
+              کاربر حساب کاربری فعالی ندارد، پاسخ در سامانه ارسال نمی‌شود و
+              دبیرخانه فقط می‌تواند از طریق ایمیل یا شماره تماس واردشده پیگیری
+              کند.
+            </p>
           </div>
         )}
+
+        {!isGuestContactRequest &&
+          selectedRequest.status !== "پاسخ داده شده" && (
+            <div className="committee-dashboard__reply-box">
+              <label>
+                <span>پاسخ دبیرخانه</span>
+                <textarea
+                  value={replyText}
+                  onChange={(event) => setReplyText(event.target.value)}
+                  placeholder="پاسخ نهایی را برای کاربر بنویسید..."
+                />
+              </label>
+
+              <button
+                type="button"
+                disabled={!replyText.trim()}
+                onClick={submitReply}
+              >
+                ارسال پاسخ
+              </button>
+            </div>
+          )}
       </section>
     );
   }
@@ -2076,7 +2507,11 @@ function ReceivedRequestsPanel({ mode, requests, setRequests }) {
             <RequestStatusBadge status={request.status} />
 
             <button type="button" onClick={() => openRequest(request.id)}>
-              {mode === "history" ? "مشاهده پاسخ" : "مشاهده و پاسخ"}
+              {isContactFormRequest(request)
+                ? "مشاهده"
+                : mode === "history"
+                  ? "مشاهده پاسخ"
+                  : "مشاهده و پاسخ"}
             </button>
           </article>
         ))}
@@ -2092,12 +2527,16 @@ function ReceivedRequestsPanel({ mode, requests, setRequests }) {
 }
 
 function MessagesPanel() {
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState(() => getCommitteeNotifications());
   const [filter, setFilter] = useState("all");
   const [selectedMessageId, setSelectedMessageId] = useState(null);
 
+  const refreshMessages = () => {
+    setMessages(getCommitteeNotifications());
+  };
+
   const selectedMessage = messages.find(
-    (message) => message.id === selectedMessageId,
+    (message) => String(message.id) === String(selectedMessageId),
   );
 
   const filteredMessages = messages.filter((message) => {
@@ -2107,34 +2546,29 @@ function MessagesPanel() {
   });
 
   const markAllAsRead = () => {
-    setMessages((currentMessages) =>
-      currentMessages.map((message) => ({ ...message, isRead: true })),
-    );
+    markAllCommitteeNotificationsAsRead();
+    refreshMessages();
   };
 
   const deleteAllMessages = () => {
     if (!window.confirm("آیا از حذف همه پیام‌ها مطمئن هستید؟")) return;
-    setMessages([]);
+    deleteAllCommitteeNotifications();
     setSelectedMessageId(null);
+    refreshMessages();
   };
 
   const openMessage = (messageId) => {
-    setMessages((currentMessages) =>
-      currentMessages.map((message) =>
-        message.id === messageId ? { ...message, isRead: true } : message,
-      ),
-    );
+    markNotificationAsRead(messageId);
     setSelectedMessageId(messageId);
+    refreshMessages();
   };
 
   const deleteMessage = (messageId) => {
-    setMessages((currentMessages) =>
-      currentMessages.filter((message) => message.id !== messageId),
-    );
-
-    if (selectedMessageId === messageId) {
+    deleteNotification(messageId);
+    if (String(selectedMessageId) === String(messageId)) {
       setSelectedMessageId(null);
     }
+    refreshMessages();
   };
 
   if (selectedMessage) {
@@ -2145,18 +2579,19 @@ function MessagesPanel() {
             <div>
               <span>{selectedMessage.category}</span>
               <h3>{selectedMessage.title}</h3>
-              <p>{selectedMessage.sentAt}</p>
+              <small>{selectedMessage.sentAt}</small>
             </div>
-
             <button
               type="button"
               className="messages-panel__neutral-button"
-              onClick={() => setSelectedMessageId(null)}
+              onClick={() => {
+                setSelectedMessageId(null);
+                refreshMessages();
+              }}
             >
               بازگشت
             </button>
           </div>
-
           <p className="messages-panel__detail-body">{selectedMessage.body}</p>
         </div>
       </section>
@@ -2169,9 +2604,12 @@ function MessagesPanel() {
         <header className="messages-panel__header">
           <div>
             <span>پیام‌ها و اعلانات</span>
-            <h3>مرکز پیام‌های دبیرخانه</h3>
+            <h3>اعلان‌های دبیرخانه</h3>
+            <p>
+              فعالیت‌های جدید کاربران، درخواست‌های پشتیبانی و پاسخ‌های ثبت‌شده
+              در این بخش قابل پیگیری است.
+            </p>
           </div>
-
           <div className="messages-panel__header-actions">
             <button
               type="button"
@@ -2184,6 +2622,7 @@ function MessagesPanel() {
               type="button"
               className="messages-panel__delete-all"
               onClick={deleteAllMessages}
+              disabled={messages.length === 0}
             >
               حذف همه
             </button>
@@ -2196,8 +2635,7 @@ function MessagesPanel() {
             className={filter === "all" ? "messages-panel__filter--active" : ""}
             onClick={() => setFilter("all")}
           >
-            همه
-            <strong>{messages.length}</strong>
+            همه <strong>{messages.length}</strong>
           </button>
           <button
             type="button"
@@ -2206,7 +2644,7 @@ function MessagesPanel() {
             }
             onClick={() => setFilter("unread")}
           >
-            خوانده‌نشده
+            خوانده‌نشده{" "}
             <strong>
               {messages.filter((message) => !message.isRead).length}
             </strong>
@@ -2218,7 +2656,7 @@ function MessagesPanel() {
             }
             onClick={() => setFilter("important")}
           >
-            مهم
+            مهم{" "}
             <strong>
               {messages.filter((message) => message.isImportant).length}
             </strong>
@@ -2228,17 +2666,17 @@ function MessagesPanel() {
         <div className="messages-panel__list">
           {filteredMessages.map((message) => (
             <article
+              key={message.id}
               className={`messages-panel__message ${
                 message.isRead ? "messages-panel__message--read" : ""
               }`}
-              key={message.id}
             >
               <div>
                 <span>{message.category}</span>
                 <h4>{message.title}</h4>
-                <p>{message.sentAt}</p>
+                <p>{message.body}</p>
+                <small>{message.sentAt}</small>
               </div>
-
               <div className="messages-panel__card-actions">
                 <button type="button" onClick={() => openMessage(message.id)}>
                   مشاهده
@@ -2340,23 +2778,31 @@ function ProfilePanel({ profile, onEdit }) {
         </button>
 
         <div className="profile-panel__head">
-          <span className="profile-panel__avatar profile-panel__avatar--large">
-            {profile.avatarLetter}
-          </span>
+          {profile.avatarPreview ? (
+            <img
+              className="profile-panel__avatar profile-panel__avatar--large"
+              src={profile.avatarPreview}
+              alt={profile.fullName || "پروفایل کاربر"}
+            />
+          ) : (
+            <span className="profile-panel__avatar profile-panel__avatar--large">
+              {profile.avatarLetter}
+            </span>
+          )}
           <h3>
-            {profile.firstName} {profile.lastName}
+            {profile.fullName ||
+              `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
           </h3>
           <p>{profile.role}</p>
         </div>
 
         <div className="profile-panel__grid">
           <article>
-            <span>نام</span>
-            <strong>{profile.firstName}</strong>
-          </article>
-          <article>
-            <span>نام خانوادگی</span>
-            <strong>{profile.lastName}</strong>
+            <span>نام و نام خانوادگی</span>
+            <strong>
+              {profile.fullName ||
+                `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
+            </strong>
           </article>
           <article>
             <span>شماره موبایل</span>
@@ -2387,15 +2833,39 @@ function EditProfilePanel({ profile, onSave, onCancel }) {
     newPassword: "",
     repeatPassword: "",
   });
+  const [message, setMessage] = useState("");
 
   const updateField = (field, value) => {
     setFormData((currentData) => ({ ...currentData, [field]: value }));
   };
 
+  const updatePasswordField = (field, value) => {
+    setPasswordData((currentData) => ({ ...currentData, [field]: value }));
+  };
+
   const submitProfile = (event) => {
     event.preventDefault();
 
-    onSave(formData);
+    try {
+      const savedProfile = onSave(formData, {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+        confirmPassword: passwordData.repeatPassword,
+      });
+      setFormData(savedProfile || formData);
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        repeatPassword: "",
+      });
+      setMessage(
+        passwordData.newPassword
+          ? "اطلاعات پروفایل و رمز عبور با موفقیت ذخیره شد."
+          : "تغییرات پروفایل با موفقیت ذخیره شد.",
+      );
+    } catch (error) {
+      setMessage(error?.message || "ذخیره تغییرات با خطا روبه‌رو شد.");
+    }
   };
 
   return (
@@ -2462,10 +2932,7 @@ function EditProfilePanel({ profile, onSave, onCancel }) {
 
           <div className="profile-panel__password-box">
             <span>تغییر رمز عبور</span>
-            <p>
-              این بخش نمایشی است و در اتصال به بک‌اند، اعتبارسنجی رمز فعال
-              می‌شود.
-            </p>
+            <p>برای تغییر رمز، رمز فعلی و رمز جدید را وارد کنید.</p>
             <div className="profile-panel__form-grid">
               <label>
                 <span>رمز فعلی</span>
@@ -2473,10 +2940,7 @@ function EditProfilePanel({ profile, onSave, onCancel }) {
                   type="password"
                   value={passwordData.currentPassword}
                   onChange={(event) =>
-                    setPasswordData((currentData) => ({
-                      ...currentData,
-                      currentPassword: event.target.value,
-                    }))
+                    updatePasswordField("currentPassword", event.target.value)
                   }
                 />
               </label>
@@ -2486,10 +2950,7 @@ function EditProfilePanel({ profile, onSave, onCancel }) {
                   type="password"
                   value={passwordData.newPassword}
                   onChange={(event) =>
-                    setPasswordData((currentData) => ({
-                      ...currentData,
-                      newPassword: event.target.value,
-                    }))
+                    updatePasswordField("newPassword", event.target.value)
                   }
                 />
               </label>
@@ -2499,10 +2960,7 @@ function EditProfilePanel({ profile, onSave, onCancel }) {
                   type="password"
                   value={passwordData.repeatPassword}
                   onChange={(event) =>
-                    setPasswordData((currentData) => ({
-                      ...currentData,
-                      repeatPassword: event.target.value,
-                    }))
+                    updatePasswordField("repeatPassword", event.target.value)
                   }
                 />
               </label>
@@ -2515,6 +2973,8 @@ function EditProfilePanel({ profile, onSave, onCancel }) {
             </button>
             <button type="submit">ذخیره تغییرات</button>
           </div>
+
+          {message && <p className="profile-panel__message">{message}</p>}
         </form>
       </div>
     </section>
@@ -3706,6 +4166,56 @@ function CommitteePlanList({
   );
 }
 
+function getPublishedRecordFeedbackItems(plan) {
+  const items = [];
+  const generalFeedback =
+    plan.finalDecisionNote || plan.committeeFeedback || "";
+  const committeeFeedback =
+    plan.committeeReviewFeedback?.text &&
+    plan.committeeReviewFeedback.text !== generalFeedback
+      ? plan.committeeReviewFeedback.text
+      : "";
+
+  if (committeeFeedback) {
+    items.push({
+      id: "committee-member",
+      title: "بازخورد عضو کمیته",
+      text: committeeFeedback,
+      meta: plan.committeeReviewFeedback?.createdAt || "ثبت‌شده",
+    });
+  }
+
+  const reviewerFeedbackPlan = getCommitteeReviewerFeedbackPlans().find(
+    (item) => String(item.id) === String(plan.sourceId || plan.id),
+  );
+
+  reviewerFeedbackPlan?.reviewerFeedbacks?.forEach((feedback, index) => {
+    if (!feedback?.text) {
+      return;
+    }
+
+    items.push({
+      id: `reviewer-${feedback.id || index}`,
+      title: feedback.reviewerName
+        ? `بازخورد ${feedback.reviewerName}`
+        : `بازخورد داور ${toPersianDigits(index + 1)}`,
+      text: feedback.text,
+      meta: feedback.createdAt || "ثبت‌شده",
+    });
+  });
+
+  if (generalFeedback) {
+    items.push({
+      id: "general-feedback",
+      title: "بازخورد کلی",
+      text: generalFeedback,
+      meta: plan.finalStatusDate || "ثبت‌شده",
+    });
+  }
+
+  return items;
+}
+
 function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
   const [feedbackText, setFeedbackText] = useState(
     plan?.committeeReviewFeedback?.text || "",
@@ -3725,41 +4235,144 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
 
   if (!plan) return null;
 
+  if (readOnly) {
+    const publishedRecordFeedbackItems = getPublishedRecordFeedbackItems(plan);
+
+    return (
+      <section className="committee-dashboard__panel committee-plans__detail">
+        <div className="committee-dashboard__panel-header committee-plans__detail-header">
+          <div>
+            <span>مشاهده پرونده نهایی</span>
+            <h3>{plan.title}</h3>
+            <p>شناسه طرح: {plan.trackingId}</p>
+          </div>
+          <button type="button" onClick={onBack}>
+            بازگشت به لیست
+          </button>
+        </div>
+
+        <div className="committee-plans__detail-grid">
+          <article>
+            <span>فناور</span>
+            <strong>{plan.innovator.name}</strong>
+            <small>{plan.innovator.organization}</small>
+          </article>
+          <article>
+            <span>حوزه</span>
+            <strong>{plan.field}</strong>
+            <small>{plan.call}</small>
+          </article>
+          <article>
+            <span>وضعیت نهایی</span>
+            <FinalPlanStatusBadge status={plan.finalStatus} />
+            <small>
+              {plan.resultsPublished
+                ? "منتشر شده برای فناور"
+                : "هنوز منتشر نشده"}
+            </small>
+          </article>
+          <article>
+            <span>تاریخ ثبت نتیجه</span>
+            <strong>
+              {toPersianDigits(
+                plan.finalStatusDate || plan.deadline || "ثبت نشده",
+              )}
+            </strong>
+            <small>وضعیت قابل مشاهده برای فناور</small>
+          </article>
+        </div>
+
+        <div className="committee-plans__review-layout">
+          <div className="committee-plans__info-stack">
+            <div className="committee-plans__info-card">
+              <h4>اطلاعات طرح</h4>
+              <dl>
+                <div>
+                  <dt>فراخوان</dt>
+                  <dd>{plan.call}</dd>
+                </div>
+                <div>
+                  <dt>تاریخ ارسال</dt>
+                  <dd>{toPersianDigits(plan.sentAt)}</dd>
+                </div>
+                <div>
+                  <dt>فایل پروپوزال</dt>
+                  <dd>{plan.proposalFile || "ثبت نشده"}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <a
+              href={getPlanDownloadHref(plan)}
+              download={plan.proposalFile}
+              className="committee-plans__download-link"
+            >
+              دانلود پروپوزال
+            </a>
+          </div>
+
+          <div className="committee-plans__feedback-card">
+            <div className="committee-plans__feedback-head">
+              <div>
+                <span>پرونده نهایی قابل مشاهده برای فناور</span>
+                <h4>وضعیت نهایی و همه بازخوردها</h4>
+              </div>
+            </div>
+
+            <div className="committee-plans__previous-feedback">
+              <span>نتیجه نهایی</span>
+              <p>{plan.finalStatus || "هنوز وضعیت نهایی ثبت نشده است."}</p>
+              <small>
+                {plan.resultsPublished
+                  ? "این نتیجه برای فناور منتشر شده است."
+                  : "این نتیجه هنوز برای فناور منتشر نشده است."}
+              </small>
+            </div>
+
+            {publishedRecordFeedbackItems.length ? (
+              publishedRecordFeedbackItems.map((feedback) => (
+                <div
+                  className="committee-plans__previous-feedback"
+                  key={feedback.id}
+                >
+                  <span>{feedback.title}</span>
+                  <p>{feedback.text}</p>
+                  <small>{toPersianDigits(feedback.meta)}</small>
+                </div>
+              ))
+            ) : (
+              <div className="committee-plans__warning">
+                هنوز بازخوردی برای این پرونده ثبت نشده است.
+              </div>
+            )}
+
+            <div className="committee-plans__readonly-note">
+              این همان پرونده نهایی است که فناور بعد از انتشار نتیجه مشاهده
+              می‌کند.
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const toggleFolder = (folderId) => {
     if (readOnly || !setPlans) return;
-    setPlans((currentPlans) =>
-      currentPlans.map((item) => {
-        if (item.id !== plan.id) return item;
-        const hasFolder = item.folders.includes(folderId);
-        return {
-          ...item,
-          folders: hasFolder
-            ? item.folders.filter((id) => id !== folderId)
-            : [...item.folders, folderId],
-        };
-      }),
-    );
+    toggleCommitteePersonalPlanFolder(plan.sourceId || plan.id, folderId);
+    setPlans(getCommitteeWorkspacePlans());
   };
 
   const saveFeedback = () => {
     if (readOnly || !setPlans || !feedbackText.trim()) return;
 
-    setPlans((currentPlans) =>
-      currentPlans.map((item) =>
-        item.id === plan.id
-          ? {
-              ...item,
-              committeeReviewStatus: "بررسی شده",
-              committeeReviewRecommendation: recommendation,
-              committeeReviewScore: score,
-              committeeReviewFeedback: {
-                text: feedbackText.trim(),
-                createdAt: `${getCurrentSimplePersianDate()} - ثبت امروز`,
-              },
-            }
-          : item,
-      ),
-    );
+    saveCommitteePersonalPlanNote(plan.sourceId || plan.id, {
+      feedbackText: feedbackText.trim(),
+      recommendation,
+      score,
+      viewed: true,
+    });
+
+    setPlans(getCommitteeWorkspacePlans());
   };
 
   const deleteFeedback = () => {
@@ -3767,18 +4380,8 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
     const confirmed = window.confirm("آیا از حذف بازخورد این طرح مطمئن هستید؟");
     if (!confirmed) return;
 
-    setPlans((currentPlans) =>
-      currentPlans.map((item) =>
-        item.id === plan.id
-          ? {
-              ...item,
-              committeeReviewRecommendation: "",
-              committeeReviewScore: "",
-              committeeReviewFeedback: null,
-            }
-          : item,
-      ),
-    );
+    deleteCommitteePersonalPlanNote(plan.sourceId || plan.id);
+    setPlans(getCommitteeWorkspacePlans());
     setFeedbackText("");
     setRecommendation("قابل بررسی در مرحله بعد");
     setScore("");
@@ -3988,31 +4591,19 @@ function CurrentPlansPanel({ plans, setPlans }) {
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId);
 
   const openPlan = (planId) => {
-    setPlans((currentPlans) =>
-      currentPlans.map((plan) =>
-        plan.id === planId &&
-        normalizePlanReviewStatus(plan.committeeReviewStatus) ===
-          "در انتظار بررسی"
-          ? { ...plan, committeeReviewStatus: "بررسی شده" }
-          : plan,
-      ),
-    );
+    const plan = plans.find((item) => item.id === planId);
+    if (plan) {
+      markCommitteePersonalPlanViewed(plan.sourceId || plan.id);
+      setPlans(getCommitteeWorkspacePlans());
+    }
     setSelectedPlanId(planId);
   };
 
   const toggleFolder = (planId, folderId) => {
-    setPlans((currentPlans) =>
-      currentPlans.map((plan) => {
-        if (plan.id !== planId) return plan;
-        const hasFolder = plan.folders.includes(folderId);
-        return {
-          ...plan,
-          folders: hasFolder
-            ? plan.folders.filter((item) => item !== folderId)
-            : [...plan.folders, folderId],
-        };
-      }),
-    );
+    const plan = plans.find((item) => item.id === planId);
+    if (!plan) return;
+    toggleCommitteePersonalPlanFolder(plan.sourceId || plan.id, folderId);
+    setPlans(getCommitteeWorkspacePlans());
   };
 
   if (selectedPlan) {
@@ -4056,6 +4647,8 @@ function FinalDecisionPanel({
   const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [feedbackText, setFeedbackText] = useState("");
   const [finalStatus, setFinalStatus] = useState("قبول");
+  const [publishForBusiness, setPublishForBusiness] = useState(false);
+  const [publishForSite, setPublishForSite] = useState(false);
   const [notice, setNotice] = useState("");
   const [filteredDecisionContext, setFilteredDecisionContext] = useState({
     planIds: [],
@@ -4074,15 +4667,37 @@ function FinalDecisionPanel({
 
   useEffect(() => {
     if (!selectedPlan) return;
+    const sitePublicationRequest = getPlanSitePublicationRequestByPlanId(
+      selectedPlan.sourceId || selectedPlan.id,
+      { destination: SITE_PUBLICATION_DESTINATIONS.SUCCESSFUL_PROJECTS },
+    );
+
     setFeedbackText(selectedPlan.committeeFeedback || "");
     setFinalStatus(selectedPlan.finalStatus || "قبول");
+    setPublishForBusiness(Boolean(selectedPlan.publishForBusiness));
+    setPublishForSite(Boolean(sitePublicationRequest));
   }, [selectedPlan]);
 
   const openDecision = (planId, context = {}) => {
     const plan = plans.find((item) => item.id === planId);
+    const sourcePlanId = plan?.sourceId || plan?.id || planId;
+
+    if (plan && !plan.finalStatus && !plan.resultsPublished) {
+      markPlanFinalReviewStarted(sourcePlanId);
+      setPlans(getCommitteeWorkspacePlans());
+    }
+
     setSelectedPlanId(planId);
     setFeedbackText(plan?.committeeFeedback || "");
     setFinalStatus(plan?.finalStatus || "قبول");
+    setPublishForBusiness(Boolean(plan?.publishForBusiness));
+    setPublishForSite(
+      Boolean(
+        getPlanSitePublicationRequestByPlanId(sourcePlanId, {
+          destination: SITE_PUBLICATION_DESTINATIONS.SUCCESSFUL_PROJECTS,
+        }),
+      ),
+    );
     setFilteredDecisionContext({
       planIds: context.planIds || plans.map((item) => item.id),
       statusLabel: context.statusLabel || "همه",
@@ -4094,24 +4709,51 @@ function FinalDecisionPanel({
     setSelectedPlanId(null);
     setFeedbackText("");
     setFinalStatus("قبول");
+    setPublishForBusiness(false);
+    setPublishForSite(false);
   };
 
   const saveDecision = () => {
     if (!selectedPlan) return;
-    setPlans((currentPlans) =>
-      currentPlans.map((plan) =>
-        plan.id === selectedPlan.id
-          ? {
-              ...plan,
-              committeeFeedback: feedbackText.trim(),
-              finalStatus,
-              finalStatusDate: getCurrentSimplePersianDate(),
-              resultsPublished: false,
-            }
-          : plan,
-      ),
+
+    const sourcePlanId = selectedPlan.sourceId || selectedPlan.id;
+
+    savePlanFinalDecision(sourcePlanId, finalStatus, feedbackText.trim(), {
+      publishForBusiness,
+    });
+
+    if (publishForBusiness) {
+      upsertSitePublicationCandidateFromPlan(selectedPlan, {
+        finalStatus,
+        committeeNote: feedbackText.trim(),
+        destination: SITE_PUBLICATION_DESTINATIONS.OPPORTUNITIES,
+        notifyInnovator: false,
+      });
+    } else {
+      cancelSitePublicationCandidate(sourcePlanId, {
+        destination: SITE_PUBLICATION_DESTINATIONS.OPPORTUNITIES,
+      });
+    }
+
+    if (publishForSite) {
+      upsertSitePublicationCandidateFromPlan(selectedPlan, {
+        finalStatus,
+        committeeNote: feedbackText.trim(),
+        destination: SITE_PUBLICATION_DESTINATIONS.SUCCESSFUL_PROJECTS,
+        notifyInnovator: false,
+      });
+    } else {
+      cancelSitePublicationCandidate(sourcePlanId, {
+        destination: SITE_PUBLICATION_DESTINATIONS.SUCCESSFUL_PROJECTS,
+      });
+    }
+
+    setPlans(getCommitteeWorkspacePlans());
+    setNotice(
+      publishForSite
+        ? "وضعیت نهایی ذخیره شد و درخواست تکمیل صفحه انتشار سایت برای فناور ثبت شد."
+        : "وضعیت نهایی و بازخورد دبیرخانه و کمیته راهبری ذخیره شد.",
     );
-    setNotice("وضعیت نهایی و بازخورد دبیرخانه و کمیته راهبری ذخیره شد.");
   };
 
   const publishResults = () => {
@@ -4121,9 +4763,41 @@ function FinalDecisionPanel({
     );
     if (!confirmed) return;
 
-    setPlans((currentPlans) =>
-      currentPlans.map((plan) => ({ ...plan, resultsPublished: true })),
-    );
+    publishPlanResults();
+
+    const refreshedPlans = getCommitteeWorkspacePlans();
+
+    refreshedPlans.forEach((plan) => {
+      const sourcePlanId = plan.sourceId || plan.id;
+      const commercialIntroductionRequest =
+        getPlanSitePublicationRequestByPlanId(sourcePlanId, {
+          destination: SITE_PUBLICATION_DESTINATIONS.OPPORTUNITIES,
+        });
+      const sitePublicationRequest = getPlanSitePublicationRequestByPlanId(
+        sourcePlanId,
+        { destination: SITE_PUBLICATION_DESTINATIONS.SUCCESSFUL_PROJECTS },
+      );
+
+      if (plan.publishForBusiness || commercialIntroductionRequest) {
+        upsertSitePublicationCandidateFromPlan(plan, {
+          finalStatus: plan.finalStatus,
+          committeeNote: plan.committeeFeedback || plan.finalDecisionNote,
+          destination: SITE_PUBLICATION_DESTINATIONS.OPPORTUNITIES,
+          notifyInnovator: true,
+        });
+      }
+
+      if (sitePublicationRequest) {
+        upsertSitePublicationCandidateFromPlan(plan, {
+          finalStatus: plan.finalStatus,
+          committeeNote: plan.committeeFeedback || plan.finalDecisionNote,
+          destination: SITE_PUBLICATION_DESTINATIONS.SUCCESSFUL_PROJECTS,
+          notifyInnovator: true,
+        });
+      }
+    });
+
+    setPlans(getCommitteeWorkspacePlans());
     setResultsPublished(true);
     setNotice("نتایج نهایی برای فناوران منتشر شد.");
   };
@@ -4236,6 +4910,35 @@ function FinalDecisionPanel({
                 ))}
               </select>
             </label>
+
+            <div className="committee-plans__business-share">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={publishForBusiness}
+                  onChange={(event) =>
+                    setPublishForBusiness(event.target.checked)
+                  }
+                />
+                <span>
+                  بعد از انتشار نهایی، این طرح به عنوان «موقعیت تجاری» به فناور
+                  معرفی شود.
+                </span>
+              </label>
+            </div>
+            <div className="committee-plans__business-share">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={publishForSite}
+                  onChange={(event) => setPublishForSite(event.target.checked)}
+                />
+                <span>
+                  بعد از انتشار نهایی، این طرح برای تکمیل صفحه «پروژه موفق /
+                  دستاورد» به فناور معرفی شود.
+                </span>
+              </label>
+            </div>
             <div className="committee-plans__decision-actions">
               <button
                 type="button"
@@ -4281,18 +4984,18 @@ function FinalDecisionPanel({
               ? "committee-plans__publish-results committee-plans__publish-results--published"
               : "committee-plans__publish-results"
           }
-          disabled={!allPlansFinalized || resultsPublished}
+          disabled={!allPlansFinalized}
           onClick={publishResults}
           title={
             resultsPublished
-              ? "نتایج قبلاً منتشر شده است"
+              ? "همگام‌سازی دوباره طرح‌های معرفی‌شده و ارسال اعلان‌های جاافتاده"
               : !allPlansFinalized
                 ? "همه طرح‌ها باید وضعیت نهایی داشته باشند"
                 : "انتشار نتایج برای فناوران"
           }
         >
           {resultsPublished
-            ? "نتایج قبلاً منتشر شده"
+            ? "همگام‌سازی معرفی‌ها"
             : "انتشار نتایج برای فناوران"}
         </button>
       </div>
@@ -4403,13 +5106,19 @@ function AcceptedPlansPanel({ plans }) {
     setNotice("");
   };
 
+  const reloadAcceptedPlanTasks = () => {
+    setTasksByPlan(buildAcceptedPlanTasksFromService(acceptedPlans));
+  };
+
   const updateTask = (planId, taskId, updates) => {
+    updateTaskInService(taskId, updates);
     setTasksByPlan((currentTasks) => ({
       ...currentTasks,
       [planId]: (currentTasks[planId] || []).map((task) =>
         task.id === taskId ? { ...task, ...updates } : task,
       ),
     }));
+    window.setTimeout(reloadAcceptedPlanTasks, 0);
   };
 
   const createTask = (event) => {
@@ -4421,17 +5130,14 @@ function AcceptedPlansPanel({ plans }) {
     )
       return;
 
-    const task = createAcceptedTask(
-      newTask.title,
-      newTask.deadlineDate,
-      newTask.deadlineTime,
-      newTask.managerMessage,
-    );
+    addTaskToService(selectedPlan.sourceId || selectedPlan.id, {
+      title: newTask.title,
+      deadlineDate: newTask.deadlineDate,
+      deadlineTime: newTask.deadlineTime,
+      managerMessage: newTask.managerMessage,
+    });
 
-    setTasksByPlan((currentTasks) => ({
-      ...currentTasks,
-      [selectedPlan.id]: [task, ...(currentTasks[selectedPlan.id] || [])],
-    }));
+    reloadAcceptedPlanTasks();
 
     setNewTask({
       title: "",
@@ -4957,6 +5663,436 @@ function AcceptedPlansPanel({ plans }) {
   );
 }
 
+function getIntroducedPlanFilterCounts(requests = []) {
+  return {
+    all: requests.length,
+    successful: requests.filter(
+      (request) =>
+        request.destination ===
+        SITE_PUBLICATION_DESTINATIONS.SUCCESSFUL_PROJECTS,
+    ).length,
+    commercial: requests.filter(
+      (request) =>
+        request.destination === SITE_PUBLICATION_DESTINATIONS.OPPORTUNITIES,
+    ).length,
+  };
+}
+
+function mapIntroducedRequestToBusinessDetails(request = {}) {
+  const draft = request.draft || {};
+  const cooperationNeeds = Array.isArray(draft.cooperationNeedTypes)
+    ? draft.cooperationNeedTypes
+    : Array.isArray(draft.cooperationNeeds)
+      ? draft.cooperationNeeds
+      : [];
+
+  return {
+    title: draft.title || request.planTitle || "موقعیت همکاری تجاری",
+    field: draft.field || request.field || "همکاری تجاری",
+    category: draft.field || request.field || "همکاری تجاری",
+    collaborationType:
+      cooperationNeeds.join("، ") || "همکاری تجاری روی طرح معرفی‌شده",
+    location: "قابل مذاکره",
+    estimatedSupport: draft.investmentNeed || "قابل مذاکره",
+    duration: "براساس توافق طرفین",
+    summary:
+      draft.summary ||
+      request.committeeNote ||
+      "موقعیت همکاری تجاری معرفی‌شده توسط کمیته.",
+    description:
+      draft.summary ||
+      request.committeeNote ||
+      "موقعیت همکاری تجاری معرفی‌شده توسط کمیته.",
+    challenge:
+      draft.investmentNeed ||
+      "نیاز همکاری یا سرمایه‌گذاری در اطلاعات طرح ثبت شده است.",
+    solution:
+      draft.contentHtml ||
+      draft.description ||
+      "شرح راهکار در اطلاعات تکمیل‌شده توسط فناور ثبت شده است.",
+    businessValue: draft.commercializationPercent
+      ? `ظرفیت تجاری‌سازی ${draft.commercializationPercent} درصد اعلام شده است.`
+      : "ظرفیت تجاری‌سازی توسط فناور ثبت شده است.",
+    requirements: cooperationNeeds.length
+      ? cooperationNeeds
+      : ["بررسی ظرفیت همکاری", "ثبت درخواست همکاری", "پیگیری از طریق دبیرخانه"],
+    tags: [
+      draft.field || request.field || "همکاری تجاری",
+      request.planTitle || "طرح معرفی‌شده",
+    ],
+  };
+}
+
+function IntroducedPlansPanel() {
+  const [requests, setRequests] = useState(() => getSitePublicationRequests());
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [feedback, setFeedback] = useState("");
+  const [selectedDisplayGroups, setSelectedDisplayGroups] = useState([]);
+  const [notice, setNotice] = useState("");
+
+  const counts = getIntroducedPlanFilterCounts(requests);
+  const selectedRequest = requests.find(
+    (request) => String(request.id) === String(selectedRequestId),
+  );
+
+  const filteredRequests = requests.filter((request) => {
+    if (activeFilter === "successful") {
+      return (
+        request.destination ===
+        SITE_PUBLICATION_DESTINATIONS.SUCCESSFUL_PROJECTS
+      );
+    }
+
+    if (activeFilter === "commercial") {
+      return (
+        request.destination === SITE_PUBLICATION_DESTINATIONS.OPPORTUNITIES
+      );
+    }
+
+    return true;
+  });
+
+  const refreshRequests = (message = "") => {
+    const nextRequests = getSitePublicationRequests();
+    setRequests(nextRequests);
+    setNotice(message);
+
+    if (selectedRequestId) {
+      const updatedSelected = nextRequests.find(
+        (request) => String(request.id) === String(selectedRequestId),
+      );
+
+      if (!updatedSelected) {
+        setSelectedRequestId(null);
+      }
+    }
+  };
+
+  const openRequest = (request) => {
+    setSelectedRequestId(request.id);
+    setFeedback(request.committeeFeedback || "");
+    setSelectedDisplayGroups(
+      request.displayGroups?.length ? request.displayGroups : [],
+    );
+    setNotice("");
+  };
+
+  const closeRequest = () => {
+    setSelectedRequestId(null);
+    setFeedback("");
+    setSelectedDisplayGroups([]);
+  };
+
+  const toggleDisplayGroup = (group) => {
+    setSelectedDisplayGroups((currentGroups) => {
+      const allGroups = SITE_PUBLICATION_DISPLAY_GROUPS;
+
+      if (group === "همه") {
+        return currentGroups.length === allGroups.length ? [] : [...allGroups];
+      }
+
+      const hasGroup = currentGroups.includes(group);
+      return hasGroup
+        ? currentGroups.filter((item) => item !== group)
+        : [...currentGroups, group];
+    });
+  };
+
+  const openPreview = (request) => {
+    saveSitePublicationPreviewItem(request);
+    window.open(
+      "/business/opportunities/preview?preview=site-publication",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
+
+  const sendRevision = () => {
+    if (!selectedRequest) return;
+
+    try {
+      returnSitePublicationForRevision(selectedRequest.id, feedback);
+      refreshRequests("بازخورد اصلاحی برای فناور ارسال شد.");
+      closeRequest();
+    } catch (error) {
+      setNotice(error?.message || "ثبت بازخورد انجام نشد.");
+    }
+  };
+
+  const publishRequest = () => {
+    if (!selectedRequest) return;
+
+    const confirmed = window.confirm(
+      selectedRequest.destination ===
+        SITE_PUBLICATION_DESTINATIONS.OPPORTUNITIES
+        ? "این موقعیت تجاری در پنل همکاران تجاری منتشر شود؟"
+        : "این پروژه در سایت منتشر شود؟",
+    );
+
+    if (!confirmed) return;
+
+    if (
+      selectedRequest.destination ===
+      SITE_PUBLICATION_DESTINATIONS.OPPORTUNITIES
+    ) {
+      savePlanBusinessOpportunityDetails(
+        selectedRequest.planId,
+        mapIntroducedRequestToBusinessDetails(selectedRequest),
+      );
+      publishPlanBusinessOpportunity(selectedRequest.planId);
+    }
+
+    publishSitePublicationRequest(selectedRequest.id, {
+      destination: selectedRequest.destination,
+      displayGroups:
+        selectedRequest.destination ===
+        SITE_PUBLICATION_DESTINATIONS.SUCCESSFUL_PROJECTS
+          ? selectedDisplayGroups
+          : [],
+    });
+
+    refreshRequests("انتشار نهایی انجام شد.");
+    closeRequest();
+  };
+
+  if (selectedRequest) {
+    const draft = selectedRequest.draft || {};
+    const isSubmitted =
+      selectedRequest.status === SITE_PUBLICATION_STATUS.SUBMITTED_TO_COMMITTEE;
+    const isPublished =
+      selectedRequest.status === SITE_PUBLICATION_STATUS.PUBLISHED;
+    const canPublish =
+      isSubmitted ||
+      isPublished ||
+      selectedRequest.status === SITE_PUBLICATION_STATUS.NEEDS_REVISION;
+
+    return (
+      <section className="committee-dashboard__panel introduced-plans">
+        <div className="committee-dashboard__panel-header">
+          <div>
+            <span>طرح‌های معرفی شده</span>
+            <h3>{draft.title || selectedRequest.planTitle}</h3>
+            <p>
+              بررسی اطلاعات تکمیل‌شده توسط فناور و تعیین انتشار نهایی یا اصلاح.
+            </p>
+          </div>
+          <button type="button" onClick={closeRequest}>
+            بازگشت به لیست
+          </button>
+        </div>
+
+        <div className="introduced-plans__detail-grid">
+          <article>
+            <span>نوع معرفی</span>
+            <strong>
+              {selectedRequest.publicationType || selectedRequest.destination}
+            </strong>
+          </article>
+          <article>
+            <span>وضعیت</span>
+            <strong>{selectedRequest.status}</strong>
+          </article>
+          <article>
+            <span>فناور</span>
+            <strong>{selectedRequest.innovatorName}</strong>
+          </article>
+          <article>
+            <span>آخرین به‌روزرسانی</span>
+            <strong>
+              {selectedRequest.updatedAt || selectedRequest.createdAt}
+            </strong>
+          </article>
+        </div>
+
+        <div className="introduced-plans__preview-box">
+          <h4>اطلاعات تکمیل‌شده</h4>
+          <p>
+            <b>خلاصه معرفی:</b> {draft.summary || "ثبت نشده"}
+          </p>
+          <p>
+            <b>حوزه:</b> {draft.field || selectedRequest.field || "ثبت نشده"}
+          </p>
+          <p>
+            <b>نیاز به سرمایه:</b> {draft.investmentNeed || "ثبت نشده"}
+          </p>
+          <p>
+            <b>نیازمندی همکاری:</b>{" "}
+            {Array.isArray(draft.cooperationNeedTypes) &&
+            draft.cooperationNeedTypes.length
+              ? draft.cooperationNeedTypes.join("، ")
+              : "ثبت نشده"}
+          </p>
+        </div>
+
+        <div className="introduced-plans__reports-box">
+          <h4>گزارش‌ها و مستندات</h4>
+          {draft.reports?.length ? (
+            <div className="introduced-plans__reports-list">
+              {draft.reports.map((report, index) => (
+                <article key={report.id || index}>
+                  <strong>{report.title || `گزارش ${index + 1}`}</strong>
+                  <span>{report.status || "ثبت نشده"}</span>
+                  {report.text && <p>{report.text}</p>}
+                  {report.fileUrl && (
+                    <a
+                      href={report.fileUrl}
+                      download={report.fileName || report.title}
+                    >
+                      دانلود فایل{" "}
+                      {report.fileName ? `(${report.fileName})` : ""}
+                    </a>
+                  )}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p>گزارشی ثبت نشده است.</p>
+          )}
+        </div>
+
+        {selectedRequest.destination ===
+          SITE_PUBLICATION_DESTINATIONS.SUCCESSFUL_PROJECTS && (
+          <div className="introduced-plans__display-groups">
+            <h4>محل نمایش در صفحه فرصت‌های همکاری</h4>
+            <p>
+              پیش‌فرض هیچ گزینه‌ای انتخاب نیست. با انتخاب «همه»، سه محل نمایش با
+              هم انتخاب یا حذف می‌شوند.
+            </p>
+            <div>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={
+                    selectedDisplayGroups.length ===
+                    SITE_PUBLICATION_DISPLAY_GROUPS.length
+                  }
+                  onChange={() => toggleDisplayGroup("همه")}
+                />
+                همه
+              </label>
+              {SITE_PUBLICATION_DISPLAY_GROUPS.map((group) => (
+                <label key={group}>
+                  <input
+                    type="checkbox"
+                    checked={selectedDisplayGroups.includes(group)}
+                    onChange={() => toggleDisplayGroup(group)}
+                  />
+                  {group}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <label className="introduced-plans__feedback-field">
+          <span>بازخورد اصلاحی کمیته</span>
+          <textarea
+            value={feedback}
+            onChange={(event) => setFeedback(event.target.value)}
+            placeholder="اگر اطلاعات نیازمند اصلاح است، بازخورد را اینجا بنویسید..."
+          />
+        </label>
+
+        <div className="introduced-plans__actions">
+          <button type="button" onClick={() => openPreview(selectedRequest)}>
+            پیش‌نمایش
+          </button>
+          <button
+            type="button"
+            onClick={sendRevision}
+            disabled={!feedback.trim()}
+          >
+            نیازمند اصلاح
+          </button>
+          <button type="button" onClick={publishRequest} disabled={!canPublish}>
+            {isPublished ? "ذخیره تغییرات انتشار" : "تایید و انتشار"}
+          </button>
+        </div>
+
+        {notice && <p className="committee-dashboard__notice">{notice}</p>}
+      </section>
+    );
+  }
+
+  return (
+    <section className="committee-dashboard__panel introduced-plans">
+      <div className="committee-dashboard__panel-header">
+        <div>
+          <span>طرح‌های معرفی شده</span>
+          <h3>بررسی موقعیت‌های تجاری و پروژه‌های موفق</h3>
+          <p>
+            مواردی که فناور برای بررسی کمیته ارسال کرده، در این بخش مدیریت
+            می‌شود.
+          </p>
+        </div>
+      </div>
+
+      <div className="introduced-plans__filters">
+        <button
+          type="button"
+          className={
+            activeFilter === "all" ? "introduced-plans__filter--active" : ""
+          }
+          onClick={() => setActiveFilter("all")}
+        >
+          همه ({toPersianDigits(counts.all)})
+        </button>
+        <button
+          type="button"
+          className={
+            activeFilter === "successful"
+              ? "introduced-plans__filter--active"
+              : ""
+          }
+          onClick={() => setActiveFilter("successful")}
+        >
+          پروژه‌های موفق ({toPersianDigits(counts.successful)})
+        </button>
+        <button
+          type="button"
+          className={
+            activeFilter === "commercial"
+              ? "introduced-plans__filter--active"
+              : ""
+          }
+          onClick={() => setActiveFilter("commercial")}
+        >
+          موقعیت‌های تجاری ({toPersianDigits(counts.commercial)})
+        </button>
+      </div>
+
+      <div className="introduced-plans__list">
+        {filteredRequests.length ? (
+          filteredRequests.map((request, index) => (
+            <article className="introduced-plans__row" key={request.id}>
+              <span className="introduced-plans__row-number">
+                {toPersianDigits(index + 1)}
+              </span>
+              <div>
+                <strong>{request.draft?.title || request.planTitle}</strong>
+                <p>{request.trackingCode || request.planId}</p>
+              </div>
+              <span>{request.publicationType || request.destination}</span>
+              <span>{request.status}</span>
+              <span>{request.updatedAt || request.createdAt}</span>
+              <button type="button" onClick={() => openRequest(request)}>
+                بررسی
+              </button>
+            </article>
+          ))
+        ) : (
+          <div className="committee-plans__warning">
+            هنوز موردی در این فیلتر وجود ندارد.
+          </div>
+        )}
+      </div>
+
+      {notice && <p className="committee-dashboard__notice">{notice}</p>}
+    </section>
+  );
+}
+
 function PlansHistoryPanel({ plans }) {
   const [selectedPlanId, setSelectedPlanId] = useState(null);
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId);
@@ -5286,8 +6422,9 @@ function ReviewerFeedbacksPanel() {
 
 function BusinessPartnersInfoPanel() {
   const [searchTerm, setSearchTerm] = useState("");
+  const partners = getBusinessPartnerProfiles();
 
-  const totals = BUSINESS_PARTNERS.reduce(
+  const totals = partners.reduce(
     (summary, partner) => ({
       viewedOpportunities:
         summary.viewedOpportunities + partner.viewedOpportunities,
@@ -5306,7 +6443,7 @@ function BusinessPartnersInfoPanel() {
     },
   );
 
-  const filteredPartners = BUSINESS_PARTNERS.filter((partner) => {
+  const filteredPartners = partners.filter((partner) => {
     const normalized = searchTerm.trim().toLowerCase();
     if (!normalized) return true;
     return (
@@ -5342,7 +6479,7 @@ function BusinessPartnersInfoPanel() {
       <div className="committee-business-partners__summary-grid">
         <article>
           <span>تعداد همکاران</span>
-          <strong>{toPersianDigits(BUSINESS_PARTNERS.length)}</strong>
+          <strong>{toPersianDigits(partners.length)}</strong>
           <p>همکاران تجاری ثبت‌شده در سامانه</p>
         </article>
         <article>
@@ -5427,15 +6564,41 @@ function BusinessPartnersInfoPanel() {
   );
 }
 
+function isFinalBusinessCollaborationRequest(request) {
+  return [
+    "پاسخ داده شده",
+    "پاسخ نهایی داده شده",
+    "answered",
+    "final_answered",
+  ].includes(request?.status);
+}
+
+function isNeedsInfoBusinessCollaborationRequest(request) {
+  return [
+    "نیازمند تکمیل اطلاعات",
+    "نیازمند اصلاح",
+    "needs_info",
+    "needs_revision",
+  ].includes(request?.status);
+}
+
 function BusinessCollaborationRequestsPanel() {
-  const [requests, setRequests] = useState(
-    INITIAL_BUSINESS_COLLABORATION_REQUESTS,
+  const [requests, setRequests] = useState(() =>
+    getBusinessCollaborationRequests(),
   );
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [replyText, setReplyText] = useState("");
+  const [replyDecision, setReplyDecision] = useState("answered");
   const [notice, setNotice] = useState("");
+
+  const partners = getBusinessPartnerProfiles();
+  const opportunities = getBusinessOpportunityOverviews();
+
+  const refreshRequests = () => {
+    setRequests(getBusinessCollaborationRequests());
+  };
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -5444,42 +6607,64 @@ function BusinessCollaborationRequestsPanel() {
   }, [notice]);
 
   const selectedRequest = requests.find(
-    (request) => request.id === selectedRequestId,
+    (request) => String(request.id) === String(selectedRequestId),
   );
   const selectedPartner = selectedRequest
-    ? BUSINESS_PARTNERS.find(
-        (partner) => partner.id === selectedRequest.partnerId,
+    ? partners.find(
+        (partner) =>
+          String(partner.id) === String(selectedRequest.partnerId) ||
+          String(partner.userId) === String(selectedRequest.partnerUserId),
       )
     : null;
   const selectedOpportunity = selectedRequest
-    ? BUSINESS_OPPORTUNITIES_OVERVIEW.find(
-        (opportunity) => opportunity.id === selectedRequest.opportunityId,
+    ? opportunities.find(
+        (opportunity) =>
+          String(opportunity.id) === String(selectedRequest.opportunityId),
       )
     : null;
 
+  const activeRequests = requests.filter(
+    (request) => !isFinalBusinessCollaborationRequest(request),
+  );
+  const historyRequests = requests.filter((request) =>
+    isFinalBusinessCollaborationRequest(request),
+  );
   const statusCounts = {
     all: requests.length,
+    active: activeRequests.length,
+    history: historyRequests.length,
     waiting: requests.filter((request) => request.status === "در انتظار پیگیری")
       .length,
     tracking: requests.filter((request) => request.status === "در حال پیگیری")
       .length,
-    answered: requests.filter((request) => request.status === "پاسخ داده شده")
-      .length,
+    needsInfo: requests.filter((request) =>
+      isNeedsInfoBusinessCollaborationRequest(request),
+    ).length,
+    answered: historyRequests.length,
   };
 
   const filteredRequests = requests.filter((request) => {
-    const partner = BUSINESS_PARTNERS.find(
-      (item) => item.id === request.partnerId,
+    const partner = partners.find(
+      (item) =>
+        String(item.id) === String(request.partnerId) ||
+        String(item.userId) === String(request.partnerUserId),
     );
-    const opportunity = BUSINESS_OPPORTUNITIES_OVERVIEW.find(
-      (item) => item.id === request.opportunityId,
+    const opportunity = opportunities.find(
+      (item) => String(item.id) === String(request.opportunityId),
     );
     const normalized = searchTerm.trim().toLowerCase();
     const matchesStatus =
       statusFilter === "all" ||
+      (statusFilter === "active" &&
+        !isFinalBusinessCollaborationRequest(request)) ||
+      (statusFilter === "history" &&
+        isFinalBusinessCollaborationRequest(request)) ||
       (statusFilter === "waiting" && request.status === "در انتظار پیگیری") ||
       (statusFilter === "tracking" && request.status === "در حال پیگیری") ||
-      (statusFilter === "answered" && request.status === "پاسخ داده شده");
+      (statusFilter === "needsInfo" &&
+        isNeedsInfoBusinessCollaborationRequest(request)) ||
+      (statusFilter === "answered" &&
+        isFinalBusinessCollaborationRequest(request));
     const matchesSearch =
       !normalized ||
       request.title.toLowerCase().includes(normalized) ||
@@ -5492,57 +6677,81 @@ function BusinessCollaborationRequestsPanel() {
   });
 
   const openRequest = (requestId) => {
-    const targetRequest = requests.find((request) => request.id === requestId);
+    const targetRequest = requests.find(
+      (request) => String(request.id) === String(requestId),
+    );
     if (!targetRequest) return;
 
     if (targetRequest.status === "در انتظار پیگیری") {
-      setRequests((currentRequests) =>
-        currentRequests.map((request) =>
-          request.id === requestId
-            ? { ...request, status: "در حال پیگیری" }
-            : request,
-        ),
-      );
+      markBusinessCollaborationRequestTracking(requestId);
+      refreshRequests();
     }
 
     setSelectedRequestId(requestId);
     setReplyText(targetRequest.supportReply || "");
+    setReplyDecision(
+      isNeedsInfoBusinessCollaborationRequest(targetRequest)
+        ? "needs-info"
+        : "answered",
+    );
   };
 
   const closeRequest = () => {
     setSelectedRequestId(null);
     setReplyText("");
+    setReplyDecision("answered");
+    refreshRequests();
   };
 
   const saveReply = () => {
     if (!selectedRequest || !replyText.trim()) return;
 
-    setRequests((currentRequests) =>
-      currentRequests.map((request) =>
-        request.id === selectedRequest.id
-          ? {
-              ...request,
-              status: "پاسخ داده شده",
-              supportReply: replyText.trim(),
-              repliedAt: getCurrentPersianDateTime(),
-            }
-          : request,
-      ),
+    const nextStatus =
+      replyDecision === "needs-info"
+        ? "نیازمند تکمیل اطلاعات"
+        : "پاسخ داده شده";
+
+    saveBusinessCollaborationRequestReply(
+      selectedRequest.id,
+      replyText.trim(),
+      {
+        status: nextStatus,
+      },
     );
-    setNotice("پاسخ درخواست همکاری با موفقیت ثبت شد.");
+    refreshRequests();
+    setNotice(
+      replyDecision === "needs-info"
+        ? "پیام تکمیل اطلاعات برای همکار تجاری ثبت شد."
+        : "پاسخ نهایی درخواست همکاری ثبت شد و درخواست به تاریخچه منتقل شد.",
+    );
+    setStatusFilter(replyDecision === "needs-info" ? "needsInfo" : "history");
   };
 
   if (selectedRequest) {
     const activeRequest =
-      requests.find((request) => request.id === selectedRequest.id) ||
-      selectedRequest;
+      requests.find(
+        (request) => String(request.id) === String(selectedRequest.id),
+      ) || selectedRequest;
+    const activePartner = partners.find(
+      (partner) =>
+        String(partner.id) === String(activeRequest.partnerId) ||
+        String(partner.userId) === String(activeRequest.partnerUserId),
+    );
+    const activeOpportunity = opportunities.find(
+      (opportunity) =>
+        String(opportunity.id) === String(activeRequest.opportunityId),
+    );
     const hasReply = Boolean(activeRequest.supportReply);
+    const isFinal = isFinalBusinessCollaborationRequest(activeRequest);
+    const isNeedsInfo = isNeedsInfoBusinessCollaborationRequest(activeRequest);
 
     return (
       <section className="committee-dashboard__panel committee-business-requests">
         <div className="committee-dashboard__panel-header committee-business-requests__header">
           <div>
-            <span>جزئیات درخواست همکاری</span>
+            <span>
+              {isFinal ? "مشاهده درخواست نهایی‌شده" : "جزئیات درخواست همکاری"}
+            </span>
             <h3>{activeRequest.title}</h3>
             <p>
               پیام همکار تجاری را بررسی کنید، اطلاعات موقعیت را ببینید و پاسخ
@@ -5561,23 +6770,46 @@ function BusinessCollaborationRequestsPanel() {
         <div className="committee-business-requests__detail-grid">
           <article>
             <span>همکار تجاری</span>
-            <strong>{selectedPartner?.name || "-"}</strong>
-            <small>{selectedPartner?.organization}</small>
+            <strong>
+              {activePartner?.name || selectedPartner?.name || "-"}
+            </strong>
+            <small>
+              {activePartner?.organization || selectedPartner?.organization}
+            </small>
           </article>
           <article>
             <span>موقعیت تجاری</span>
-            <strong>{selectedOpportunity?.title || activeRequest.title}</strong>
-            <small>{selectedOpportunity?.field}</small>
+            <strong>
+              {activeOpportunity?.title ||
+                selectedOpportunity?.title ||
+                activeRequest.title}
+            </strong>
+            <small>
+              {activeOpportunity?.field || selectedOpportunity?.field}
+            </small>
           </article>
           <article>
             <span>نوع همکاری</span>
-            <strong>{selectedOpportunity?.collaborationType || "-"}</strong>
-            <small>{selectedOpportunity?.stage}</small>
+            <strong>
+              {activeOpportunity?.collaborationType ||
+                selectedOpportunity?.collaborationType ||
+                activeRequest.collaborationType ||
+                "-"}
+            </strong>
+            <small>
+              {activeOpportunity?.stage || selectedOpportunity?.stage}
+            </small>
           </article>
           <article>
             <span>وضعیت درخواست</span>
             <strong>{activeRequest.status}</strong>
-            <small>{activeRequest.sentAt}</small>
+            <small>
+              {isNeedsInfo
+                ? "منتظر ارسال مجدد همکار تجاری"
+                : isFinal
+                  ? "در تاریخچه"
+                  : activeRequest.sentAt}
+            </small>
           </article>
         </div>
 
@@ -5589,40 +6821,76 @@ function BusinessCollaborationRequestsPanel() {
 
           <article className="committee-business-requests__message committee-business-requests__message--opportunity">
             <span>اطلاعات موقعیت</span>
-            <h4>{selectedOpportunity?.title}</h4>
+            <h4>{activeOpportunity?.title || selectedOpportunity?.title}</h4>
             <p>
-              متولی: {selectedOpportunity?.owner} / وضعیت:{" "}
-              {selectedOpportunity?.stage}
+              متولی: {activeOpportunity?.owner || selectedOpportunity?.owner} /
+              وضعیت: {activeOpportunity?.stage || selectedOpportunity?.stage}
             </p>
           </article>
 
           {hasReply && (
             <article className="committee-business-requests__message committee-business-requests__message--support">
-              <span>آخرین پاسخ ثبت‌شده</span>
+              <span>
+                {isNeedsInfo
+                  ? "پیام تکمیل اطلاعات ثبت‌شده"
+                  : "آخرین پاسخ ثبت‌شده"}
+              </span>
               <p>{activeRequest.supportReply}</p>
               <small>{activeRequest.repliedAt}</small>
             </article>
           )}
         </div>
 
-        <label className="committee-business-requests__reply-box">
-          <span>ثبت پیام برای این درخواست</span>
-          <textarea
-            value={replyText}
-            onChange={(event) => setReplyText(event.target.value)}
-            placeholder="پاسخ یا پیام دبیرخانه برای همکار تجاری را بنویسید..."
-          />
-        </label>
+        {!isFinal ? (
+          <>
+            <label className="committee-business-requests__reply-box">
+              <span>ثبت پیام برای این درخواست</span>
+              <textarea
+                value={replyText}
+                onChange={(event) => setReplyText(event.target.value)}
+                placeholder="پاسخ یا پیام دبیرخانه برای همکار تجاری را بنویسید..."
+              />
+            </label>
 
-        <div className="committee-business-requests__actions">
-          <button
-            type="button"
-            onClick={saveReply}
-            disabled={!replyText.trim()}
-          >
-            ثبت پاسخ و تغییر وضعیت به پاسخ داده شده
-          </button>
-        </div>
+            <label className="committee-business-requests__reply-box">
+              <span>نوع پاسخ</span>
+              <select
+                value={replyDecision}
+                onChange={(event) => setReplyDecision(event.target.value)}
+                style={{
+                  width: "100%",
+                  border: "1px solid #d8e5ef",
+                  borderRadius: "16px",
+                  padding: "12px",
+                  fontFamily: "inherit",
+                  fontWeight: 800,
+                }}
+              >
+                <option value="answered">پاسخ نهایی و انتقال به تاریخچه</option>
+                <option value="needs-info">
+                  نیازمند تکمیل اطلاعات توسط همکار تجاری
+                </option>
+              </select>
+            </label>
+
+            <div className="committee-business-requests__actions">
+              <button
+                type="button"
+                onClick={saveReply}
+                disabled={!replyText.trim()}
+              >
+                {replyDecision === "needs-info"
+                  ? "ارسال پیام تکمیل اطلاعات"
+                  : "ثبت پاسخ نهایی"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="committee-business-requests__notice">
+            این درخواست پاسخ نهایی گرفته و فقط برای مشاهده در تاریخچه نگهداری
+            می‌شود.
+          </div>
+        )}
       </section>
     );
   }
@@ -5632,10 +6900,10 @@ function BusinessCollaborationRequestsPanel() {
       <div className="committee-dashboard__panel-header committee-business-requests__header">
         <div>
           <span>درخواست‌های همکاری</span>
-          <h3>درخواست‌های ثبت‌شده برای موقعیت‌های تجاری</h3>
+          <h3>درخواست‌های جاری و تاریخچه همکاری تجاری</h3>
           <p>
-            درخواست‌های همکاران تجاری را ببینید، موقعیت مربوطه را بررسی کنید و
-            برای هر درخواست پیام ثبت کنید.
+            درخواست‌های همکاران تجاری را ببینید، موارد جاری را پیگیری کنید، پاسخ
+            نهایی بدهید یا برای تکمیل اطلاعات به همکار تجاری برگردانید.
           </p>
         </div>
       </div>
@@ -5653,10 +6921,17 @@ function BusinessCollaborationRequestsPanel() {
         <div className="committee-business-requests__filters">
           <button
             type="button"
-            className={statusFilter === "all" ? "is-active" : ""}
-            onClick={() => setStatusFilter("all")}
+            className={statusFilter === "active" ? "is-active" : ""}
+            onClick={() => setStatusFilter("active")}
           >
-            همه <strong>{toPersianDigits(statusCounts.all)}</strong>
+            جاری <strong>{toPersianDigits(statusCounts.active)}</strong>
+          </button>
+          <button
+            type="button"
+            className={statusFilter === "history" ? "is-active" : ""}
+            onClick={() => setStatusFilter("history")}
+          >
+            تاریخچه <strong>{toPersianDigits(statusCounts.history)}</strong>
           </button>
           <button
             type="button"
@@ -5675,23 +6950,34 @@ function BusinessCollaborationRequestsPanel() {
           </button>
           <button
             type="button"
-            className={statusFilter === "answered" ? "is-active" : ""}
-            onClick={() => setStatusFilter("answered")}
+            className={statusFilter === "needsInfo" ? "is-active" : ""}
+            onClick={() => setStatusFilter("needsInfo")}
           >
-            پاسخ داده شده{" "}
-            <strong>{toPersianDigits(statusCounts.answered)}</strong>
+            نیازمند تکمیل{" "}
+            <strong>{toPersianDigits(statusCounts.needsInfo)}</strong>
+          </button>
+          <button
+            type="button"
+            className={statusFilter === "all" ? "is-active" : ""}
+            onClick={() => setStatusFilter("all")}
+          >
+            همه <strong>{toPersianDigits(statusCounts.all)}</strong>
           </button>
         </div>
       </div>
 
       <div className="committee-business-requests__list">
         {filteredRequests.map((request) => {
-          const partner = BUSINESS_PARTNERS.find(
-            (item) => item.id === request.partnerId,
+          const partner = partners.find(
+            (item) =>
+              String(item.id) === String(request.partnerId) ||
+              String(item.userId) === String(request.partnerUserId),
           );
-          const opportunity = BUSINESS_OPPORTUNITIES_OVERVIEW.find(
-            (item) => item.id === request.opportunityId,
+          const opportunity = opportunities.find(
+            (item) => String(item.id) === String(request.opportunityId),
           );
+          const isFinal = isFinalBusinessCollaborationRequest(request);
+          const isNeedsInfo = isNeedsInfoBusinessCollaborationRequest(request);
 
           return (
             <article
@@ -5701,19 +6987,30 @@ function BusinessCollaborationRequestsPanel() {
               <div className="committee-business-requests__card-main">
                 <div className="committee-business-requests__card-title">
                   <h4>{request.title}</h4>
-                  <span>{request.status}</span>
+                  <span>
+                    {isFinal ? "تاریخچه / پاسخ نهایی" : request.status}
+                  </span>
                 </div>
-                <p>{request.message}</p>
+                <p>
+                  {isFinal && request.supportReply
+                    ? request.supportReply
+                    : request.message}
+                </p>
                 <div className="committee-business-requests__meta">
                   <span>همکار: {partner?.name}</span>
                   <span>سازمان: {partner?.organization}</span>
                   <span>موقعیت: {opportunity?.title}</span>
-                  <span>ارسال: {request.sentAt}</span>
+                  <span>
+                    {isFinal
+                      ? `پاسخ: ${request.repliedAt}`
+                      : `ارسال: ${request.sentAt}`}
+                  </span>
+                  {isNeedsInfo && <span>در انتظار ارسال مجدد</span>}
                 </div>
               </div>
               <div className="committee-business-requests__card-actions">
                 <button type="button" onClick={() => openRequest(request.id)}>
-                  مشاهده و پاسخ
+                  {isFinal ? "مشاهده تاریخچه" : "مشاهده و پاسخ"}
                 </button>
               </div>
             </article>
@@ -5728,16 +7025,6 @@ function BusinessCollaborationRequestsPanel() {
       </div>
     </section>
   );
-}
-
-function getActivityModerationStatusClass(status) {
-  if (status === "منتشر شده") return "published";
-  if (status === "رد شده") return "rejected";
-  return "pending";
-}
-
-function getExecutionOrderStatusClass(status) {
-  return status === "قبول شده" ? "accepted" : "waiting";
 }
 
 function ActivityModerationStatusBadge({ status }) {
@@ -5893,30 +7180,35 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const pendingActivities = activities.filter(
-    (activity) => activity.status === "در انتظار بررسی",
+  const syncActivities = () => {
+    setActivities(getInstructorActivities(INITIAL_COMMITTEE_ACTIVITIES));
+  };
+
+  const pendingActivities = activities.filter(isPendingInstructorActivity);
+  const rejectedActivities = activities.filter(isRejectedInstructorActivity);
+  const revisionActivities = activities.filter(
+    isNeedsRevisionInstructorActivity,
   );
-  const rejectedActivities = activities.filter(
-    (activity) => activity.status === "رد شده",
-  );
-  const publishedActivities = activities.filter(
-    (activity) => activity.status === "منتشر شده",
-  );
+  const publishedActivities = activities.filter(isPublishedInstructorActivity);
+
   const visibleActivities =
     tab === "published"
       ? publishedActivities
       : tab === "rejected"
         ? rejectedActivities
-        : pendingActivities;
+        : tab === "revision"
+          ? revisionActivities
+          : pendingActivities;
+
   const selectedActivity = activities.find(
-    (activity) => activity.id === selectedActivityId,
+    (activity) => String(activity.id) === String(selectedActivityId),
   );
 
   const openActivity = (activity) => {
     setSelectedActivityId(activity.id);
     setFeedbackText(
-      activity.status === "در انتظار بررسی"
-        ? activity.managerFeedback || ""
+      isPendingInstructorActivity(activity)
+        ? activity.statusFeedback || activity.managerFeedback || ""
         : "",
     );
   };
@@ -5927,52 +7219,24 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
   };
 
   const openActivityPreview = (activity) => {
-    if (activity.status === "رد شده") return;
+    if (!activity || isRejectedInstructorActivity(activity)) return;
 
-    const previewWindow = window.open("", "_blank");
+    const previewPath =
+      activity.type === "event"
+        ? `/events/${activity.id}?preview=committee`
+        : `/courses/${activity.id}?preview=committee`;
+
+    const previewWindow = window.open(
+      previewPath,
+      "_blank",
+      "noopener,noreferrer",
+    );
 
     if (!previewWindow) {
       window.alert(
         "برای مشاهده پیش‌نمایش، اجازه باز شدن پنجره جدید را فعال کنید.",
       );
-      return;
     }
-
-    previewWindow.document.write(`<!doctype html>
-      <html lang="fa" dir="rtl">
-        <head>
-          <meta charset="UTF-8" />
-          <title>${activity.title}</title>
-          <style>
-            body { margin:0; padding:36px; background:#eef3f8; color:#173154; font-family:Tahoma, Arial, sans-serif; direction:rtl; }
-            .page { max-width:980px; margin:0 auto; display:grid; gap:18px; }
-            .hero { padding:30px; border-radius:28px; color:#fff; background:linear-gradient(135deg,#0e2f59,#19b4e9); }
-            .hero span { display:inline-flex; padding:7px 12px; border-radius:999px; background:rgba(255,255,255,.16); font-size:12px; font-weight:800; }
-            h1 { margin:18px 0 10px; font-size:30px; line-height:1.7; }
-            p { margin:0; line-height:2.1; }
-            .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
-            .card { padding:16px; border:1px solid #e4edf5; border-radius:18px; background:#fff; }
-            .card small { display:block; color:#84a0bc; font-weight:800; margin-bottom:8px; }
-            .card strong { color:#10284b; }
-          </style>
-        </head>
-        <body>
-          <main class="page">
-            <section class="hero">
-              <span>${activity.type}</span>
-              <h1>${activity.title}</h1>
-              <p>${activity.summary}</p>
-            </section>
-            <section class="grid">
-              <article class="card"><small>مدرس/رویدادگر</small><strong>${activity.instructor}</strong></article>
-              <article class="card"><small>حوزه</small><strong>${activity.field}</strong></article>
-              <article class="card"><small>شروع</small><strong>${activity.startDate}</strong></article>
-              <article class="card"><small>ظرفیت</small><strong>${activity.capacity}</strong></article>
-            </section>
-          </main>
-        </body>
-      </html>`);
-    previewWindow.document.close();
   };
 
   const publishActivity = (activityId) => {
@@ -5981,21 +7245,50 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
     );
     if (!confirmed) return;
 
-    setActivities((currentActivities) =>
-      currentActivities.map((activity) =>
-        activity.id === activityId
-          ? {
-              ...activity,
-              status: "منتشر شده",
-              publishedAt: getCurrentSimplePersianDate(),
-              managerFeedback: "",
-            }
-          : activity,
-      ),
+    const updatedActivity = saveInstructorActivityDecision(
+      activityId,
+      INSTRUCTOR_ACTIVITY_STATUS.PUBLISHED,
+      "",
+      { secondaryStatus: "در حال ثبت نام" },
     );
-    setNotice("برنامه با موفقیت منتشر شد.");
+
+    if (!updatedActivity) {
+      setNotice("برنامه پیدا نشد یا امکان انتشار آن وجود ندارد.");
+      return;
+    }
+
+    syncActivities();
+    setNotice("برنامه با موفقیت منتشر شد و نتیجه برای مدرس ارسال شد.");
     closeDetail();
     setTab("published");
+  };
+
+  const requestRevisionActivity = (activityId) => {
+    if (!feedbackText.trim()) {
+      setNotice("برای ثبت وضعیت نیازمند اصلاح، نوشتن بازخورد الزامی است.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "این برنامه نیازمند اصلاح می‌شود و بازخورد برای مدرس/رویدادگر ارسال خواهد شد. ادامه می‌دهید؟",
+    );
+    if (!confirmed) return;
+
+    const updatedActivity = saveInstructorActivityDecision(
+      activityId,
+      INSTRUCTOR_ACTIVITY_STATUS.NEEDS_REVISION,
+      feedbackText.trim(),
+    );
+
+    if (!updatedActivity) {
+      setNotice("برنامه پیدا نشد یا امکان ثبت وضعیت وجود ندارد.");
+      return;
+    }
+
+    syncActivities();
+    setNotice("وضعیت نیازمند اصلاح ثبت شد و بازخورد برای مدرس ارسال شد.");
+    closeDetail();
+    setTab("revision");
   };
 
   const rejectActivity = (activityId) => {
@@ -6009,25 +7302,26 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
     );
     if (!confirmed) return;
 
-    setActivities((currentActivities) =>
-      currentActivities.map((activity) =>
-        activity.id === activityId
-          ? {
-              ...activity,
-              status: "رد شده",
-              managerFeedback: feedbackText.trim(),
-            }
-          : activity,
-      ),
+    const updatedActivity = saveInstructorActivityDecision(
+      activityId,
+      INSTRUCTOR_ACTIVITY_STATUS.REJECTED,
+      feedbackText.trim(),
     );
+
+    if (!updatedActivity) {
+      setNotice("برنامه پیدا نشد یا امکان رد آن وجود ندارد.");
+      return;
+    }
+
+    syncActivities();
     setNotice("برنامه رد شد و بازخورد برای مدرس/رویدادگر ثبت شد.");
     closeDetail();
     setTab("rejected");
   };
 
   if (selectedActivity) {
-    const isPending = selectedActivity.status === "در انتظار بررسی";
-    const isRejected = selectedActivity.status === "رد شده";
+    const isPending = isPendingInstructorActivity(selectedActivity);
+    const isRejected = isRejectedInstructorActivity(selectedActivity);
     const canPreview = !isRejected;
 
     return (
@@ -6036,12 +7330,13 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
           <div>
             <span>
               {isPending
-                ? `بررسی ${selectedActivity.type}`
-                : `مشاهده ${selectedActivity.type}`}
+                ? `بررسی ${getActivityTypeLabel(selectedActivity.type)}`
+                : `مشاهده ${getActivityTypeLabel(selectedActivity.type)}`}
             </span>
             <h3>{selectedActivity.title}</h3>
             <p>
-              {selectedActivity.instructor} / {selectedActivity.field}
+              {getActivityInstructorName(selectedActivity)} /{" "}
+              {getActivityField(selectedActivity)}
             </p>
           </div>
           <button
@@ -6062,7 +7357,7 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
         <div className="committee-events__detail-grid">
           <article>
             <span>نوع</span>
-            <strong>{selectedActivity.type}</strong>
+            <strong>{getActivityTypeLabel(selectedActivity.type)}</strong>
           </article>
           <article>
             <span>وضعیت</span>
@@ -6070,11 +7365,20 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
           </article>
           <article>
             <span>شروع</span>
-            <strong>{selectedActivity.startDate}</strong>
+            <strong>{getActivityStartDate(selectedActivity)}</strong>
           </article>
           <article>
             <span>ظرفیت</span>
-            <strong>{selectedActivity.capacity}</strong>
+            <strong>{getActivityCapacity(selectedActivity)}</strong>
+          </article>
+          <article>
+            <span>ثبت‌نام‌شده</span>
+            <strong>
+              {toPersianDigits(
+                getActivityRegistrationStats(selectedActivity).total,
+              )}{" "}
+              نفر
+            </strong>
           </article>
         </div>
 
@@ -6089,7 +7393,7 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
             <span>
               {canPreview ? "پیش‌نمایش و توضیح مختصر" : "توضیح مختصر"}
             </span>
-            <p>{selectedActivity.summary}</p>
+            <p>{selectedActivity.summary || "توضیحی ثبت نشده است."}</p>
             {canPreview && (
               <button
                 type="button"
@@ -6099,10 +7403,14 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
                 👁 مشاهده پیش‌نمایش
               </button>
             )}
-            {selectedActivity.managerFeedback && (
+            {(selectedActivity.statusFeedback ||
+              selectedActivity.managerFeedback) && (
               <div className="committee-events__feedback-view">
                 <strong>بازخورد ثبت‌شده برای مدرس/رویدادگر</strong>
-                <p>{selectedActivity.managerFeedback}</p>
+                <p>
+                  {selectedActivity.statusFeedback ||
+                    selectedActivity.managerFeedback}
+                </p>
               </div>
             )}
           </div>
@@ -6110,11 +7418,11 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
           {isPending && (
             <div className="committee-events__decision-card">
               <label>
-                <span>بازخورد برای رد دوره/رویداد</span>
+                <span>بازخورد برای اصلاح یا رد دوره/رویداد</span>
                 <textarea
                   value={feedbackText}
                   onChange={(event) => setFeedbackText(event.target.value)}
-                  placeholder="اگر قصد رد کردن دارید، دلیل رد یا اصلاحات موردنظر را وارد کنید..."
+                  placeholder="اگر قصد اصلاح یا رد دارید، دلیل و توضیحات موردنظر را وارد کنید..."
                 />
               </label>
 
@@ -6125,6 +7433,14 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
                   onClick={() => publishActivity(selectedActivity.id)}
                 >
                   انتشار نهایی
+                </button>
+                <button
+                  type="button"
+                  className="committee-events__warning-button"
+                  onClick={() => requestRevisionActivity(selectedActivity.id)}
+                  disabled={!feedbackText.trim()}
+                >
+                  نیازمند اصلاح
                 </button>
                 <button
                   type="button"
@@ -6149,8 +7465,8 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
           <span>دوره‌ها و رویدادها</span>
           <h3>بررسی و انتشار برنامه‌های ساخته‌شده</h3>
           <p>
-            مدرس یا رویدادگر برنامه را ارسال می‌کند؛ اینجا یا منتشر می‌شود یا با
-            بازخورد رد می‌شود.
+            مدرس یا رویدادگر برنامه را ارسال می‌کند؛ اینجا منتشر، رد یا برای
+            اصلاح به مدرس بازگردانده می‌شود.
           </p>
         </div>
       </div>
@@ -6172,6 +7488,14 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
         </button>
         <button
           type="button"
+          className={tab === "revision" ? "is-active" : ""}
+          onClick={() => setTab("revision")}
+        >
+          نیازمند اصلاح{" "}
+          <strong>{toPersianDigits(revisionActivities.length)}</strong>
+        </button>
+        <button
+          type="button"
           className={tab === "rejected" ? "is-active" : ""}
           onClick={() => setTab("rejected")}
         >
@@ -6190,8 +7514,8 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
 
       <div className="committee-events__activity-list">
         {visibleActivities.map((activity) => {
-          const isRejected = activity.status === "رد شده";
-          const isPending = activity.status === "در انتظار بررسی";
+          const isRejected = isRejectedInstructorActivity(activity);
+          const isPending = isPendingInstructorActivity(activity);
 
           return (
             <article
@@ -6199,18 +7523,28 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
               key={activity.id}
             >
               <div className="committee-events__activity-main">
-                <span>{activity.type}</span>
+                <span>{getActivityTypeLabel(activity.type)}</span>
                 <h4>{activity.title}</h4>
-                <p>{activity.summary}</p>
+                <p>{activity.summary || "توضیحی ثبت نشده است."}</p>
                 <div className="committee-events__meta-line">
-                  <small>مدرس/رویدادگر: {activity.instructor}</small>
-                  <small>حوزه: {activity.field}</small>
-                  <small>شروع: {activity.startDate}</small>
-                  <small>ظرفیت: {activity.capacity}</small>
+                  <small>
+                    مدرس/رویدادگر: {getActivityInstructorName(activity)}
+                  </small>
+                  <small>حوزه: {getActivityField(activity)}</small>
+                  <small>شروع: {getActivityStartDate(activity)}</small>
+                  <small>ظرفیت: {getActivityCapacity(activity)}</small>
+                  <small>
+                    ثبت‌نام:{" "}
+                    {toPersianDigits(
+                      getActivityRegistrationStats(activity).total,
+                    )}{" "}
+                    نفر
+                  </small>
                 </div>
-                {activity.managerFeedback && (
+                {(activity.statusFeedback || activity.managerFeedback) && (
                   <div className="committee-events__inline-feedback">
-                    بازخورد: {activity.managerFeedback}
+                    بازخورد:{" "}
+                    {activity.statusFeedback || activity.managerFeedback}
                   </div>
                 )}
               </div>
@@ -6273,20 +7607,16 @@ function ExecutionOrdersManagementPanel({ orders, setOrders }) {
       return;
     }
 
-    setOrders((currentOrders) => [
-      {
-        id: Date.now(),
-        title: form.title.trim(),
-        summary: form.summary.trim(),
-        subject: form.subject.trim(),
-        deadlineDate: form.deadlineDate.trim(),
-        deadlineTime: form.deadlineTime.trim() || "--:--",
-        status: "در انتظار پذیرش",
-        acceptedBy: "",
-        createdAt: getCurrentSimplePersianDate(),
-      },
-      ...currentOrders,
-    ]);
+    createExecutionOrder({
+      title: form.title.trim(),
+      summary: form.summary.trim(),
+      subject: form.subject.trim(),
+      deadlineDate: form.deadlineDate.trim(),
+      deadlineTime: form.deadlineTime.trim() || "--:--",
+      createdAt: getCurrentSimplePersianDate(),
+    });
+
+    setOrders(getCommitteeExecutionOrders(INITIAL_EXECUTION_ORDERS));
 
     setForm({
       title: "",
@@ -6444,6 +7774,876 @@ function ExecutionOrdersManagementPanel({ orders, setOrders }) {
   );
 }
 
+const NEWS_FORM_INITIAL_STATE = {
+  title: "",
+  summary: "",
+  image: "",
+  category: "اخبار و اطلاع‌رسانی",
+  body: "",
+  isImportant: false,
+};
+
+function getNewsFormState(newsItem = null) {
+  if (!newsItem) {
+    return { ...NEWS_FORM_INITIAL_STATE };
+  }
+
+  const sourceNewsItem = newsItem.draftRevision || newsItem;
+
+  const body = String(
+    sourceNewsItem.contentHtml ||
+      (typeof sourceNewsItem.body === "string"
+        ? sourceNewsItem.body
+        : Array.isArray(sourceNewsItem.body)
+          ? sourceNewsItem.body
+              .map((paragraph) => `<p>${paragraph}</p>`)
+              .join("")
+          : ""),
+  );
+
+  return {
+    title: String(sourceNewsItem.title || ""),
+    summary: String(sourceNewsItem.summary || ""),
+    image: String(sourceNewsItem.image || ""),
+    category: String(
+      sourceNewsItem.category || NEWS_FORM_INITIAL_STATE.category,
+    ),
+    body,
+    isImportant: Boolean(sourceNewsItem.isImportant),
+  };
+}
+
+function getNewsStatusClass(status = "") {
+  return status === "منتشر شده"
+    ? "committee-news-history__status--published"
+    : "committee-news-history__status--draft";
+}
+
+function getShortNewsId(newsId = "") {
+  const value = String(newsId || "");
+  if (value.length <= 18) return value;
+  return `${value.slice(0, 8)}…${value.slice(-6)}`;
+}
+
+const NEWS_IMAGE_MAX_DATA_URL_LENGTH = 320000;
+const NEWS_IMAGE_COMPRESSION_ATTEMPTS = [
+  { maxWidth: 1200, maxHeight: 720, quality: 0.68 },
+  { maxWidth: 1000, maxHeight: 620, quality: 0.58 },
+  { maxWidth: 820, maxHeight: 520, quality: 0.48 },
+  { maxWidth: 680, maxHeight: 430, quality: 0.42 },
+];
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("خواندن فایل تصویر انجام نشد."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImageFromSource(source) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("بارگذاری تصویر انجام نشد."));
+    image.src = source;
+  });
+}
+
+function getScaledImageSize(width, height, maxWidth, maxHeight) {
+  const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
+
+  return {
+    width: Math.max(1, Math.round(width * ratio)),
+    height: Math.max(1, Math.round(height * ratio)),
+  };
+}
+
+async function compressNewsImageFile(file) {
+  if (file.type === "image/svg+xml") {
+    const svgDataUrl = await readFileAsDataUrl(file);
+
+    if (svgDataUrl.length > NEWS_IMAGE_MAX_DATA_URL_LENGTH) {
+      throw new Error(
+        "حجم تصویر زیاد است. لطفاً تصویر سبک‌تر یا آدرس تصویر را وارد کنید.",
+      );
+    }
+
+    return svgDataUrl;
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await loadImageFromSource(objectUrl);
+    let lastDataUrl = "";
+
+    for (const attempt of NEWS_IMAGE_COMPRESSION_ATTEMPTS) {
+      const size = getScaledImageSize(
+        image.naturalWidth || image.width,
+        image.naturalHeight || image.height,
+        attempt.maxWidth,
+        attempt.maxHeight,
+      );
+
+      const canvas = document.createElement("canvas");
+      canvas.width = size.width;
+      canvas.height = size.height;
+
+      const context = canvas.getContext("2d");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, size.width, size.height);
+      context.drawImage(image, 0, 0, size.width, size.height);
+
+      lastDataUrl = canvas.toDataURL("image/jpeg", attempt.quality);
+
+      if (lastDataUrl.length <= NEWS_IMAGE_MAX_DATA_URL_LENGTH) {
+        return lastDataUrl;
+      }
+    }
+
+    if (
+      lastDataUrl &&
+      lastDataUrl.length <= NEWS_IMAGE_MAX_DATA_URL_LENGTH * 1.12
+    ) {
+      return lastDataUrl;
+    }
+
+    throw new Error(
+      "حجم تصویر بعد از فشرده‌سازی هم زیاد است. لطفاً تصویر کوچک‌تر انتخاب کنید یا آدرس تصویر را وارد کنید.",
+    );
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+function stripNewsHtml(value = "") {
+  const text = String(value || "")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text;
+}
+
+function normalizeNewsUrl(value = "") {
+  const normalizedValue = String(value || "").trim();
+
+  if (!normalizedValue) return "";
+
+  if (/^https?:\/\//i.test(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  return `https://${normalizedValue}`;
+}
+
+function NewsPreviewCard({ newsItem }) {
+  const hasBodyHtml = Boolean(String(newsItem.body || "").trim());
+
+  return (
+    <aside className="committee-news-preview" aria-label="پیش نمایش خبر">
+      <div className="committee-news-preview__label">پیش‌نمایش خبر</div>
+
+      {newsItem.image ? (
+        <img src={newsItem.image} alt={newsItem.title || "تصویر خبر"} />
+      ) : (
+        <div className="committee-news-preview__empty-image">تصویر خبر</div>
+      )}
+
+      <div className="committee-news-preview__body">
+        <div className="committee-news-preview__chips">
+          <span>{newsItem.category || "اخبار و اطلاع‌رسانی"}</span>
+          {newsItem.isImportant && <strong>خبر مهم</strong>}
+        </div>
+
+        <h4>{newsItem.title || "عنوان خبر"}</h4>
+        <p>{newsItem.summary || "خلاصه خبر در این بخش نمایش داده می‌شود."}</p>
+
+        {hasBodyHtml && (
+          <div
+            className="committee-news-preview__content"
+            dangerouslySetInnerHTML={{ __html: newsItem.body }}
+          />
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function buildNewsPreviewHtml(newsItem = {}) {
+  const safeTitle = String(newsItem.title || "پیش‌نمایش خبر");
+  const safeSummary = String(newsItem.summary || "");
+  const safeCategory = String(newsItem.category || "اخبار و اطلاع‌رسانی");
+  const safeImage = String(newsItem.image || "");
+  const safeBody = String(newsItem.contentHtml || newsItem.body || "");
+  const importantBadge = newsItem.isImportant
+    ? '<strong class="preview-badge preview-badge--important">خبر مهم</strong>'
+    : "";
+
+  return `<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${safeTitle}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f5f8fb;
+      color: #10284b;
+      font-family: Tahoma, Arial, sans-serif;
+      line-height: 2;
+    }
+    .preview-page {
+      width: min(980px, calc(100% - 40px));
+      margin: 40px auto;
+      padding: 28px;
+      border: 1px solid #e4edf5;
+      border-radius: 28px;
+      background: #ffffff;
+      box-shadow: 0 18px 42px rgba(18, 48, 86, 0.08);
+    }
+    .preview-top {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .preview-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      color: #0f5f80;
+      background: #e8f8ff;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .preview-badge--important {
+      color: #92400e;
+      background: #fef3c7;
+    }
+    h1 {
+      margin: 0 0 18px;
+      color: #10284b;
+      font-size: 28px;
+      font-weight: 950;
+      line-height: 1.75;
+    }
+    .preview-summary {
+      margin: 0 0 22px;
+      color: #52677f;
+      font-size: 15px;
+      line-height: 2.2;
+    }
+    .preview-image {
+      width: 100%;
+      max-height: 430px;
+      display: block;
+      object-fit: cover;
+      margin-bottom: 22px;
+      border-radius: 20px;
+      background: #eef3f8;
+    }
+    .preview-empty-image {
+      min-height: 280px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 22px;
+      border: 1px dashed #dce6ef;
+      border-radius: 20px;
+      color: #84a0bc;
+      background: #f8fbfd;
+      font-size: 14px;
+      font-weight: 900;
+    }
+    .preview-content {
+      padding-top: 8px;
+      color: #25292f;
+      font-size: 15px;
+      line-height: 2.45;
+    }
+    .preview-content h2,
+    .preview-content h3 {
+      color: #10284b;
+      line-height: 1.9;
+    }
+    .preview-content a {
+      color: #0f5f80;
+      font-weight: 900;
+    }
+  </style>
+</head>
+<body>
+  <main class="preview-page">
+    <div class="preview-top">
+      <span class="preview-badge">${safeCategory}</span>
+      ${importantBadge}
+    </div>
+    <h1>${safeTitle}</h1>
+    ${safeSummary ? `<p class="preview-summary">${safeSummary}</p>` : ""}
+    ${safeImage ? `<img class="preview-image" src="${safeImage}" alt="${safeTitle}" />` : '<div class="preview-empty-image">تصویر خبر</div>'}
+    <article class="preview-content">${safeBody || "<p>متن خبر هنوز وارد نشده است.</p>"}</article>
+  </main>
+</body>
+</html>`;
+}
+
+function openNewsPreviewInNewTab(newsItem = {}) {
+  try {
+    saveNewsPreviewItem(newsItem);
+  } catch (error) {
+    window.alert(
+      error?.message ||
+        "ذخیره پیش‌نمایش انجام نشد. تصویر را کوچک‌تر کنید یا آدرس تصویر را وارد کنید.",
+    );
+    return;
+  }
+
+  const previewWindow = window.open(
+    "/news/preview?preview=committee",
+    "_blank",
+    "noopener,noreferrer",
+  );
+
+  if (!previewWindow) {
+    window.alert("مرورگر اجازه باز شدن تب پیش‌نمایش را نداد.");
+  }
+}
+
+function openNewsItemPreviewInNewTab(newsItem = {}) {
+  if (!newsItem?.id) {
+    openNewsPreviewInNewTab(newsItem);
+    return;
+  }
+
+  const previewWindow = window.open(
+    `/news/${encodeURIComponent(newsItem.id)}?preview=committee`,
+    "_blank",
+    "noopener,noreferrer",
+  );
+
+  if (!previewWindow) {
+    window.alert("مرورگر اجازه باز شدن تب پیش‌نمایش را نداد.");
+  }
+}
+
+function NewsBuilderPanel({
+  notice,
+  onSaveNews,
+  editingNewsItem = null,
+  onCancelEdit,
+}) {
+  const editorRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const isEditingNews = Boolean(editingNewsItem?.id);
+  const [formData, setFormData] = useState(() =>
+    getNewsFormState(editingNewsItem),
+  );
+  const [formError, setFormError] = useState("");
+  const [imageUploadName, setImageUploadName] = useState("");
+
+  useEffect(() => {
+    const nextFormData = getNewsFormState(editingNewsItem);
+    setFormData(nextFormData);
+    setImageUploadName("");
+    setFormError("");
+
+    if (editorRef.current) {
+      editorRef.current.innerHTML = nextFormData.body || "";
+    }
+
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+  }, [editingNewsItem?.id]);
+
+  const updateField = (field, value) => {
+    setFormData((currentData) => ({
+      ...currentData,
+      [field]: value,
+    }));
+    setFormError("");
+  };
+
+  const updateBodyFromEditor = () => {
+    updateField("body", editorRef.current?.innerHTML || "");
+  };
+
+  const runEditorCommand = (command, value = null) => {
+    editorRef.current?.focus();
+
+    if (command === "createLink") {
+      const linkUrl = normalizeNewsUrl(
+        window.prompt("آدرس لینک را وارد کنید:", "https://"),
+      );
+
+      if (!linkUrl || linkUrl === "https://") return;
+
+      document.execCommand("createLink", false, linkUrl);
+      updateBodyFromEditor();
+      return;
+    }
+
+    document.execCommand(command, false, value);
+    updateBodyFromEditor();
+  };
+
+  const handleImageUpload = async (event) => {
+    const [file] = Array.from(event.target.files || []);
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setFormError("فقط فایل تصویر قابل بارگذاری است.");
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      setFormError("در حال آماده‌سازی و فشرده‌سازی تصویر...");
+      const compressedImage = await compressNewsImageFile(file);
+      updateField("image", compressedImage);
+      setImageUploadName(`${file.name} - فشرده شد`);
+      setFormError("");
+    } catch (error) {
+      setFormError(
+        error?.message || "بارگذاری تصویر انجام نشد. دوباره امتحان کنید.",
+      );
+      updateField("image", "");
+      setImageUploadName("");
+      event.target.value = "";
+    }
+  };
+
+  const clearNewsImage = () => {
+    updateField("image", "");
+    setImageUploadName("");
+
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+  };
+
+  const resetNewsForm = () => {
+    setFormData(getNewsFormState());
+    setImageUploadName("");
+    if (editorRef.current) {
+      editorRef.current.innerHTML = "";
+    }
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+  };
+
+  const buildNewsPayload = () => {
+    const body = String(
+      editorRef.current?.innerHTML || formData.body || "",
+    ).trim();
+
+    return {
+      title: formData.title.trim(),
+      summary: formData.summary.trim(),
+      image: formData.image.trim(),
+      category: formData.category.trim(),
+      body,
+      contentHtml: body,
+      isImportant: Boolean(formData.isImportant),
+    };
+  };
+
+  const validateNewsPayload = (newsPayload) => {
+    const bodyText = stripNewsHtml(newsPayload.body);
+
+    if (!newsPayload.title || !newsPayload.summary || !bodyText) {
+      setFormError("عنوان، خلاصه و متن خبر را کامل کنید.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const previewNews = () => {
+    const newsPayload = buildNewsPayload();
+
+    if (
+      !newsPayload.title &&
+      !newsPayload.summary &&
+      !stripNewsHtml(newsPayload.body)
+    ) {
+      setFormError("برای پیش‌نمایش، حداقل عنوان یا متن خبر را وارد کنید.");
+      return;
+    }
+
+    openNewsPreviewInNewTab({
+      ...newsPayload,
+      title: newsPayload.title || "پیش‌نمایش خبر",
+      summary: newsPayload.summary || "خلاصه خبر هنوز وارد نشده است.",
+      status: "پیش‌نویس",
+      date: "پیش‌نمایش",
+      publishedAt: "پیش‌نمایش",
+    });
+  };
+
+  const submitNews = (publish = false) => {
+    const newsPayload = buildNewsPayload();
+
+    if (!validateNewsPayload(newsPayload)) {
+      return;
+    }
+
+    try {
+      const savedNewsItem = onSaveNews(
+        newsPayload,
+        publish,
+        editingNewsItem?.id || null,
+      );
+
+      if (savedNewsItem) {
+        resetNewsForm();
+        if (isEditingNews && typeof onCancelEdit === "function") {
+          onCancelEdit();
+        }
+      }
+    } catch (error) {
+      setFormError(error?.message || "ثبت خبر انجام نشد. دوباره امتحان کنید.");
+    }
+  };
+
+  return (
+    <section className="committee-dashboard__panel committee-news-builder">
+      <div className="committee-dashboard__panel-header">
+        <div>
+          <span>اخبار سایت</span>
+          <h3>{isEditingNews ? "ویرایش خبر" : "ثبت خبر جدید"}</h3>
+          <p>
+            {isEditingNews
+              ? "اگر خبر قبلاً منتشر شده باشد، «ذخیره تغییرات» فقط پیش‌نویس ویرایش را نگه می‌دارد و نسخه سایت عوض نمی‌شود؛ «ذخیره و انتشار» نسخه جدید را روی سایت منتشر می‌کند."
+              : "خبر را وارد کنید، تصویر آن را بارگذاری کنید، متن را قالب‌بندی کنید و در پایان آن را به‌صورت پیش‌نویس یا منتشرشده ذخیره کنید. موضوع خبر فقط به‌عنوان لیبل نمایش داده می‌شود."}
+          </p>
+        </div>
+      </div>
+
+      {notice && <p className="committee-dashboard__form-notice">{notice}</p>}
+      {formError && (
+        <p className="committee-dashboard__form-error">{formError}</p>
+      )}
+
+      <div className="committee-news-builder__layout">
+        <div className="committee-dashboard__form-grid">
+          <label>
+            <span>عنوان خبر</span>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(event) => updateField("title", event.target.value)}
+              placeholder="مثلاً انتشار فراخوان جدید حمایت از طرح‌های فناورانه"
+            />
+          </label>
+
+          <label>
+            <span>موضوع خبر</span>
+            <select
+              value={formData.category}
+              onChange={(event) => updateField("category", event.target.value)}
+            >
+              {NEWS_CATEGORY_OPTIONS.map((categoryOption) => (
+                <option key={categoryOption} value={categoryOption}>
+                  {categoryOption}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="committee-dashboard__form-field--wide">
+            <span>تصویر خبر</span>
+            <div className="committee-news-builder__image-tools">
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+              />
+              <input
+                type="text"
+                value={formData.image}
+                onChange={(event) => updateField("image", event.target.value)}
+                placeholder="یا آدرس تصویر را وارد کنید"
+              />
+            </div>
+            {(imageUploadName || formData.image) && (
+              <div className="committee-news-builder__image-status">
+                <small>
+                  {imageUploadName
+                    ? `تصویر انتخاب‌شده: ${imageUploadName}`
+                    : "تصویر برای این خبر ثبت شده است."}
+                </small>
+                <button
+                  type="button"
+                  className="committee-news-builder__remove-image"
+                  onClick={clearNewsImage}
+                  title="حذف تصویر خبر"
+                  aria-label="حذف تصویر خبر"
+                >
+                  ✕ حذف تصویر
+                </button>
+              </div>
+            )}
+          </label>
+
+          <label className="committee-news-builder__important-toggle committee-dashboard__form-field--wide">
+            <input
+              type="checkbox"
+              checked={formData.isImportant}
+              onChange={(event) =>
+                updateField("isImportant", event.target.checked)
+              }
+            />
+            <span>
+              این خبر مهم است و علاوه بر «آخرین اخبار»، در سایدبار «مهم‌ترین
+              خبرها» هم نمایش داده شود.
+            </span>
+          </label>
+
+          <label className="committee-dashboard__form-field--wide">
+            <span>خلاصه خبر</span>
+            <textarea
+              rows={3}
+              value={formData.summary}
+              onChange={(event) => updateField("summary", event.target.value)}
+              placeholder="خلاصه‌ای که در لیست اخبار نمایش داده می‌شود"
+            />
+          </label>
+
+          <div className="committee-dashboard__form-field--wide committee-news-editor">
+            <span>متن کامل خبر</span>
+            <div className="committee-news-editor__toolbar">
+              <button
+                type="button"
+                onClick={() => runEditorCommand("formatBlock", "p")}
+              >
+                متن
+              </button>
+              <button
+                type="button"
+                onClick={() => runEditorCommand("formatBlock", "h2")}
+              >
+                تیتر اصلی
+              </button>
+              <button
+                type="button"
+                onClick={() => runEditorCommand("formatBlock", "h3")}
+              >
+                تیتر فرعی
+              </button>
+              <button type="button" onClick={() => runEditorCommand("bold")}>
+                Bold
+              </button>
+              <button
+                type="button"
+                onClick={() => runEditorCommand("underline")}
+              >
+                Underline
+              </button>
+              <button
+                type="button"
+                onClick={() => runEditorCommand("createLink")}
+              >
+                لینک‌دهی
+              </button>
+              <button
+                type="button"
+                onClick={() => runEditorCommand("removeFormat")}
+              >
+                حذف فرمت
+              </button>
+            </div>
+            <div
+              ref={editorRef}
+              className="committee-news-editor__input"
+              contentEditable
+              role="textbox"
+              tabIndex={0}
+              aria-label="متن کامل خبر"
+              suppressContentEditableWarning
+              onInput={updateBodyFromEditor}
+              onBlur={updateBodyFromEditor}
+            />
+            <small>
+              برای لینک‌دهی، اول متن موردنظر را انتخاب کن و بعد دکمه لینک‌دهی را
+              بزن.
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div className="committee-dashboard__form-actions committee-news-builder__actions">
+        <button type="button" onClick={previewNews}>
+          پیش‌نمایش
+        </button>
+        <button type="button" onClick={() => submitNews(false)}>
+          {isEditingNews ? "ذخیره تغییرات" : "ذخیره پیش‌نویس"}
+        </button>
+        <button type="button" onClick={() => submitNews(true)}>
+          {isEditingNews ? "ذخیره و انتشار" : "ثبت و انتشار"}
+        </button>
+        {isEditingNews && (
+          <button
+            type="button"
+            className="committee-news-builder__cancel-edit"
+            onClick={() => {
+              resetNewsForm();
+              onCancelEdit?.();
+            }}
+          >
+            انصراف از ویرایش
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function NewsHistoryPanel({
+  newsItems,
+  onPublishNews,
+  onDeleteNews,
+  onEditNews,
+}) {
+  const publishedCount = newsItems.filter(
+    (newsItem) => newsItem.status === "منتشر شده",
+  ).length;
+  const draftCount = newsItems.filter(
+    (newsItem) => newsItem.status === "پیش‌نویس",
+  ).length;
+  const importantCount = newsItems.filter(
+    (newsItem) => newsItem.isImportant,
+  ).length;
+
+  return (
+    <section className="committee-dashboard__panel committee-news-history">
+      <div className="committee-dashboard__panel-header">
+        <div>
+          <span>تاریخچه اخبار</span>
+          <h3>خبرهای ثبت‌شده</h3>
+          <p>
+            {toPersianDigits(newsItems.length)} خبر ثبت شده؛{" "}
+            {toPersianDigits(publishedCount)} منتشرشده،{" "}
+            {toPersianDigits(draftCount)} پیش‌نویس و{" "}
+            {toPersianDigits(importantCount)} خبر مهم.
+          </p>
+        </div>
+      </div>
+
+      {newsItems.length === 0 ? (
+        <div className="committee-dashboard__empty-state">
+          هنوز خبری از طرف دبیرخانه ثبت نشده است.
+        </div>
+      ) : (
+        <div className="committee-news-history__list" role="list">
+          {newsItems.map((newsItem, index) => (
+            <article className="committee-news-history__row" key={newsItem.id}>
+              <div
+                className="committee-news-history__number"
+                aria-label={`ردیف ${index + 1}`}
+              >
+                {toPersianDigits(index + 1)}
+              </div>
+
+              <div className="committee-news-history__id">
+                <span>شناسه</span>
+                <strong dir="ltr" title={newsItem.id}>
+                  {getShortNewsId(newsItem.id)}
+                </strong>
+              </div>
+
+              <div className="committee-news-history__main">
+                <div className="committee-news-history__badges">
+                  <span>
+                    {newsItem.draftRevision?.category || newsItem.category}
+                  </span>
+                  {(newsItem.draftRevision?.isImportant ||
+                    newsItem.isImportant) && <strong>خبر مهم</strong>}
+                  {newsItem.draftRevision && <em>ویرایش ذخیره‌شده</em>}
+                </div>
+                <h4>{newsItem.draftRevision?.title || newsItem.title}</h4>
+                <p>{newsItem.draftRevision?.summary || newsItem.summary}</p>
+              </div>
+
+              <div className="committee-news-history__info">
+                <span
+                  className={`committee-news-history__status ${getNewsStatusClass(
+                    newsItem.status,
+                  )}`}
+                >
+                  {newsItem.status}
+                </span>
+                <small>
+                  انتشار: {newsItem.publishedAt || newsItem.date || "—"}
+                </small>
+                <small>ثبت: {newsItem.createdAt || "—"}</small>
+                {newsItem.draftRevision && (
+                  <small>
+                    ویرایش: {newsItem.draftRevision.updatedAt || "—"}
+                  </small>
+                )}
+                <small>
+                  موضوع:{" "}
+                  {newsItem.draftRevision?.category || newsItem.category || "—"}
+                </small>
+                {(newsItem.draftRevision?.isImportant ||
+                  newsItem.isImportant) && <small>لیبل: خبر مهم</small>}
+              </div>
+
+              <div className="committee-news-history__actions">
+                <button
+                  type="button"
+                  className="committee-news-history__icon-button"
+                  onClick={() => openNewsItemPreviewInNewTab(newsItem)}
+                  title="پیش‌نمایش خبر"
+                  aria-label={`پیش‌نمایش ${newsItem.title}`}
+                >
+                  👁
+                </button>
+                <button type="button" onClick={() => onEditNews(newsItem)}>
+                  ویرایش
+                </button>
+                {newsItem.status !== "منتشر شده" && (
+                  <button
+                    type="button"
+                    onClick={() => onPublishNews(newsItem.id)}
+                  >
+                    انتشار
+                  </button>
+                )}
+                {newsItem.status === "منتشر شده" && (
+                  <Link to={`/news/${newsItem.id}`}>مشاهده</Link>
+                )}
+                <button type="button" onClick={() => onDeleteNews(newsItem.id)}>
+                  حذف
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function PlaceholderManagementPanel({ sectionId }) {
   const item = MANAGEMENT_ITEMS.find(
     (managementItem) => managementItem.id === sectionId,
@@ -6477,54 +8677,103 @@ function CommitteeSecretariatDashboardPage() {
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
-  const [expandedMenus, setExpandedMenus] = useState(() => [
-    "calls-management",
-  ]);
+  const [expandedMenus, setExpandedMenus] = useState(() => []);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [requests, setRequests] = useState(INITIAL_RECEIVED_REQUESTS);
-  const [profile, setProfile] = useState(INITIAL_PROFILE);
+  const notificationMenuRef = useRef(null);
+  const [committeeRecentMessages, setCommitteeRecentMessages] = useState(() =>
+    getCommitteeNotifications().slice(0, 3),
+  );
+  const [requests, setRequests] = useState(() =>
+    getReceivedRequestsForCommittee(),
+  );
+  useEffect(() => {
+    const refreshReceivedRequests = () => {
+      setRequests(getReceivedRequestsForCommittee());
+      setCommitteeRecentMessages(getCommitteeNotifications().slice(0, 3));
+    };
+
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    window.addEventListener(
+      CONTACT_REQUESTS_UPDATED_EVENT,
+      refreshReceivedRequests,
+    );
+    window.addEventListener(
+      SUPPORT_TICKETS_UPDATED_EVENT,
+      refreshReceivedRequests,
+    );
+    window.addEventListener("storage", refreshReceivedRequests);
+
+    return () => {
+      window.removeEventListener(
+        CONTACT_REQUESTS_UPDATED_EVENT,
+        refreshReceivedRequests,
+      );
+      window.removeEventListener(
+        SUPPORT_TICKETS_UPDATED_EVENT,
+        refreshReceivedRequests,
+      );
+      window.removeEventListener("storage", refreshReceivedRequests);
+    };
+  }, []);
+
+  const [committeeNewsItems, setCommitteeNewsItems] = useState(() =>
+    getCommitteeNewsItems(),
+  );
+  const [newsNotice, setNewsNotice] = useState("");
+  const [editingNewsItem, setEditingNewsItem] = useState(null);
+  const [profile, setProfile] = useState(() =>
+    getCurrentDashboardProfile(INITIAL_PROFILE),
+  );
+
+  const saveCommitteeProfile = (nextProfile, passwordData = {}) => {
+    const savedProfile = saveCurrentDashboardProfile(
+      nextProfile,
+      INITIAL_PROFILE,
+      passwordData,
+    );
+    setProfile(savedProfile);
+    return savedProfile;
+  };
   const [calls, setCalls] = useState(() => getCommitteeCalls());
   const [editingCall, setEditingCall] = useState(null);
   const [callNotice, setCallNotice] = useState("");
   const [callFormResetKey, setCallFormResetKey] = useState(0);
-  const [plans, setPlans] = useState(() => getCommitteePlans());
+  const [plans, setPlans] = useState(() => getCommitteeWorkspacePlans());
   const [resultsPublished, setResultsPublished] = useState(false);
-  const [instructorActivities, setInstructorActivities] = useState(
-    INITIAL_COMMITTEE_ACTIVITIES,
+  const [instructorActivities, setInstructorActivities] = useState(() =>
+    getInstructorActivities(INITIAL_COMMITTEE_ACTIVITIES),
   );
-  const [executionOrders, setExecutionOrders] = useState(
-    INITIAL_EXECUTION_ORDERS,
+  const [executionOrders, setExecutionOrders] = useState(() =>
+    getCommitteeExecutionOrders(INITIAL_EXECUTION_ORDERS),
   );
 
   useEffect(() => {
-    setInstructorActivities((currentActivities) => {
-      const hasPendingActivities = currentActivities.some(
-        (activity) => activity.status === "در انتظار بررسی",
+    if (
+      activeSection === "activities-management" ||
+      activeSection === "dashboard"
+    ) {
+      setInstructorActivities(
+        getInstructorActivities(INITIAL_COMMITTEE_ACTIVITIES),
       );
+    }
+  }, [activeSection]);
 
-      if (hasPendingActivities) {
-        return currentActivities;
-      }
+  useEffect(() => {
+    if (
+      activeSection === "execution-orders-management" ||
+      activeSection === "dashboard"
+    ) {
+      setExecutionOrders(getCommitteeExecutionOrders(INITIAL_EXECUTION_ORDERS));
+    }
+  }, [activeSection]);
 
-      const existingActivityIds = new Set(
-        currentActivities.map((activity) => activity.id),
-      );
-      const newPendingActivities = EXTRA_PENDING_ACTIVITIES_FOR_REVIEW.filter(
-        (activity) => !existingActivityIds.has(activity.id),
-      );
-
-      if (!newPendingActivities.length) {
-        return currentActivities;
-      }
-
-      return [...newPendingActivities, ...currentActivities];
-    });
-  }, []);
-
-  const unreadNotificationCount =
-    INITIAL_MESSAGES.filter((message) => !message.isRead).length +
-    requests.filter((request) => request.status === "در انتظار پیگیری").length;
+  const unreadNotificationCount = committeeRecentMessages.filter(
+    (message) => !message.isRead,
+  ).length;
 
   const activeSectionData =
     SECTION_DATA[activeSection] || SECTION_DATA.dashboard;
@@ -6534,10 +8783,110 @@ function CommitteeSecretariatDashboardPage() {
   );
 
   useEffect(() => {
+    if (!isNotificationOpen) {
+      return undefined;
+    }
+
+    const closeOnOutsideClick = (event) => {
+      if (
+        notificationMenuRef.current &&
+        !notificationMenuRef.current.contains(event.target)
+      ) {
+        setIsNotificationOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+    };
+  }, [isNotificationOpen]);
+
+  const refreshCommitteeMessages = () => {
+    setCommitteeRecentMessages(getCommitteeNotifications().slice(0, 3));
+  };
+
+  const openCommitteeSection = (sectionId, parentId = "") => {
+    setActiveSection(sectionId);
+    setExpandedMenus(parentId ? [parentId] : []);
+    setIsNotificationOpen(false);
+    setIsProfileMenuOpen(false);
+  };
+
+  const openCommitteeMessagesCenter = (event) => {
+    event?.stopPropagation();
+    openCommitteeSection("messages");
+  };
+
+  const markCommitteeMessageAsRead = (messageId, event) => {
+    event?.stopPropagation();
+    markNotificationAsRead(messageId);
+    refreshCommitteeMessages();
+  };
+
+  const markAllCommitteeMessagesAsRead = (event) => {
+    event?.stopPropagation();
+    markAllCommitteeNotificationsAsRead();
+    refreshCommitteeMessages();
+  };
+
+  const openCommitteeNotificationTarget = (message) => {
+    markNotificationAsRead(message.id);
+    refreshCommitteeMessages();
+
+    if (message.sourceType === "support-ticket") {
+      openCommitteeSection("new-requests", "received-requests");
+      return;
+    }
+
+    if (message.sourceType === "business-collaboration-request") {
+      openCommitteeSection(
+        "business-collaboration-requests",
+        "business-management",
+      );
+      return;
+    }
+
+    if (message.sourceType === "instructor-activity") {
+      openCommitteeSection("activities-management", "events-management");
+      return;
+    }
+
+    if (message.sourceType === "execution-order") {
+      openCommitteeSection("execution-orders-management", "events-management");
+      return;
+    }
+
+    if (message.sourceType === "task") {
+      openCommitteeSection("accepted-plans", "plans-management");
+      return;
+    }
+
+    if (message.sourceType === "review") {
+      openCommitteeSection("reviewer-feedbacks", "reviewers-management");
+      return;
+    }
+
+    if (message.sourceType === "plan") {
+      openCommitteeSection("final-decisions", "plans-management");
+      return;
+    }
+
+    openCommitteeSection("messages");
+  };
+
+  useEffect(() => {
     if (!callNotice) return undefined;
     const timer = window.setTimeout(() => setCallNotice(""), 3500);
     return () => window.clearTimeout(timer);
   }, [callNotice]);
+
+  useEffect(() => {
+    if (!newsNotice) return undefined;
+    const timer = window.setTimeout(() => setNewsNotice(""), 3500);
+    return () => window.clearTimeout(timer);
+  }, [newsNotice]);
 
   const toggleMenu = (menuId) => {
     setExpandedMenus((currentMenus) =>
@@ -6557,6 +8906,9 @@ function CommitteeSecretariatDashboardPage() {
       if (item.subItems[0].id === "create-call") {
         setEditingCall(null);
       }
+      if (item.subItems[0].id === "create-news") {
+        setEditingNewsItem(null);
+      }
       setActiveSection(item.subItems[0].id);
       return;
     }
@@ -6568,6 +8920,9 @@ function CommitteeSecretariatDashboardPage() {
   const handleSubNavigation = (parentId, subItemId) => {
     if (subItemId === "create-call") {
       setEditingCall(null);
+    }
+    if (subItemId === "create-news") {
+      setEditingNewsItem(null);
     }
     setActiveSection(subItemId);
     setExpandedMenus([parentId]);
@@ -6668,14 +9023,19 @@ function CommitteeSecretariatDashboardPage() {
       );
     }
 
+    const activeWorkflowPlans = plans.filter(isCommitteeActiveWorkflowPlan);
+    const closedPublishedPlans = plans.filter(isCommitteeClosedPublishedPlan);
+
     if (activeSection === "current-plans") {
-      return <CurrentPlansPanel plans={plans} setPlans={setPlans} />;
+      return (
+        <CurrentPlansPanel plans={activeWorkflowPlans} setPlans={setPlans} />
+      );
     }
 
     if (activeSection === "final-decisions") {
       return (
         <FinalDecisionPanel
-          plans={plans}
+          plans={activeWorkflowPlans}
           setPlans={setPlans}
           resultsPublished={resultsPublished}
           setResultsPublished={setResultsPublished}
@@ -6687,8 +9047,12 @@ function CommitteeSecretariatDashboardPage() {
       return <AcceptedPlansPanel plans={plans} />;
     }
 
+    if (activeSection === "introduced-plans") {
+      return <IntroducedPlansPanel />;
+    }
+
     if (activeSection === "plans-history") {
-      return <PlansHistoryPanel plans={plans} />;
+      return <PlansHistoryPanel plans={closedPublishedPlans} />;
     }
 
     if (activeSection === "reviewers-info") {
@@ -6749,6 +9113,84 @@ function CommitteeSecretariatDashboardPage() {
       );
     }
 
+    if (activeSection === "create-news") {
+      return (
+        <NewsBuilderPanel
+          notice={newsNotice}
+          editingNewsItem={editingNewsItem}
+          onCancelEdit={() => {
+            setEditingNewsItem(null);
+            setActiveSection("news-history");
+            setExpandedMenus(["news-management"]);
+          }}
+          onSaveNews={(newsData, publish, newsId) => {
+            let savedNewsItem;
+
+            if (newsId) {
+              const currentNewsItem = getCommitteeNewsItems().find(
+                (item) => String(item.id) === String(newsId),
+              );
+              const isPublishedNews = currentNewsItem?.status === "منتشر شده";
+
+              if (publish) {
+                savedNewsItem = publishNewsRevision(newsId, newsData);
+              } else if (isPublishedNews) {
+                savedNewsItem = saveNewsDraftRevision(newsId, newsData);
+              } else {
+                savedNewsItem = updateNewsItem(newsId, newsData);
+              }
+
+              setEditingNewsItem(null);
+              setActiveSection("news-history");
+              setExpandedMenus(["news-management"]);
+              setNewsNotice(
+                publish
+                  ? "تغییرات خبر ذخیره و نسخه جدید در سایت منتشر شد."
+                  : isPublishedNews
+                    ? "ویرایش خبر به‌صورت پیش‌نویس ذخیره شد و نسخه منتشرشده سایت تغییر نکرد."
+                    : "تغییرات پیش‌نویس خبر با موفقیت ذخیره شد.",
+              );
+            } else {
+              savedNewsItem = createNewsItem(newsData, { publish });
+              setNewsNotice(
+                publish
+                  ? "خبر با موفقیت در سایت منتشر شد."
+                  : "خبر با موفقیت به‌صورت پیش‌نویس ذخیره شد.",
+              );
+            }
+
+            setCommitteeNewsItems(getCommitteeNewsItems());
+            return savedNewsItem;
+          }}
+        />
+      );
+    }
+
+    if (activeSection === "news-history") {
+      return (
+        <NewsHistoryPanel
+          newsItems={committeeNewsItems}
+          onPublishNews={(newsId) => {
+            publishNewsItem(newsId);
+            setCommitteeNewsItems(getCommitteeNewsItems());
+            setNewsNotice("خبر با موفقیت منتشر شد.");
+          }}
+          onDeleteNews={(newsId) => {
+            const confirmed = window.confirm("آیا از حذف این خبر مطمئن هستید؟");
+            if (!confirmed) return;
+            deleteNewsItem(newsId);
+            setCommitteeNewsItems(getCommitteeNewsItems());
+            setNewsNotice("خبر حذف شد.");
+          }}
+          onEditNews={(newsItem) => {
+            setEditingNewsItem(newsItem);
+            setActiveSection("create-news");
+            setExpandedMenus(["news-management"]);
+          }}
+        />
+      );
+    }
+
     if (activeSection === "messages") {
       return <MessagesPanel />;
     }
@@ -6771,7 +9213,7 @@ function CommitteeSecretariatDashboardPage() {
         <EditProfilePanel
           profile={profile}
           onSave={(newProfile) => {
-            setProfile(newProfile);
+            saveCommitteeProfile(newProfile);
             setActiveSection("profile");
           }}
           onCancel={() => setActiveSection("profile")}
@@ -6886,13 +9328,17 @@ function CommitteeSecretariatDashboardPage() {
           <div className="innovator-dashboard__topbar-actions">
             <DashboardDateTime />
 
-            <div className="innovator-dashboard__notification-menu">
+            <div
+              className="innovator-dashboard__notification-menu"
+              ref={notificationMenuRef}
+            >
               <button
                 type="button"
                 className="innovator-dashboard__notification-trigger"
-                onClick={() =>
-                  setIsNotificationOpen((currentValue) => !currentValue)
-                }
+                onClick={() => {
+                  setIsNotificationOpen((currentValue) => !currentValue);
+                  setIsProfileMenuOpen(false);
+                }}
                 aria-label="اعلان‌ها"
               >
                 <BellIcon />
@@ -6905,37 +9351,112 @@ function CommitteeSecretariatDashboardPage() {
                 <div className="innovator-dashboard__notification-dropdown">
                   <div className="innovator-dashboard__notification-header">
                     <strong>اعلان‌های جدید</strong>
-                    <small>{unreadNotificationCount} مورد</small>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={openCommitteeMessagesCenter}
+                        title="رفتن به پیام‌ها و اعلانات"
+                        style={{
+                          width: "30px",
+                          height: "30px",
+                          border: "0",
+                          borderRadius: "999px",
+                          background: "#e8f8ff",
+                          cursor: "pointer",
+                        }}
+                      >
+                        📨
+                      </button>
+                      <button
+                        type="button"
+                        onClick={markAllCommitteeMessagesAsRead}
+                        disabled={unreadNotificationCount === 0}
+                        style={{
+                          height: "30px",
+                          border: "0",
+                          borderRadius: "999px",
+                          padding: "0 10px",
+                          color: unreadNotificationCount
+                            ? "#0e7ca8"
+                            : "#64748b",
+                          background: unreadNotificationCount
+                            ? "#e8f8ff"
+                            : "#e9edf2",
+                          fontFamily: "inherit",
+                          fontSize: "10px",
+                          fontWeight: 900,
+                          cursor: unreadNotificationCount
+                            ? "pointer"
+                            : "default",
+                        }}
+                      >
+                        خواندن همه
+                      </button>
+                    </div>
+                    <small>{unreadNotificationCount} خوانده‌نشده</small>
                   </div>
 
                   <div className="innovator-dashboard__notification-list">
-                    {requests
-                      .filter(
-                        (request) => request.status === "در انتظار پیگیری",
-                      )
-                      .slice(0, 3)
-                      .map((request) => (
-                        <article
-                          className="innovator-dashboard__notification-item"
-                          key={request.id}
+                    {committeeRecentMessages.map((message) => (
+                      <article
+                        className={`innovator-dashboard__notification-item ${
+                          message.isRead
+                            ? "innovator-dashboard__notification-item--read"
+                            : ""
+                        }`}
+                        key={message.id}
+                        onClick={() => openCommitteeNotificationTarget(message)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            openCommitteeNotificationTarget(message);
+                          }
+                        }}
+                        style={{
+                          cursor: "pointer",
+                          border: message.isRead
+                            ? "1px solid #bbf7d0"
+                            : "1px solid transparent",
+                          background: message.isRead ? "#f0fdf4" : undefined,
+                          opacity: message.isRead ? 1 : undefined,
+                        }}
+                      >
+                        <div>
+                          <h4>{message.title}</h4>
+                          <p>{message.sentAt}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(event) =>
+                            markCommitteeMessageAsRead(message.id, event)
+                          }
+                          disabled={message.isRead}
+                          style={
+                            message.isRead
+                              ? { color: "#166534", background: "#dcfce7" }
+                              : undefined
+                          }
                         >
-                          <div>
-                            <h4>{request.title}</h4>
-                            <p>
-                              {request.userLevel} / {request.sentAt}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveSection("new-requests");
-                              setIsNotificationOpen(false);
-                            }}
-                          >
-                            مشاهده
-                          </button>
-                        </article>
-                      ))}
+                          {message.isRead ? "خوانده شد" : "خواندن"}
+                        </button>
+                      </article>
+                    ))}
+
+                    {committeeRecentMessages.length === 0 && (
+                      <article className="innovator-dashboard__notification-item">
+                        <div>
+                          <h4>اعلان جدیدی ندارید</h4>
+                          <p>همه چیز خوانده شده است.</p>
+                        </div>
+                      </article>
+                    )}
                   </div>
                 </div>
               )}
@@ -6951,13 +9472,22 @@ function CommitteeSecretariatDashboardPage() {
               >
                 <span className="innovator-dashboard__profile-text">
                   <strong>
-                    {profile.firstName} {profile.lastName}
+                    {profile.fullName ||
+                      `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
                   </strong>
                   <small>{profile.role}</small>
                 </span>
-                <span className="innovator-dashboard__top-avatar">
-                  {profile.avatarLetter}
-                </span>
+                {profile.avatarPreview ? (
+                  <img
+                    className="innovator-dashboard__top-avatar"
+                    src={profile.avatarPreview}
+                    alt={profile.fullName || "پروفایل کاربر"}
+                  />
+                ) : (
+                  <span className="innovator-dashboard__top-avatar">
+                    {profile.avatarLetter || profile.fullName?.[0] || "ک"}
+                  </span>
+                )}
                 <span className="innovator-dashboard__profile-caret">⌄</span>
               </button>
 

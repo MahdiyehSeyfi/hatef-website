@@ -1,14 +1,30 @@
-import { useEffect, useState } from "react";
-import { Link, Navigate, useParams } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Link,
+  Navigate,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router";
 
 import ActivitiesCarousel from "../../components/activities/ActivitiesCarousel";
 import ExpandableArticle from "../../components/activities/ExpandableArticle";
 
 import {
-  courseItems,
-  eventItems,
-  getEventById,
-} from "../../data/activitiesData";
+  getPublicCourseItems,
+  getPublicEventById,
+  getPublicEventItems,
+  isPreviewAllowedForInstructorActivity,
+} from "../../services/publicActivityService";
+
+import {
+  addActivityRegistration,
+  consumePendingActivityRegistrationForActivity,
+  getActivityRegistrationStats,
+  isRegisteredForActivity,
+  savePendingActivityRegistration,
+} from "../../services/activityRegistrationService";
+import { getCurrentUser } from "../../services/authService";
 
 import facebookIcon from "../../assets/icons/contact/facebook.svg";
 import instagramIcon from "../../assets/icons/contact/instagram.svg";
@@ -160,7 +176,7 @@ function CheckIcon() {
   );
 }
 
-const eventHighlights = [
+const defaultEventHighlights = [
   {
     id: 1,
     title: "ارائه تجربه‌های موفق",
@@ -186,7 +202,7 @@ const eventHighlights = [
   },
 ];
 
-const eventAgenda = [
+const defaultEventAgenda = [
   {
     id: 1,
     time: "۰۸:۳۰",
@@ -205,16 +221,9 @@ const eventAgenda = [
     title: "پنل تخصصی دانشگاه و صنعت",
     description: "گفت‌وگوی مدیران و پژوهشگران درباره تجاری‌سازی فناوری.",
   },
-  {
-    id: 4,
-    time: "۱۳:۳۰",
-    title: "ارائه دستاوردها و شبکه‌سازی",
-    description:
-      "معرفی پروژه‌ها، مذاکره با مجموعه‌ها و شکل‌گیری همکاری‌های جدید.",
-  },
 ];
 
-const eventSpeakers = [
+const defaultEventSpeakers = [
   {
     id: 1,
     initials: "م س",
@@ -229,16 +238,9 @@ const eventSpeakers = [
     role: "مدیر توسعه فناوری",
     organization: "مرکز نوآوری دانشگاه تهران",
   },
-  {
-    id: 3,
-    initials: "س ا",
-    name: "سارا احمدی",
-    role: "پژوهشگر و مدیر پروژه",
-    organization: "معاونت پژوهشی دانشگاه تهران",
-  },
 ];
 
-const eventQuestions = [
+const defaultEventQuestions = [
   {
     id: 1,
     title: "شرکت در رویداد برای چه افرادی مناسب است؟",
@@ -266,110 +268,221 @@ const articleParagraphs = [
 ];
 
 const socialLinks = [
-  {
-    id: 1,
-    label: "فیسبوک",
-    icon: facebookIcon,
-  },
-  {
-    id: 2,
-    label: "واتساپ",
-    icon: whatsappIcon,
-  },
-  {
-    id: 3,
-    label: "توییتر",
-    icon: twitterIcon,
-  },
-  {
-    id: 4,
-    label: "اینستاگرام",
-    icon: instagramIcon,
-  },
-  {
-    id: 5,
-    label: "تلگرام",
-    icon: telegramIcon,
-  },
+  { id: 1, label: "فیسبوک", icon: facebookIcon },
+  { id: 2, label: "واتساپ", icon: whatsappIcon },
+  { id: 3, label: "توییتر", icon: twitterIcon },
+  { id: 4, label: "اینستاگرام", icon: instagramIcon },
+  { id: 5, label: "تلگرام", icon: telegramIcon },
 ];
 
 function getStatusLabel(status) {
-  if (status === "registering") {
-    return "ثبت‌نام فعال";
-  }
-
-  if (status === "ongoing") {
-    return "در حال برگزاری";
-  }
-
+  if (status === "registering") return "ثبت‌نام فعال";
+  if (status === "ongoing") return "در حال برگزاری";
   return "برگزار شده";
 }
 
 function getActionLabel(status) {
-  if (status === "registering") {
-    return "ثبت‌نام در رویداد";
-  }
-
-  if (status === "ongoing") {
-    return "مشاهده اطلاعات رویداد";
-  }
-
+  if (status === "registering") return "ثبت‌نام در رویداد";
+  if (status === "ongoing") return "مشاهده اطلاعات رویداد";
   return "مشاهده گزارش رویداد";
+}
+
+function splitParagraphs(value, fallbackParagraphs = []) {
+  const paragraphs = String(value || "")
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return paragraphs.length ? paragraphs : fallbackParagraphs;
+}
+
+function normalizeItems(items, fallbackItems) {
+  return Array.isArray(items) && items.length ? items : fallbackItems;
+}
+
+function getItemTitle(item, fallback = "عنوان") {
+  return item.title || item.question || item.name || fallback;
+}
+
+function getItemDescription(item, fallback = "") {
+  return (
+    item.description || item.content || item.answer || item.role || fallback
+  );
+}
+
+function createInitials(name) {
+  return (
+    String(name || "سخنران")
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join(" ") || "س"
+  );
+}
+
+function getCapacityLabel(capacity) {
+  return capacity ? `${capacity} نفر` : "تعیین نشده";
+}
+
+function getTimeRange(eventItem) {
+  const startTime = eventItem.startTime || "";
+  const endTime = eventItem.endTime || "";
+
+  if (startTime && endTime) {
+    return `${startTime} تا ${endTime}`;
+  }
+
+  return startTime || endTime || "تعیین نشده";
+}
+
+function getRegistrationMessage(reason) {
+  const messageMap = {
+    created: "ثبت‌نام شما با موفقیت ثبت شد.",
+    duplicate: "شما قبلاً برای این رویداد ثبت‌نام کرده‌اید.",
+    capacity_full: "ظرفیت این رویداد تکمیل شده است.",
+    login_required: "برای ثبت‌نام ابتدا وارد حساب کاربری شوید.",
+    activity_not_found: "رویداد موردنظر پیدا نشد.",
+  };
+
+  return messageMap[reason] || "ثبت‌نام انجام نشد. لطفاً دوباره تلاش کنید.";
 }
 
 function EventDetailsPage() {
   const { eventId } = useParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isPreviewMode = searchParams.get("preview") === "committee";
+  const includePreview =
+    isPreviewMode && isPreviewAllowedForInstructorActivity();
 
-  const eventItem = getEventById(eventId);
-
+  const eventItem = getPublicEventById(eventId, { includePreview });
+  const currentUser = getCurrentUser();
   const [openQuestion, setOpenQuestion] = useState(null);
+  const [registrationNotice, setRegistrationNotice] = useState("");
+  const [registrationVersion, setRegistrationVersion] = useState(0);
 
   useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [eventId]);
+
+  useEffect(() => {
+    if (!registrationNotice) return undefined;
+    const timer = window.setTimeout(() => setRegistrationNotice(""), 4200);
+    return () => window.clearTimeout(timer);
+  }, [registrationNotice]);
+
+  useEffect(() => {
+    if (!eventItem || !currentUser || isPreviewMode) {
+      return;
+    }
+
+    if (!consumePendingActivityRegistrationForActivity(eventItem)) {
+      return;
+    }
+
+    const result = addActivityRegistration(eventItem);
+    setRegistrationNotice(getRegistrationMessage(result.reason));
+
+    if (result.success) {
+      setRegistrationVersion((current) => current + 1);
+    }
+  }, [eventItem, currentUser, isPreviewMode]);
+
+  const registrationStats = useMemo(
+    () => getActivityRegistrationStats(eventItem || {}),
+    [eventItem, registrationVersion],
+  );
+  const alreadyRegistered = eventItem
+    ? isRegisteredForActivity(eventItem)
+    : false;
+  const canRegister =
+    eventItem?.status === "registering" &&
+    !isPreviewMode &&
+    !registrationStats.isFull;
 
   if (!eventItem) {
     return <Navigate to="/events/all" replace />;
   }
 
-  const relatedEvents = eventItems
+  const handleEventRegistration = () => {
+    if (!currentUser) {
+      savePendingActivityRegistration(eventItem, `/events/${eventItem.id}`);
+      navigate("/auth");
+      return;
+    }
+
+    const result = addActivityRegistration(eventItem);
+
+    setRegistrationNotice(getRegistrationMessage(result.reason));
+
+    if (result.success) {
+      setRegistrationVersion((current) => current + 1);
+    }
+  };
+
+  const allEvents = getPublicEventItems({ includePreview });
+  const relatedEvents = allEvents
     .filter((item) => item.id !== eventItem.id)
     .slice(0, 8);
+  const relatedCourses = getPublicCourseItems({ includePreview }).slice(0, 8);
 
-  const relatedCourses = courseItems.slice(0, 8);
+  const statusLabel = getStatusLabel(eventItem.status);
+  const actionLabel = getActionLabel(eventItem.status);
+  const summaryParagraphs = splitParagraphs(eventItem.summary, [
+    "این رویداد با هدف ایجاد ارتباط میان پژوهشگران، صاحبان ایده، مدیران فناوری و فعالان صنعت برگزار می‌شود.",
+    "شرکت‌کنندگان می‌توانند با تازه‌ترین دستاوردهای پژوهشی آشنا شوند و فرصت‌های همکاری جدیدی ایجاد کنند.",
+  ]);
+  const introParagraphs = splitParagraphs(eventItem.introText, [
+    "این رویداد بر توسعه فناوری‌های نوآورانه، تجاری‌سازی دستاوردهای دانشگاهی و ایجاد همکاری میان پژوهشگران و صنعت تمرکز دارد.",
+    "شرکت‌کنندگان می‌توانند طرح‌ها و توانمندی‌های خود را معرفی کرده و از تجربه مدیران، متخصصان و سرمایه‌گذاران بهره‌مند شوند.",
+  ]);
+  const eventAudiences = normalizeItems(eventItem.audiences, [
+    { title: "پژوهشگران" },
+    { title: "دانشجویان" },
+    { title: "مدیران" },
+    { title: "فعالان صنعت" },
+  ]);
+  const eventHighlights = normalizeItems(
+    eventItem.highlights,
+    defaultEventHighlights,
+  );
+  const eventAgenda = normalizeItems(eventItem.agenda, defaultEventAgenda);
+  const eventSpeakers = normalizeItems(
+    eventItem.speakers,
+    defaultEventSpeakers,
+  );
+  const eventQuestions = normalizeItems(eventItem.faqs, defaultEventQuestions);
 
   const eventMeta = [
     {
       id: 1,
       title: "مدت رویداد",
-      value: "یک روز",
+      value: eventItem.duration || "تعیین نشده",
       Icon: ClockIcon,
     },
     {
       id: 2,
       title: "تاریخ برگزاری",
-      value: eventItem.startDate,
+      value: eventItem.eventDate || eventItem.startDate || "تعیین نشده",
       Icon: CalendarIcon,
     },
     {
       id: 3,
       title: "نوع برگزاری",
-      value: "حضوری",
+      value: eventItem.format || "تعیین نشده",
       Icon: PresentationIcon,
     },
     {
       id: 4,
       title: "محل برگزاری",
-      value: "دانشگاه تهران",
+      value: eventItem.location || "تعیین نشده",
       Icon: LocationIcon,
     },
     {
       id: 5,
-      title: "ظرفیت رویداد",
-      value: "۱۲۰ نفر",
+      title: "دبیر رویداد",
+      value: eventItem.secretaryName || eventItem.instructor || "دبیر رویداد",
       Icon: UsersIcon,
     },
   ];
@@ -380,13 +493,9 @@ function EventDetailsPage() {
         <div className="event-details-page__container">
           <nav className="event-details__breadcrumb" aria-label="مسیر صفحه">
             <Link to="/">صفحه اصلی</Link>
-
             <span>/</span>
-
             <Link to="/events/all">رویدادهای هاتف</Link>
-
             <span>/</span>
-
             <span>{eventItem.title}</span>
           </nav>
 
@@ -395,9 +504,8 @@ function EventDetailsPage() {
               <img src={eventItem.image} alt={eventItem.title} />
 
               <div className="event-details-hero__badges">
-                <span>{getStatusLabel(eventItem.status)}</span>
-
-                <span>{eventItem.startDate}</span>
+                <span>{statusLabel}</span>
+                <span>{eventItem.eventDate || eventItem.startDate}</span>
               </div>
             </div>
 
@@ -408,21 +516,15 @@ function EventDetailsPage() {
 
               <h1>{eventItem.title}</h1>
 
-              <p>
-                این رویداد با هدف ایجاد ارتباط میان پژوهشگران، صاحبان ایده،
-                مدیران فناوری و فعالان صنعت برگزار می‌شود.
-              </p>
-
-              <p>
-                شرکت‌کنندگان می‌توانند با تازه‌ترین دستاوردهای پژوهشی آشنا شوند
-                و فرصت‌های همکاری جدیدی ایجاد کنند.
-              </p>
+              {summaryParagraphs.slice(0, 2).map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
 
               <a
                 href="#event-registration"
                 className="event-details-hero__button"
               >
-                {getActionLabel(eventItem.status)}
+                {actionLabel}
               </a>
             </div>
           </div>
@@ -433,7 +535,6 @@ function EventDetailsPage() {
                 <span className="event-details-meta__icon">
                   <Icon />
                 </span>
-
                 <div>
                   <h2>{title}</h2>
                   <p>{value}</p>
@@ -450,8 +551,7 @@ function EventDetailsPage() {
             <aside className="event-details-sidebar">
               <div className="event-registration-card" id="event-registration">
                 <div className="event-registration-card__header">
-                  <span>{getStatusLabel(eventItem.status)}</span>
-
+                  <span>{statusLabel}</span>
                   <span>ظرفیت محدود</span>
                 </div>
 
@@ -460,72 +560,95 @@ function EventDetailsPage() {
                 <dl className="event-registration-card__details">
                   <div>
                     <dt>دبیر رویداد:</dt>
-                    <dd>{eventItem.instructor}</dd>
+                    <dd>{eventItem.secretaryName || eventItem.instructor}</dd>
                   </div>
-
                   <div>
                     <dt>برگزارکننده:</dt>
                     <dd>{eventItem.organizer}</dd>
                   </div>
-
                   <div>
                     <dt>تاریخ برگزاری:</dt>
-                    <dd>{eventItem.startDate}</dd>
+                    <dd>{eventItem.eventDate || eventItem.startDate}</dd>
                   </div>
-
                   <div>
                     <dt>ساعت برگزاری:</dt>
-                    <dd>۰۸:۳۰ تا ۱۷:۰۰</dd>
+                    <dd>{getTimeRange(eventItem)}</dd>
                   </div>
-
                   <div>
                     <dt>نوع برگزاری:</dt>
-                    <dd>حضوری</dd>
+                    <dd>{eventItem.format || "تعیین نشده"}</dd>
                   </div>
-
                   <div>
                     <dt>محل برگزاری:</dt>
-                    <dd>دانشگاه تهران، سالن همایش‌های مرکزی</dd>
+                    <dd>{eventItem.location || "تعیین نشده"}</dd>
                   </div>
                 </dl>
 
                 <div className="event-registration-card__audience">
                   <h3>مناسب برای:</h3>
-
                   <div>
-                    <span>
-                      <CheckIcon />
-                      پژوهشگران
-                    </span>
-
-                    <span>
-                      <CheckIcon />
-                      دانشجویان
-                    </span>
-
-                    <span>
-                      <CheckIcon />
-                      مدیران
-                    </span>
-
-                    <span>
-                      <CheckIcon />
-                      فعالان صنعت
-                    </span>
+                    {eventAudiences.map((audience, index) => (
+                      <span key={`${audience.title}-${index}`}>
+                        <CheckIcon />
+                        {audience.title}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
-                <a
-                  href="#registration-form"
-                  className="event-registration-card__button"
-                >
-                  {getActionLabel(eventItem.status)}
-                </a>
+                {registrationNotice && (
+                  <p
+                    style={{
+                      margin: "16px 0 0",
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      background: "#f0fdf4",
+                      color: "#166534",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      lineHeight: 1.9,
+                    }}
+                  >
+                    {registrationNotice}
+                  </p>
+                )}
+
+                {eventItem.status === "registering" && !isPreviewMode ? (
+                  <button
+                    type="button"
+                    className="event-registration-card__button"
+                    onClick={handleEventRegistration}
+                    disabled={!canRegister || alreadyRegistered}
+                    style={{
+                      border: 0,
+                      width: "100%",
+                      opacity: !canRegister || alreadyRegistered ? 0.55 : 1,
+                      cursor:
+                        !canRegister || alreadyRegistered
+                          ? "not-allowed"
+                          : "pointer",
+                    }}
+                  >
+                    {registrationStats.isFull
+                      ? "ظرفیت تکمیل شده"
+                      : alreadyRegistered
+                        ? "قبلاً ثبت‌نام کرده‌اید"
+                        : actionLabel}
+                  </button>
+                ) : (
+                  <a
+                    href="#event-registration"
+                    className="event-registration-card__button"
+                  >
+                    {isPreviewMode
+                      ? "پیش‌نمایش ثبت‌نام غیرفعال است"
+                      : actionLabel}
+                  </a>
+                )}
               </div>
 
               <div className="event-details-share">
                 <span>به اشتراک‌گذاری این رویداد:</span>
-
                 <div>
                   {socialLinks.map((social) => (
                     <a
@@ -545,37 +668,29 @@ function EventDetailsPage() {
                 <span className="event-content-section__eyebrow">
                   معرفی رویداد
                 </span>
-
-                <h2>محورهای پژوهشی سال جاری</h2>
-
-                <p>
-                  این رویداد بر توسعه فناوری‌های نوآورانه، تجاری‌سازی دستاوردهای
-                  دانشگاهی و ایجاد همکاری میان پژوهشگران و صنعت تمرکز دارد.
-                </p>
-
-                <p>
-                  شرکت‌کنندگان می‌توانند طرح‌ها و توانمندی‌های خود را معرفی کرده
-                  و از تجربه مدیران، متخصصان و سرمایه‌گذاران بهره‌مند شوند.
-                </p>
+                <h2>{eventItem.introTitle || "محورهای پژوهشی سال جاری"}</h2>
+                {introParagraphs.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
               </section>
 
               <section className="event-content-section">
                 <span className="event-content-section__eyebrow">
                   مزایای حضور
                 </span>
-
                 <h2>چرا در این رویداد شرکت کنیم؟</h2>
-
                 <div className="event-highlights">
-                  {eventHighlights.map((highlight) => (
-                    <article className="event-highlight" key={highlight.id}>
+                  {eventHighlights.map((highlight, index) => (
+                    <article
+                      className="event-highlight"
+                      key={`${getItemTitle(highlight)}-${index}`}
+                    >
                       <span>
                         <CheckIcon />
                       </span>
-
                       <div>
-                        <h3>{highlight.title}</h3>
-                        <p>{highlight.description}</p>
+                        <h3>{getItemTitle(highlight, "مزیت حضور")}</h3>
+                        <p>{getItemDescription(highlight)}</p>
                       </div>
                     </article>
                   ))}
@@ -586,19 +701,18 @@ function EventDetailsPage() {
                 <span className="event-content-section__eyebrow">
                   برنامه رویداد
                 </span>
-
                 <h2>جدول زمان‌بندی برنامه‌ها</h2>
-
                 <div className="event-agenda">
-                  {eventAgenda.map((agendaItem) => (
-                    <article className="event-agenda__item" key={agendaItem.id}>
-                      <time>{agendaItem.time}</time>
-
+                  {eventAgenda.map((agenda, index) => (
+                    <article
+                      className="event-agenda__item"
+                      key={`${getItemTitle(agenda)}-${index}`}
+                    >
+                      <time>{agenda.time || "--:--"}</time>
                       <span className="event-agenda__marker" />
-
                       <div>
-                        <h3>{agendaItem.title}</h3>
-                        <p>{agendaItem.description}</p>
+                        <h3>{getItemTitle(agenda, "عنوان برنامه")}</h3>
+                        <p>{getItemDescription(agenda)}</p>
                       </div>
                     </article>
                   ))}
@@ -609,21 +723,22 @@ function EventDetailsPage() {
                 <span className="event-content-section__eyebrow">
                   تیم علمی رویداد
                 </span>
-
                 <h2>سخنرانان و اعضای پنل</h2>
-
                 <div className="event-speakers">
-                  {eventSpeakers.map((speaker) => (
-                    <article className="event-speaker" key={speaker.id}>
+                  {eventSpeakers.map((speaker, index) => (
+                    <article
+                      className="event-speaker"
+                      key={`${speaker.name}-${index}`}
+                    >
                       <span className="event-speaker__avatar">
-                        {speaker.initials}
+                        {speaker.initials || createInitials(speaker.name)}
                       </span>
-
                       <div>
-                        <h3>{speaker.name}</h3>
-                        <p>{speaker.role}</p>
-                        <span>{speaker.organization}</span>
-
+                        <h3>{speaker.name || "سخنران رویداد"}</h3>
+                        <p>{speaker.role || "سخنران"}</p>
+                        <span>
+                          {speaker.organization || eventItem.organizer}
+                        </span>
                         <a href="#speaker-profile">مشاهده صفحه در دانشگاه</a>
                       </div>
                     </article>
@@ -635,32 +750,25 @@ function EventDetailsPage() {
                 <span className="event-content-section__eyebrow">
                   راهنمای حضور
                 </span>
-
                 <h2>پرسش‌های متداول رویداد</h2>
-
                 <div className="event-faq">
                   {eventQuestions.map((question, index) => {
                     const isOpen = openQuestion === index;
-
                     return (
                       <article
-                        className={`event-faq__item ${
-                          isOpen ? "event-faq__item--open" : ""
-                        }`}
-                        key={question.id}
+                        className={`event-faq__item ${isOpen ? "event-faq__item--open" : ""}`}
+                        key={`${getItemTitle(question)}-${index}`}
                       >
                         <button
                           type="button"
                           onClick={() => setOpenQuestion(isOpen ? null : index)}
                           aria-expanded={isOpen}
                         >
-                          <span>{question.title}</span>
-
+                          <span>{getItemTitle(question, "سوال متداول")}</span>
                           <i aria-hidden="true">{isOpen ? "−" : "+"}</i>
                         </button>
-
                         <div className="event-faq__answer">
-                          <p>{question.content}</p>
+                          <p>{getItemDescription(question, "پاسخ سوال")}</p>
                         </div>
                       </article>
                     );
@@ -675,11 +783,10 @@ function EventDetailsPage() {
       <section className="event-related-section">
         <div className="event-details-page__container">
           <ActivitiesCarousel
-            key={`related-events-${eventItem.id}`}
             title="رویدادهای دیگر"
             items={relatedEvents}
             viewAllPath="/events/all"
-            viewAllLabel="مشاهده همه رویدادها"
+            viewAllLabel="همه رویدادها"
           />
         </div>
       </section>
@@ -687,11 +794,10 @@ function EventDetailsPage() {
       <section className="event-related-section event-related-section--courses">
         <div className="event-details-page__container">
           <ActivitiesCarousel
-            key={`related-courses-${eventItem.id}`}
             title="دیگر دوره‌های هاتف"
             items={relatedCourses}
             viewAllPath="/courses/all"
-            viewAllLabel="مشاهده همه دوره‌ها"
+            viewAllLabel="همه دوره‌ها"
           />
         </div>
       </section>

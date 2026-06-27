@@ -2136,3 +2136,37 @@
     position: static !important;
   }
 }
+
+/* v6 commercial opportunity detail: show only innovator-provided fields for introduced opportunities */
+.business-opportunity-detail__rich-text {
+  color: #52677f;
+  font-size: 13px;
+  line-height: 2.25;
+  overflow-wrap: anywhere;
+}
+
+.business-opportunity-detail__rich-text p {
+  margin: 0 0 14px;
+}
+
+.business-opportunity-detail__rich-text h1,
+.business-opportunity-detail__rich-text h2,
+.business-opportunity-detail__rich-text h3 {
+  margin: 0 0 14px;
+  color: #10284b;
+  font-weight: 950;
+  line-height: 1.8;
+}
+
+.business-opportunity-detail__rich-text ul,
+.business-opportunity-detail__rich-text ol {
+  margin: 0 0 14px;
+  padding-right: 22px;
+}
+
+.business-opportunity-detail__rich-text a {
+  color: #0f5f80;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}

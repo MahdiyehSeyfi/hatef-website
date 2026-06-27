@@ -1,46 +1,79 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { newsItems } from "../../data/newsData";
+import {
+  getImportantPublicNewsItems,
+  getLatestPublicNewsItems,
+  NEWS_UPDATED_EVENT,
+} from "../../services/newsService";
 import "./NewsSidebar.css";
 
-const sidebarGroups = [
-  {
-    id: 1,
-    title: "آخرین اخبار",
-    items: newsItems.slice(0, 6),
-  },
-  {
-    id: 2,
-    title: "مهم‌ترین خبرها",
-    items: newsItems.slice(2, 8),
-  },
-  {
-    id: 3,
-    title: "آخرین رویدادها",
-    items: newsItems.slice(4, 10),
-  },
-];
+function NewsSidebarGroup({ group }) {
+  return (
+    <section className="news-sidebar__box">
+      <header className="news-sidebar__heading">
+        <span />
+        <h2>{group.title}</h2>
+      </header>
+
+      <ul className="news-sidebar__list">
+        {group.items.length === 0 ? (
+          <li className="news-sidebar__empty">هنوز موردی ثبت نشده است.</li>
+        ) : (
+          group.items.map((newsItem) => (
+            <li key={`${group.id}-${newsItem.id}`}>
+              <Link to={`/news/${newsItem.id}`}>
+                <span className="news-sidebar__item-dot" />
+                <span>{newsItem.title}</span>
+              </Link>
+            </li>
+          ))
+        )}
+      </ul>
+    </section>
+  );
+}
 
 function NewsSidebar() {
+  const [latestNewsItems, setLatestNewsItems] = useState(() =>
+    getLatestPublicNewsItems(6),
+  );
+  const [importantNewsItems, setImportantNewsItems] = useState(() =>
+    getImportantPublicNewsItems(6),
+  );
+
+  useEffect(() => {
+    const refreshSidebarNews = () => {
+      setLatestNewsItems(getLatestPublicNewsItems(6));
+      setImportantNewsItems(getImportantPublicNewsItems(6));
+    };
+
+    refreshSidebarNews();
+    window.addEventListener(NEWS_UPDATED_EVENT, refreshSidebarNews);
+    window.addEventListener("storage", refreshSidebarNews);
+
+    return () => {
+      window.removeEventListener(NEWS_UPDATED_EVENT, refreshSidebarNews);
+      window.removeEventListener("storage", refreshSidebarNews);
+    };
+  }, []);
+
+  const sidebarGroups = [
+    {
+      id: "latest",
+      title: "آخرین اخبار",
+      items: latestNewsItems,
+    },
+    {
+      id: "important",
+      title: "مهم‌ترین خبرها",
+      items: importantNewsItems,
+    },
+  ];
+
   return (
     <aside className="news-sidebar">
       {sidebarGroups.map((group) => (
-        <section className="news-sidebar__box" key={group.id}>
-          <header className="news-sidebar__heading">
-            <span />
-            <h2>{group.title}</h2>
-          </header>
-
-          <ul className="news-sidebar__list">
-            {group.items.map((newsItem) => (
-              <li key={`${group.id}-${newsItem.id}`}>
-                <Link to={`/news/${newsItem.id}`}>
-                  <span className="news-sidebar__item-dot" />
-                  <span>{newsItem.title}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <NewsSidebarGroup key={group.id} group={group} />
       ))}
     </aside>
   );
