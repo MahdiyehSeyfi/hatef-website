@@ -1,5 +1,10 @@
 import { getCurrentUser } from "./authService";
 import { addNotification } from "./notificationService";
+import {
+  deleteSupportTicketFromSupabase,
+  syncSupportTicketToSupabase,
+  syncSupportTicketUpdateToSupabase,
+} from "./supabaseSupportTicketService";
 
 const SUPPORT_TICKETS_STORAGE_KEY = "hatef_support_tickets";
 const SUPPORT_TICKETS_UPDATED_EVENT = "hatef-support-tickets-updated";
@@ -9,57 +14,6 @@ const LEGACY_SUPPORT_TICKET_KEYS = [
   "business-dashboard-support-tickets",
   "innovator-dashboard-support-requests",
   "reviewer-dashboard-support-tickets",
-];
-
-const DEFAULT_SUPPORT_TICKETS = [
-  {
-    id: "support-1",
-    userId: "user-innovator-1",
-    userName: "فناور نمونه",
-    userRole: "فناور",
-    userLevel: "فناور",
-    title: "مشکل در بارگذاری فایل پروپوزال",
-    message:
-      "هنگام بارگذاری فایل پروپوزال، سامانه خطا می‌دهد و فایل ثبت نمی‌شود. لطفاً راهنمایی کنید.",
-    sentAt: "۱۴۰۵/۰۳/۱۲ - ساعت ۱۰:۳۰",
-    status: "در انتظار پیگیری",
-    seenBySupport: false,
-    supportReply: "",
-    reply: "",
-    repliedAt: "",
-  },
-  {
-    id: "support-2",
-    userId: "user-reviewer-1",
-    userName: "داور نمونه",
-    userRole: "داور",
-    userLevel: "داور",
-    title: "عدم نمایش فایل یکی از طرح‌ها",
-    message:
-      "در صفحه جزئیات طرح، لینک دانلود پروپوزال برای یکی از طرح‌ها فعال نیست و نیاز به بررسی دارد.",
-    sentAt: "۱۴۰۵/۰۳/۱۳ - ساعت ۱۴:۱۵",
-    status: "در انتظار پیگیری",
-    seenBySupport: false,
-    supportReply: "",
-    reply: "",
-    repliedAt: "",
-  },
-  {
-    id: "support-3",
-    userId: "business-1",
-    userName: "همکار تجاری نمونه",
-    userRole: "همکار تجاری",
-    userLevel: "همکار تجاری",
-    title: "پیگیری درخواست همکاری ثبت‌شده",
-    message:
-      "برای یکی از موقعیت‌های همکاری درخواست ثبت کرده‌ام و می‌خواهم بدانم چه زمانی بررسی می‌شود.",
-    sentAt: "۱۴۰۵/۰۳/۱۵ - ساعت ۱۱:۲۰",
-    status: "در انتظار پیگیری",
-    seenBySupport: false,
-    supportReply: "",
-    reply: "",
-    repliedAt: "",
-  },
 ];
 
 let memoryTickets = [];
@@ -165,7 +119,7 @@ function getCurrentUserProfile(defaultRole = "فناور") {
   };
 }
 
-function normalizeTicket(ticket) {
+function normalizeTicket(ticket = {}) {
   const supportReply = ticket.supportReply || ticket.reply || "";
   const userRole = normalizeRole(
     ticket.userRole || ticket.userLevel || ticket.role,
@@ -178,6 +132,7 @@ function normalizeTicket(ticket) {
 
   return {
     id: ticket.id || makeId(),
+    supabaseId: ticket.supabaseId || "",
     userId: ticket.userId || ticket.ownerId || ticket.senderId || "",
     userName: ticket.userName || ticket.senderName || "کاربر سامانه",
     userRole,
@@ -245,10 +200,6 @@ function writeTickets(tickets) {
 
 function readTickets() {
   if (!canUseStorage()) {
-    if (!memoryTickets.length) {
-      memoryTickets = normalizeTickets(DEFAULT_SUPPORT_TICKETS);
-    }
-
     return memoryTickets;
   }
 
@@ -267,13 +218,14 @@ function readTickets() {
     }
   }
 
-  writeTickets(DEFAULT_SUPPORT_TICKETS);
-  return normalizeTickets(DEFAULT_SUPPORT_TICKETS);
+  return [];
 }
 
 function sortNewest(tickets) {
-  return [...tickets].sort((first, second) =>
-    String(second.sentAt || "").localeCompare(String(first.sentAt || "")),
+  return [...tickets].sort(
+    (first, second) =>
+      Number(second.sentAtTimestamp || second.createdAtTimestamp || 0) -
+      Number(first.sentAtTimestamp || first.createdAtTimestamp || 0),
   );
 }
 
@@ -299,10 +251,11 @@ export function getCurrentUserSupportTickets(defaultRole = "فناور") {
   );
 }
 
-export function addSupportTicket(ticketData, defaultRole = "فناور") {
+export function addSupportTicket(ticketData = {}, defaultRole = "فناور") {
   const user = getCurrentUserProfile(defaultRole);
   const tickets = getSupportTickets();
   const nowTimestamp = Date.now();
+
   const newTicket = normalizeTicket({
     ...ticketData,
     id: ticketData.id || makeId(),
@@ -336,7 +289,9 @@ export function addSupportTicket(ticketData, defaultRole = "فناور") {
     isImportant: true,
   });
 
+  syncSupportTicketToSupabase(newTicket);
   notifySupportTicketsUpdated();
+
   return newTicket;
 }
 
@@ -360,6 +315,11 @@ export function markSupportTicketSeen(ticketId) {
   });
 
   writeTickets(updatedTickets);
+
+  if (updatedTicket) {
+    syncSupportTicketUpdateToSupabase(updatedTicket);
+  }
+
   return updatedTicket;
 }
 
@@ -387,6 +347,8 @@ export function saveSupportTicketReply(ticketId, replyText) {
   writeTickets(updatedTickets);
 
   if (updatedTicket) {
+    syncSupportTicketUpdateToSupabase(updatedTicket);
+
     addNotification({
       targetUserId: updatedTicket.userId,
       title: "پاسخ پشتیبانی ثبت شد",
@@ -404,7 +366,7 @@ export function saveSupportTicketReply(ticketId, replyText) {
 export function deleteSupportTicket(ticketId) {
   const tickets = getSupportTickets();
   const targetTicket = tickets.find(
-    (ticket) => String(ticket.id) !== String(ticketId),
+    (ticket) => String(ticket.id) === String(ticketId),
   );
 
   if (targetTicket?.seenBySupport) {
@@ -416,10 +378,23 @@ export function deleteSupportTicket(ticketId) {
   );
 
   writeTickets(updatedTickets);
+
+  if (targetTicket) {
+    deleteSupportTicketFromSupabase(targetTicket);
+  } else {
+    deleteSupportTicketFromSupabase(ticketId);
+  }
+
   return updatedTickets;
 }
 
 export function clearSupportTickets() {
+  const tickets = getSupportTickets();
+
+  tickets.forEach((ticket) => {
+    deleteSupportTicketFromSupabase(ticket);
+  });
+
   writeTickets([]);
   return [];
 }

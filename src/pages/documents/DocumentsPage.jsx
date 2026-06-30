@@ -1,11 +1,31 @@
-import DocumentsQuickAccess from "../../components/documents/DocumentsQuickAccess";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, Navigate, useParams } from "react-router";
 
 import DocumentsSidebar from "../../components/documents/DocumentsSidebar";
 import { getDocumentCategory } from "../../data/documentsData";
 
 import "./DocumentsPage.css";
+
+const documentAccessItems = [
+  {
+    id: "forms",
+    title: "فرم‌ها",
+    description: "فرم‌های موردنیاز برای ثبت، ارسال، بررسی و پیگیری درخواست‌ها",
+    path: "/documents/forms",
+  },
+  {
+    id: "regulations",
+    title: "آیین‌نامه‌ها",
+    description: "دستورالعمل‌ها، مقررات و چارچوب‌های رسمی برنامه هاتف",
+    path: "/documents/regulations",
+  },
+  {
+    id: "templates",
+    title: "قالب‌ها",
+    description: "قالب‌های استاندارد برای تهیه فایل‌ها، پیشنهادها و گزارش‌ها",
+    path: "/documents/templates",
+  },
+];
 
 function DownloadIcon() {
   return (
@@ -35,6 +55,103 @@ function DownloadIcon() {
         strokeLinecap="round"
       />
     </svg>
+  );
+}
+
+function DocumentAccessIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path
+        d="M9 4.5h9.5L24 10v17.5H9V4.5Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+
+      <path
+        d="M18.5 4.5V10H24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+
+      <path
+        d="M12.5 15.5h7M12.5 20h7M12.5 24.5h4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function getCategoryDocumentsCount(categoryId) {
+  const category = getDocumentCategory(categoryId);
+
+  if (!category) {
+    return 0;
+  }
+
+  return category.groups.reduce((totalCount, group) => {
+    return totalCount + group.items.length;
+  }, 0);
+}
+
+function DocumentsQuickAccessPanel({ activeCategory }) {
+  const accessItems = useMemo(() => {
+    return documentAccessItems.map((item) => ({
+      ...item,
+      count: getCategoryDocumentsCount(item.id),
+    }));
+  }, []);
+
+  return (
+    <section className="documents-page__quick-access">
+      <div className="documents-page__quick-access-head">
+        <span>مرکز مستندات هاتف</span>
+
+        <h1>دسترسی سریع به مستندات</h1>
+
+        <p>
+          اسناد، فرم‌ها، آیین‌نامه‌ها و قالب‌های موردنیاز برنامه هاتف در این بخش
+          دسته‌بندی شده‌اند تا دسترسی به فایل‌های موردنیاز سریع‌تر و ساده‌تر
+          انجام شود.
+        </p>
+      </div>
+
+      <div className="documents-page__quick-access-grid">
+        {accessItems.map((item) => {
+          const isActive = item.id === activeCategory;
+
+          return (
+            <Link
+              key={item.id}
+              to={item.path}
+              className={`documents-page__quick-card ${
+                isActive ? "documents-page__quick-card--active" : ""
+              }`}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <span className="documents-page__quick-card-icon">
+                <DocumentAccessIcon />
+              </span>
+
+              <span className="documents-page__quick-card-content">
+                <strong>{item.title}</strong>
+                <small>{item.description}</small>
+              </span>
+
+              <span className="documents-page__quick-card-count">
+                {item.count} فایل
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -79,7 +196,8 @@ function DocumentsPage() {
           <DocumentsSidebar />
 
           <main className="documents-page__main">
-            <DocumentsQuickAccess activeCategory={category} />
+            <DocumentsQuickAccessPanel activeCategory={category} />
+
             {downloadNotice && (
               <p className="documents-page__notice" role="status">
                 {downloadNotice}

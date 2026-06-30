@@ -8,6 +8,7 @@ import {
   BUSINESS_REQUESTS_STORAGE_KEY,
   deleteBusinessCollaborationRequest,
   getCurrentBusinessCollaborationRequests,
+  getCurrentBusinessCollaborationHistory,
 } from "../../services/businessService";
 
 import {
@@ -24,6 +25,12 @@ import {
 } from "../../services/notificationService";
 
 import { getPublishedCommercialOpportunityProjects } from "../../services/projectPublicationService";
+import { fetchSitePublicationRequestsFromSupabase } from "../../services/supabaseSitePublicationService";
+import {
+  BUSINESS_FAVORITES_UPDATED_EVENT,
+  fetchCurrentBusinessFavoriteIds,
+  setBusinessFavoriteStatus,
+} from "../../services/businessFavoriteService";
 
 import {
   getCurrentDashboardProfile,
@@ -31,6 +38,10 @@ import {
 } from "../../services/userProfileService";
 
 import "./BusinessDashboardPage.css";
+
+const SITE_PUBLICATION_REQUESTS_STORAGE_KEY = "hatef_site_publication_requests";
+const SITE_PUBLICATION_REQUESTS_UPDATED_EVENT =
+  "hatef-site-publication-requests-updated";
 
 const NAV_ITEMS = [
   {
@@ -444,24 +455,12 @@ function mapPublishedProjectToBusinessOpportunity(project, index = 0) {
 }
 
 function getAllBusinessOpportunities() {
-  const publishedCommercialOpportunities =
-    getPublishedCommercialOpportunityProjects().map((project, index) =>
-      mapPublishedProjectToBusinessOpportunity(project, index),
-    );
-
-  return [...publishedCommercialOpportunities, ...BUSINESS_OPPORTUNITIES];
+  return getPublishedCommercialOpportunityProjects().map((project, index) =>
+    mapPublishedProjectToBusinessOpportunity(project, index),
+  );
 }
 
-const INITIAL_FAVORITES = [
-  {
-    opportunityId: 2,
-    savedAt: "۱۴۰۵/۰۳/۱۲ - ساعت ۱۱:۳۰",
-  },
-  {
-    opportunityId: 1,
-    savedAt: "۱۴۰۵/۰۳/۱۰ - ساعت ۱۵:۲۰",
-  },
-];
+const INITIAL_FAVORITES = [];
 
 const INITIAL_SUPPORT_REQUESTS = [
   {
@@ -698,7 +697,23 @@ function createCollaborationRequest(opportunity) {
 }
 
 function loadStoredCollaborationRequests() {
-  return getCurrentBusinessCollaborationRequests();
+  const activeRequests = getCurrentBusinessCollaborationRequests();
+  const historyRequests = getCurrentBusinessCollaborationHistory();
+  const requestsById = new Map();
+
+  [...activeRequests, ...historyRequests].forEach((request) => {
+    const requestKey = String(
+      request.id || request.supabaseId || request.title || "",
+    );
+
+    if (!requestKey) {
+      return;
+    }
+
+    requestsById.set(requestKey, request);
+  });
+
+  return Array.from(requestsById.values());
 }
 
 const OPPORTUNITY_DETAIL_VISUALS = {
@@ -971,10 +986,11 @@ function getIntroducedInfoItems(opportunity) {
 function OpportunityDetailPage({
   opportunity,
   opportunities = BUSINESS_OPPORTUNITIES,
+  isFavorite = false,
   isRequested = false,
+  onToggleFavorite,
   onRequestCooperation,
 }) {
-  const [isFavorite, setIsFavorite] = useState(false);
   const isIntroducedCommercial = Boolean(opportunity.isIntroducedCommercial);
   const visual = getOpportunityVisual(opportunity);
   const indicators = getOpportunityIndicators(opportunity);
@@ -1050,7 +1066,7 @@ function OpportunityDetailPage({
                 ? "business-opportunity-detail__favorite business-opportunity-detail__favorite--active"
                 : "business-opportunity-detail__favorite"
             }
-            onClick={() => setIsFavorite((current) => !current)}
+            onClick={() => onToggleFavorite?.(opportunity.id)}
             aria-label={
               isFavorite ? "حذف از علاقه‌مندی‌ها" : "افزودن به علاقه‌مندی‌ها"
             }
@@ -1462,7 +1478,9 @@ function OpportunitiesPanel({
       item.collaborationType === collaborationFilter;
     const matchesLocation =
       locationFilter === "all" || item.location === locationFilter;
-    const matchesFavorite = !onlyFavorites || favoriteIds.includes(item.id);
+    const matchesFavorite =
+      !onlyFavorites ||
+      favoriteIds.some((favoriteId) => String(favoriteId) === String(item.id));
 
     return (
       matchesSearch &&
@@ -1587,7 +1605,9 @@ function OpportunitiesPanel({
 
         <div className="business-opportunities__grid business-opportunities__grid--detailed">
           {filteredOpportunities.map((item) => {
-            const isFavorite = favoriteIds.includes(item.id);
+            const isFavorite = favoriteIds.some(
+              (favoriteId) => String(favoriteId) === String(item.id),
+            );
 
             return (
               <article className="business-opportunities__card" key={item.id}>
@@ -1663,7 +1683,7 @@ function FavoritesPanel({
   onOpenOpportunity,
 }) {
   const favoriteItems = opportunities.filter((item) =>
-    favoriteIds.includes(item.id),
+    favoriteIds.some((favoriteId) => String(favoriteId) === String(item.id)),
   );
 
   return (
@@ -1737,11 +1757,21 @@ function FavoritesPanel({
 }
 
 function CollaborationRequestsPanel({ requests, onOpenOpportunity }) {
-  const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [selectedRequestId, setSelectedRequestId] = useState("");
 
   const selectedRequest = requests.find(
-    (request) => request.id === selectedRequestId,
+    (request) =>
+      String(request.id || "") === String(selectedRequestId || "") ||
+      String(request.supabaseId || "") === String(selectedRequestId || ""),
   );
+
+  const openRequestDetail = (requestId) => {
+    setSelectedRequestId(requestId || "");
+  };
+
+  const closeRequestDetail = () => {
+    setSelectedRequestId("");
+  };
 
   if (selectedRequest) {
     const hasReply = Boolean(selectedRequest.supportReply);
@@ -1759,9 +1789,9 @@ function CollaborationRequestsPanel({ requests, onOpenOpportunity }) {
             <button
               type="button"
               className="support-requests__neutral-button"
-              onClick={() => setSelectedRequestId(null)}
+              onClick={closeRequestDetail}
             >
-              بازگشت به درخواست‌های همکاری
+              بازگشت به لیست درخواست‌ها
             </button>
           </div>
 
@@ -1828,44 +1858,62 @@ function CollaborationRequestsPanel({ requests, onOpenOpportunity }) {
         </div>
 
         <div className="support-requests__list">
-          {requests.map((request) => (
-            <article className="support-requests__card" key={request.id}>
-              <div className="support-requests__card-main">
-                <div className="support-requests__card-title">
-                  <h4>{request.opportunityTitle}</h4>
+          {requests.map((request) => {
+            const hasReply = Boolean(request.supportReply);
 
-                  <span className="support-requests__waiting-badge">
-                    {request.status}
-                  </span>
+            return (
+              <article
+                className={`support-requests__card ${
+                  hasReply ? "support-requests__card--answered" : ""
+                }`}
+                key={request.id || request.supabaseId}
+              >
+                <div className="support-requests__card-main">
+                  <div className="support-requests__card-title">
+                    <h4>{request.opportunityTitle}</h4>
+
+                    <span className="support-requests__waiting-badge">
+                      {request.status}
+                    </span>
+                  </div>
+
+                  <p>{request.message}</p>
+
+                  {hasReply && (
+                    <p>
+                      <strong>پاسخ کارشناس:</strong> {request.supportReply}
+                    </p>
+                  )}
+
+                  <div className="support-requests__meta">
+                    <span>{request.opportunityField}</span>
+                    <span>{request.collaborationType}</span>
+                    <span>ارسال: {request.sentAt}</span>
+                    {hasReply && <span>پاسخ: {request.repliedAt}</span>}
+                  </div>
                 </div>
 
-                <p>{request.message}</p>
+                <div className="support-requests__actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openRequestDetail(request.id || request.supabaseId)
+                    }
+                  >
+                    مشاهده درخواست
+                  </button>
 
-                <div className="support-requests__meta">
-                  <span>{request.opportunityField}</span>
-                  <span>{request.collaborationType}</span>
-                  <span>ارسال: {request.sentAt}</span>
+                  <button
+                    type="button"
+                    className="support-requests__neutral-action"
+                    onClick={() => onOpenOpportunity(request.opportunityId)}
+                  >
+                    مشاهده موقعیت
+                  </button>
                 </div>
-              </div>
-
-              <div className="support-requests__actions">
-                <button
-                  type="button"
-                  onClick={() => setSelectedRequestId(request.id)}
-                >
-                  مشاهده درخواست
-                </button>
-
-                <button
-                  type="button"
-                  className="support-requests__neutral-action"
-                  onClick={() => onOpenOpportunity(request.opportunityId)}
-                >
-                  مشاهده موقعیت
-                </button>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
 
           {requests.length === 0 && (
             <div className="support-requests__empty-reply">
@@ -2889,16 +2937,50 @@ function BusinessDashboardPage() {
     return savedProfile;
   };
   const [favoriteIds, setFavoriteIds] = useState(() =>
-    INITIAL_FAVORITES.map((item) => item.opportunityId),
+    INITIAL_FAVORITES.map((item) => String(item.opportunityId)),
   );
   const [collaborationRequests, setCollaborationRequests] = useState(
     loadStoredCollaborationRequests,
   );
+  const [selectedCollaborationRequestId, setSelectedCollaborationRequestId] =
+    useState("");
 
   const allBusinessOpportunities = useMemo(
     () => getAllBusinessOpportunities(),
     [contentResetKey],
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchSitePublicationRequestsFromSupabase()
+      .then((requests) => {
+        if (!isMounted || !Array.isArray(requests)) {
+          return;
+        }
+
+        window.localStorage.setItem(
+          SITE_PUBLICATION_REQUESTS_STORAGE_KEY,
+          JSON.stringify(requests),
+        );
+
+        window.dispatchEvent(
+          new CustomEvent(SITE_PUBLICATION_REQUESTS_UPDATED_EVENT),
+        );
+
+        setContentResetKey((currentKey) => currentKey + 1);
+      })
+      .catch((error) => {
+        console.warn(
+          "Business opportunities hydration failed:",
+          error?.message || error,
+        );
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const opportunityQueryId = new URLSearchParams(window.location.search).get(
     "opportunity",
@@ -2941,21 +3023,81 @@ function BusinessDashboardPage() {
   );
 
   useEffect(() => {
+    let isMounted = true;
+
+    const refreshFavoriteIds = () => {
+      fetchCurrentBusinessFavoriteIds()
+        .then((nextFavoriteIds) => {
+          if (!isMounted) {
+            return;
+          }
+
+          setFavoriteIds(nextFavoriteIds.map((itemId) => String(itemId)));
+        })
+        .catch((error) => {
+          console.warn(
+            "Business favorites hydration failed:",
+            error?.message || error,
+          );
+        });
+    };
+
+    const handleFavoritesUpdated = (event) => {
+      if (Array.isArray(event?.detail?.favoriteIds)) {
+        setFavoriteIds(
+          event.detail.favoriteIds.map((itemId) => String(itemId)),
+        );
+        return;
+      }
+
+      refreshFavoriteIds();
+    };
+
+    refreshFavoriteIds();
+    window.addEventListener(
+      BUSINESS_FAVORITES_UPDATED_EVENT,
+      handleFavoritesUpdated,
+    );
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener(
+        BUSINESS_FAVORITES_UPDATED_EVENT,
+        handleFavoritesUpdated,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     setCollaborationRequests(loadStoredCollaborationRequests());
   }, []);
 
   useEffect(() => {
+    const refreshCollaborationRequests = () => {
+      setCollaborationRequests(loadStoredCollaborationRequests());
+    };
+
     const handleStorageChange = (event) => {
       if (event.key !== BUSINESS_REQUESTS_STORAGE_KEY) {
         return;
       }
 
-      setCollaborationRequests(loadStoredCollaborationRequests());
+      refreshCollaborationRequests();
     };
 
     window.addEventListener("storage", handleStorageChange);
+    window.addEventListener(
+      "hatef:supabase-sync-complete",
+      refreshCollaborationRequests,
+    );
 
-    return () => window.removeEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener(
+        "hatef:supabase-sync-complete",
+        refreshCollaborationRequests,
+      );
+    };
   }, []);
 
   const resetCurrentContent = () => {
@@ -2963,11 +3105,52 @@ function BusinessDashboardPage() {
   };
 
   const toggleFavorite = (opportunityId) => {
-    setFavoriteIds((currentIds) =>
-      currentIds.includes(opportunityId)
-        ? currentIds.filter((itemId) => itemId !== opportunityId)
-        : [...currentIds, opportunityId],
+    const normalizedOpportunityId = String(opportunityId || "");
+    const targetOpportunity = allBusinessOpportunities.find(
+      (item) => String(item.id) === normalizedOpportunityId,
     );
+
+    if (!normalizedOpportunityId) {
+      return;
+    }
+
+    const shouldAddFavorite = !favoriteIds.some(
+      (itemId) => String(itemId) === normalizedOpportunityId,
+    );
+
+    setFavoriteIds((currentIds) => {
+      const normalizedCurrentIds = currentIds.map((itemId) => String(itemId));
+
+      return shouldAddFavorite
+        ? [...new Set([...normalizedCurrentIds, normalizedOpportunityId])]
+        : normalizedCurrentIds.filter(
+            (itemId) => itemId !== normalizedOpportunityId,
+          );
+    });
+
+    setBusinessFavoriteStatus(
+      normalizedOpportunityId,
+      shouldAddFavorite,
+      targetOpportunity || {},
+    )
+      .then((nextFavoriteIds) => {
+        setFavoriteIds(nextFavoriteIds.map((itemId) => String(itemId)));
+      })
+      .catch((error) => {
+        console.warn("Business favorite sync failed:", error?.message || error);
+
+        setFavoriteIds((currentIds) => {
+          const normalizedCurrentIds = currentIds.map((itemId) =>
+            String(itemId),
+          );
+
+          return shouldAddFavorite
+            ? normalizedCurrentIds.filter(
+                (itemId) => itemId !== normalizedOpportunityId,
+              )
+            : [...new Set([...normalizedCurrentIds, normalizedOpportunityId])];
+        });
+      });
   };
 
   const toggleCollaborationRequest = (opportunityId) => {
@@ -3017,6 +3200,10 @@ function BusinessDashboardPage() {
     const hasSubItems = Boolean(item.subItems?.length);
     const isSameOpenMenu = openMenuId === item.id;
 
+    if (item.id !== "requests") {
+      setSelectedCollaborationRequestId("");
+    }
+
     setActiveSection(item.id);
     resetCurrentContent();
 
@@ -3040,6 +3227,11 @@ function BusinessDashboardPage() {
     setActiveSection(parentId);
     setOpenMenuId(parentId);
     setActiveSubItem(subItemId);
+
+    if (subItemId === "collaboration-requests") {
+      setSelectedCollaborationRequestId("");
+    }
+
     resetCurrentContent();
   };
 
@@ -3074,6 +3266,8 @@ function BusinessDashboardPage() {
     setIsNotificationOpen(false);
 
     if (message.sourceType === "business-collaboration-request") {
+      setCollaborationRequests(loadStoredCollaborationRequests());
+      setSelectedCollaborationRequestId("");
       setActiveSection("requests");
       setActiveSubItem("collaboration-requests");
       setOpenMenuId("requests");
@@ -3109,9 +3303,13 @@ function BusinessDashboardPage() {
       <OpportunityDetailPage
         opportunity={opportunityDetail}
         opportunities={allBusinessOpportunities}
+        isFavorite={favoriteIds.some(
+          (itemId) => String(itemId) === String(opportunityDetail.id),
+        )}
         isRequested={requestedOpportunityIds.some(
           (itemId) => String(itemId) === String(opportunityDetail.id),
         )}
+        onToggleFavorite={toggleFavorite}
         onRequestCooperation={() =>
           toggleCollaborationRequest(opportunityDetail.id)
         }
@@ -3433,6 +3631,8 @@ function BusinessDashboardPage() {
           <CollaborationRequestsPanel
             key={`collaboration-requests-${contentResetKey}`}
             requests={collaborationRequests}
+            selectedRequestId={selectedCollaborationRequestId}
+            onSelectRequest={setSelectedCollaborationRequestId}
             onOpenOpportunity={openOpportunityInNewTab}
           />
         ) : shouldShowSupportTickets ? (

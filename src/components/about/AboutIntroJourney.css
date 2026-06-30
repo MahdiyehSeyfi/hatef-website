@@ -7,7 +7,18 @@
   min-height: 680px;
   overflow: hidden;
   outline: none;
-  background-color: #fafafa;
+  background:
+    radial-gradient(
+      circle at 18% 30%,
+      rgba(0, 173, 234, 0.08),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 62% 74%,
+      rgba(1, 210, 201, 0.075),
+      transparent 36%
+    ),
+    linear-gradient(135deg, #fbfcfd 0%, #f4f8fb 100%);
   overscroll-behavior-y: auto;
   isolation: isolate;
 }
@@ -19,10 +30,6 @@
 .about-journey--transitioning {
   cursor: progress;
 }
-
-/* =========================
-   پس‌زمینه هندسی
-========================= */
 
 .about-journey__background {
   position: absolute;
@@ -68,51 +75,38 @@
   left: 42%;
 }
 
-/* =========================
-   چیدمان اصلی
-========================= */
-
 .about-journey__layout {
   width: min(calc(100% - 120px), 1580px);
   height: 100%;
   display: grid;
-
   grid-template-columns:
     minmax(0, 54%)
     minmax(460px, 46%);
-
   margin-inline: auto;
   direction: ltr;
 }
-
-/* =========================
-   بخش تصاویر سمت چپ
-========================= */
 
 .about-journey__visual {
   position: relative;
   min-width: 0;
   height: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .about-journey__visual-glow {
   position: absolute;
-  top: 51%;
-  left: 50%;
-  width: 540px;
-  height: 390px;
+  top: 47%;
+  left: 56%;
+  width: 640px;
+  height: 440px;
   border-radius: 50%;
-  opacity: 0.55;
-
+  opacity: 0.72;
   background: radial-gradient(
     circle,
-    rgba(0, 173, 234, 0.08),
-    rgba(1, 210, 201, 0.025) 50%,
-    transparent 74%
+    rgba(0, 173, 234, 0.14),
+    rgba(1, 210, 201, 0.045) 52%,
+    transparent 78%
   );
-
-  filter: blur(30px);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -120,68 +114,611 @@
 .about-journey__visual-item {
   position: absolute;
   inset: 55px 42px 55px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   margin: 0;
   opacity: 0;
-  filter: blur(3px);
-
+  filter: blur(2px);
   transform: translate3d(0, 14px, 0) scale(0.975);
-
   transition:
     opacity 310ms ease,
     filter 180ms ease,
     transform var(--scene-duration) cubic-bezier(0.16, 1, 0.3, 1);
-
   pointer-events: none;
-  will-change: opacity, filter, transform;
-}
-
-.about-journey__visual-item--before {
-  transform: translate3d(-12px, -8px, 0) scale(1.012);
-}
-
-.about-journey__visual-item--after {
-  transform: translate3d(12px, 13px, 0) scale(0.975);
+  will-change: opacity, transform;
 }
 
 .about-journey__visual-item--active {
   z-index: 2;
   opacity: 1;
   filter: blur(0);
-
   transform: translate3d(0, 0, 0) scale(1);
-
   pointer-events: auto;
 }
 
-.about-journey__visual-item img {
-  width: min(76%, 610px);
-  max-height: calc(100vh - 225px);
-  display: block;
+.about-journey__visual-item--university {
+  inset: 12px -18px 10px 40px;
+}
+
+.about-journey__university-scene {
+  position: relative;
+  width: min(97%, 760px);
+  height: min(80vh, 640px);
+  min-height: 520px;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  transform: translate3d(34px, -22px, 0);
+  perspective: 1000px;
+}
+
+.about-journey__university-scene::before {
+  position: absolute;
+  z-index: -2;
+  top: 48%;
+  left: 55%;
+  width: 640px;
+  height: 410px;
+  content: "";
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.92),
+      rgba(255, 255, 255, 0) 68%
+    ),
+    radial-gradient(circle at 68% 34%, rgba(1, 210, 201, 0.12), transparent 46%);
+  transform: translate(-50%, -50%);
+}
+
+.about-journey__university-building-shadow {
+  position: absolute;
+  z-index: 0;
+  right: 8%;
+  bottom: 5%;
+  width: min(72%, 500px);
+  height: 70px;
+  border-radius: 50%;
+  opacity: 0.28;
+  background: radial-gradient(
+    ellipse,
+    rgba(11, 28, 48, 0.24) 0%,
+    rgba(11, 28, 48, 0.11) 42%,
+    rgba(11, 28, 48, 0.04) 62%,
+    transparent 78%
+  );
+  animation: about-building-shadow-soft 10.5s ease-in-out infinite;
+}
+
+.about-journey__university-building {
+  position: absolute;
+  z-index: 1;
+  right: 2%;
+  bottom: 8%;
+  width: min(87%, 650px);
+  max-height: 80%;
   object-fit: contain;
-
-  filter: drop-shadow(0 22px 28px rgba(15, 36, 61, 0.075));
-
+  filter: drop-shadow(0 28px 30px rgba(15, 36, 61, 0.095))
+    drop-shadow(0 8px 14px rgba(15, 36, 61, 0.07));
   user-select: none;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  animation: about-building-float-soft 10.5s ease-in-out infinite;
+}
+
+.about-journey__floating-set {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  opacity: 0;
+  transform: translate3d(0, 18px, 0) scale(0.96);
+  transition:
+    opacity 520ms ease,
+    transform 720ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+.about-journey__floating-set--active {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.about-journey__floating-set--research,
+.about-journey__floating-set--commercialization,
+.about-journey__floating-set--investing {
+  transform: translate3d(0, 20px, 0) scale(0.94);
+}
+
+.about-journey__floating-set--research.about-journey__floating-set--active,
+.about-journey__floating-set--commercialization.about-journey__floating-set--active,
+.about-journey__floating-set--investing.about-journey__floating-set--active {
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.about-journey__university-cap {
+  position: absolute;
+  z-index: 6;
+  left: 13%;
+  top: 9%;
+  width: min(40%, 300px);
+  object-fit: contain;
+  filter: drop-shadow(0 30px 24px rgba(15, 36, 61, 0.14))
+    drop-shadow(0 8px 14px rgba(0, 173, 234, 0.08));
+  user-select: none;
+  pointer-events: none;
+  transform-origin: 50% 58%;
+  will-change: transform;
+  animation: about-floating-cap-soft 9.2s ease-in-out infinite;
+}
+
+.about-journey__university-shadow {
+  position: absolute;
+  z-index: 3;
+  left: 23%;
+  bottom: 20%;
+  width: 230px;
+  height: 42px;
+  border-radius: 50%;
+  opacity: 0.24;
+  background: radial-gradient(
+    circle,
+    rgba(18, 40, 70, 0.24),
+    rgba(18, 40, 70, 0.08) 54%,
+    transparent 74%
+  );
+  animation: about-cap-shadow-soft 9.2s ease-in-out infinite;
+}
+
+.about-journey__university-certificate {
+  position: absolute;
+  z-index: 5;
+  left: 68%;
+  top: 27%;
+  width: min(24%, 180px);
+  object-fit: contain;
+  filter: drop-shadow(0 22px 20px rgba(15, 36, 61, 0.11))
+    drop-shadow(0 6px 10px rgba(255, 100, 88, 0.08));
+  user-select: none;
+  pointer-events: none;
+  transform-origin: 50% 52%;
+  will-change: transform;
+  animation: about-floating-certificate-soft 11.6s ease-in-out infinite;
+  animation-delay: -2.8s;
+}
+
+.about-journey__university-certificate-shadow {
+  position: absolute;
+  z-index: 3;
+  left: 70%;
+  top: 65%;
+  width: 126px;
+  height: 26px;
+  border-radius: 50%;
+  opacity: 0.13;
+  background: radial-gradient(
+    circle,
+    rgba(18, 40, 70, 0.18),
+    rgba(18, 40, 70, 0.06) 52%,
+    transparent 76%
+  );
+  animation: about-certificate-shadow-soft 11.6s ease-in-out infinite;
+  animation-delay: -2.8s;
+}
+
+.about-journey__university-microscope {
+  position: absolute;
+  z-index: 6;
+  left: 70%;
+  top: 50%;
+  width: min(20%, 215px);
+  object-fit: contain;
+  filter: drop-shadow(0 26px 24px rgba(15, 36, 61, 0.14))
+    drop-shadow(0 8px 14px rgba(15, 36, 61, 0.08));
+  user-select: none;
+  pointer-events: none;
+  transform-origin: 48% 58%;
+  will-change: transform;
+  animation: about-floating-microscope-soft 10.8s ease-in-out infinite;
+}
+
+.about-journey__microscope-shadow {
+  position: absolute;
+  z-index: 3;
+  left: 72%;
+  top: 82%;
+  width: 120px;
+  height: 26px;
+  border-radius: 50%;
+  opacity: 0.13;
+  background: radial-gradient(
+    circle,
+    rgba(18, 40, 70, 0.18),
+    rgba(18, 40, 70, 0.06) 52%,
+    transparent 76%
+  );
+  animation: about-microscope-shadow-soft 10.8s ease-in-out infinite;
+}
+
+.about-journey__university-ai {
+  position: absolute;
+  z-index: 5;
+  left: 11%;
+  top: 13%;
+  width: min(32%, 250px);
+  object-fit: contain;
+  filter: drop-shadow(0 26px 24px rgba(72, 49, 120, 0.12))
+    drop-shadow(0 8px 14px rgba(255, 188, 57, 0.08));
+  user-select: none;
+  pointer-events: none;
+  transform-origin: 50% 52%;
+  will-change: transform;
+  animation: about-floating-ai-soft 12.4s ease-in-out infinite;
+  animation-delay: -3.4s;
+}
+
+.about-journey__ai-shadow {
+  position: absolute;
+  z-index: 3;
+  left: 16%;
+  top: 59%;
+  width: 170px;
+  height: 32px;
+  border-radius: 50%;
+  opacity: 0.12;
+  background: radial-gradient(
+    circle,
+    rgba(72, 49, 120, 0.18),
+    rgba(72, 49, 120, 0.06) 52%,
+    transparent 76%
+  );
+  animation: about-ai-shadow-soft 12.4s ease-in-out infinite;
+}
+
+.about-journey__university-satellite {
+  position: absolute;
+  z-index: 6;
+  left: 8%;
+  top: 6%;
+  width: min(34%, 260px);
+  object-fit: contain;
+  filter: drop-shadow(0 26px 24px rgba(15, 58, 105, 0.13))
+    drop-shadow(0 8px 14px rgba(0, 120, 255, 0.08));
+  user-select: none;
+  pointer-events: none;
+  transform-origin: 50% 52%;
+  will-change: transform;
+  animation: about-floating-satellite-soft 12.2s ease-in-out infinite;
+}
+
+.about-journey__satellite-shadow {
+  position: absolute;
+  z-index: 3;
+  left: 14%;
+  top: 47%;
+  width: 160px;
+  height: 30px;
+  border-radius: 50%;
+  opacity: 0.12;
+  background: radial-gradient(
+    circle,
+    rgba(18, 48, 90, 0.17),
+    rgba(18, 48, 90, 0.055) 52%,
+    transparent 76%
+  );
+  animation: about-satellite-shadow-soft 12.2s ease-in-out infinite;
+}
+
+.about-journey__university-gear {
+  position: absolute;
+  z-index: 5;
+  left: 28%;
+  top: 65%;
+  width: min(14%, 150px);
+  object-fit: contain;
+  filter: drop-shadow(0 22px 20px rgba(15, 36, 61, 0.11))
+    drop-shadow(0 6px 12px rgba(255, 154, 0, 0.1));
+  user-select: none;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  will-change: transform;
+  animation: about-floating-gear-soft 13.4s ease-in-out infinite;
+  animation-delay: -2.4s;
+}
+
+.about-journey__gear-shadow {
+  position: absolute;
+  z-index: 3;
+  left: 29%;
+  top: 78%;
+  width: 82px;
+  height: 20px;
+  border-radius: 50%;
+  opacity: 0.11;
+  background: radial-gradient(
+    circle,
+    rgba(255, 154, 0, 0.18),
+    rgba(18, 40, 70, 0.05) 52%,
+    transparent 76%
+  );
+  animation: about-gear-shadow-soft 13.4s ease-in-out infinite;
+  animation-delay: -2.4s;
+}
+
+.about-journey__university-vr {
+  position: absolute;
+  z-index: 6;
+  left: 70%;
+  top: 45%;
+  width: min(31%, 240px);
+  object-fit: contain;
+  filter: drop-shadow(0 26px 24px rgba(15, 36, 61, 0.13))
+    drop-shadow(0 8px 14px rgba(15, 36, 61, 0.08));
+  user-select: none;
+  pointer-events: none;
+  transform-origin: 50% 55%;
+  will-change: transform;
+  animation: about-floating-vr-soft 11.4s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+.about-journey__vr-shadow {
+  position: absolute;
+  z-index: 3;
+  left: 73%;
+  top: 79%;
+  width: 158px;
+  height: 31px;
+  border-radius: 50%;
+  opacity: 0.13;
+  background: radial-gradient(
+    circle,
+    rgba(18, 40, 70, 0.18),
+    rgba(18, 40, 70, 0.06) 52%,
+    transparent 76%
+  );
+  animation: about-vr-shadow-soft 11.4s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+.about-journey__university-coin {
+  position: absolute;
+  z-index: 6;
+  object-fit: contain;
+  filter: drop-shadow(0 22px 18px rgba(15, 36, 61, 0.11))
+    drop-shadow(0 6px 11px rgba(255, 180, 0, 0.12));
+  user-select: none;
+  pointer-events: none;
+  transform-origin: 50% 52%;
+  will-change: transform;
+}
+
+.about-journey__university-coin--main {
+  left: 25%;
+  top: 8%;
+  width: min(25%, 118px);
+  animation: about-floating-coin-main-soft 10.8s ease-in-out infinite;
+}
+
+.about-journey__university-coin--ghost-one {
+  z-index: 5;
+  left: 73%;
+  top: 50%;
+  width: min(5%, 78px);
+  opacity: 0.28;
+  filter: blur(2.2px) drop-shadow(0 16px 14px rgba(15, 36, 61, 0.08));
+  animation: about-floating-coin-ghost-one 12.6s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.about-journey__university-coin--ghost-two {
+  z-index: 5;
+  left: 80%;
+  top: 50%;
+  width: min(9%, 70px);
+  opacity: 0.22;
+  filter: blur(2.8px) drop-shadow(0 14px 12px rgba(15, 36, 61, 0.07));
+  animation: about-floating-coin-ghost-two 13.2s ease-in-out infinite;
+  animation-delay: -4.5s;
+}
+
+.about-journey__coin-shadow {
+  position: absolute;
+  z-index: 3;
+  left: 78%;
+  top: 34%;
+  width: 105px;
+  height: 22px;
+  border-radius: 50%;
+  opacity: 0.1;
+  background: radial-gradient(
+    circle,
+    rgba(255, 178, 0, 0.2),
+    rgba(18, 40, 70, 0.05) 52%,
+    transparent 76%
+  );
+  animation: about-coin-shadow-soft 10.8s ease-in-out infinite;
+}
+
+.about-journey__university-raise {
+  position: absolute;
+  z-index: 5;
+  left: 55%;
+  top: 55%;
+  width: min(100%, 260px);
+  object-fit: contain;
+  filter: drop-shadow(0 26px 24px rgba(15, 58, 105, 0.12))
+    drop-shadow(0 8px 14px rgba(0, 120, 255, 0.08));
+  user-select: none;
+  pointer-events: none;
+  transform-origin: 50% 52%;
+  will-change: transform;
+  animation: about-floating-raise-soft 12.4s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+.about-journey__raise-shadow {
+  position: absolute;
+  z-index: 3;
+  left: 60%;
+  top: 68%;
+  width: 175px;
+  height: 32px;
+  border-radius: 50%;
+  opacity: 0.11;
+  background: radial-gradient(
+    circle,
+    rgba(18, 80, 150, 0.16),
+    rgba(18, 40, 70, 0.05) 52%,
+    transparent 76%
+  );
+  animation: about-raise-shadow-soft 12.4s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+.about-journey__university-vase {
+  position: absolute;
+  z-index: 6;
+  left: 28%;
+  top: 62%;
+  width: min(14%, 175px);
+  object-fit: contain;
+  filter: drop-shadow(0 24px 22px rgba(15, 36, 61, 0.12))
+    drop-shadow(0 7px 12px rgba(50, 150, 70, 0.08));
+  user-select: none;
+  pointer-events: none;
+  transform-origin: 50% 60%;
+  will-change: transform;
+  animation: about-floating-vase-soft 11.8s ease-in-out infinite;
+  animation-delay: -1.8s;
+}
+
+.about-journey__vase-shadow {
+  position: absolute;
+  z-index: 3;
+  left: 12%;
+  top: 84%;
+  width: 118px;
+  height: 25px;
+  border-radius: 50%;
+  opacity: 0.13;
+  background: radial-gradient(
+    circle,
+    rgba(20, 100, 45, 0.16),
+    rgba(18, 40, 70, 0.055) 52%,
+    transparent 76%
+  );
+  animation: about-vase-shadow-soft 11.8s ease-in-out infinite;
+  animation-delay: -1.8s;
+}
+
+.about-journey__university-orbit {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid rgba(0, 173, 234, 0.13);
+  border-radius: 50%;
   pointer-events: none;
 }
 
-/* =========================
-   متن سمت راست
-========================= */
+.about-journey__university-orbit--one {
+  top: 17%;
+  left: 8%;
+  width: 420px;
+  height: 126px;
+  transform: rotate(-10deg);
+}
+
+.about-journey__university-orbit--two {
+  top: 26%;
+  left: 20%;
+  width: 320px;
+  height: 94px;
+  opacity: 0.62;
+  transform: rotate(14deg);
+}
+
+.about-journey__university-glass {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.54),
+    rgba(255, 255, 255, 0.16)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 14px 22px rgba(23, 49, 79, 0.055);
+  will-change: transform;
+}
+
+.about-journey__university-glass--one {
+  top: 10%;
+  left: 52%;
+  width: 68px;
+  height: 68px;
+  border-radius: 22px;
+  opacity: 0.36;
+  animation: about-glass-drift-one 11s ease-in-out infinite;
+}
+
+.about-journey__university-glass--two {
+  top: 20%;
+  left: 72%;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  opacity: 0.48;
+  animation: about-glass-drift-two 9.5s ease-in-out infinite;
+}
+
+.about-journey__university-glass--three {
+  top: 42%;
+  left: 5%;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  opacity: 0.26;
+}
+
+.about-journey__university-node {
+  position: absolute;
+  z-index: 4;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #ffffff,
+    rgba(1, 210, 201, 0.85) 40%,
+    rgba(0, 173, 234, 0.55)
+  );
+  box-shadow:
+    0 0 0 4px rgba(1, 210, 201, 0.055),
+    0 10px 18px rgba(0, 173, 234, 0.1);
+}
+
+.about-journey__university-node--one {
+  top: 31%;
+  left: 17%;
+  width: 12px;
+  height: 12px;
+}
+
+.about-journey__university-node--two {
+  top: 18%;
+  left: 45%;
+  width: 9px;
+  height: 9px;
+  opacity: 0.78;
+}
 
 .about-journey__content {
   position: relative;
   min-width: 0;
   height: 100%;
-
   display: flex;
   align-items: center;
-
   direction: rtl;
 }
 
@@ -189,8 +726,6 @@
   width: 100%;
   padding: 22px 10px 45px 42px;
 }
-
-/* متن‌های توضیحی */
 
 .about-journey__supporting-text {
   transition:
@@ -211,39 +746,26 @@
   transform: translate3d(16px, 7px, 0);
 }
 
-/* برچسب بالای تیتر */
-
 .about-journey__eyebrow {
   min-height: 31px;
   display: inline-flex;
   align-items: center;
-
   margin-bottom: 16px;
   padding: 4px 14px;
-
   border: 1px solid rgba(1, 210, 201, 0.24);
   border-radius: 20px;
-
   color: #078c86;
   background-color: rgba(1, 210, 201, 0.08);
-
   font-size: 12px;
   font-weight: 700;
 }
-
-/* =========================
-   تیتر تایپ و حذف‌شونده
-========================= */
 
 .about-journey__title {
   min-height: 98px;
   display: flex;
   align-items: center;
-
   margin: 0 0 12px;
-
   color: var(--color-black);
-
   font-size: clamp(37px, 3vw, 57px);
   font-weight: 900;
   line-height: 1.45;
@@ -257,15 +779,11 @@
 .about-journey__typing-cursor {
   width: 3px;
   height: 0.95em;
-
   display: inline-block;
   flex: 0 0 auto;
-
   margin-right: 5px;
   border-radius: 2px;
-
   background-color: var(--color-secondary);
-
   animation: about-cursor-blink 650ms step-end infinite;
 }
 
@@ -281,18 +799,11 @@
   animation-iteration-count: 3;
 }
 
-/* =========================
-   زیرتیتر و پاراگراف‌ها
-========================= */
-
 .about-journey__subtitle {
   position: relative;
-
   margin: 0 0 22px;
   padding-right: 22px;
-
   color: var(--color-primary);
-
   font-size: 17px;
   font-weight: 700;
   line-height: 2;
@@ -302,15 +813,11 @@
   position: absolute;
   top: 15px;
   right: 0;
-
   width: 8px;
   height: 8px;
-
   content: "";
   border-radius: 50%;
-
   background-color: var(--color-accent);
-
   box-shadow: 0 0 0 6px rgba(1, 210, 201, 0.1);
 }
 
@@ -320,9 +827,7 @@
 
 .about-journey__paragraphs p {
   margin: 0 0 12px;
-
   color: #4b555f;
-
   font-size: 14px;
   line-height: 2.3;
   text-align: justify;
@@ -330,16 +835,12 @@
 
 .about-journey__counter {
   width: 126px;
-
   display: flex;
   align-items: center;
   gap: 10px;
-
   margin-top: 27px;
-
   direction: ltr;
   color: #959da6;
-
   font-family: Arial, sans-serif;
   font-size: 11px;
 }
@@ -350,40 +851,27 @@
   background-color: #cfd5da;
 }
 
-/* =========================
-   دایره‌های اسلاید
-========================= */
-
 .about-journey__navigation {
   position: absolute;
   z-index: 10;
-
   top: 50%;
   left: 24px;
-
   width: 230px;
-
   display: flex;
   flex-direction: column;
   gap: 19px;
-
   transform: translateY(-50%);
 }
 
 .about-journey__navigation-item {
   position: relative;
-
   width: 100%;
   min-height: 28px;
-
   display: block;
-
   padding: 0;
   border: 0;
-
   color: #929ca6;
   background-color: transparent;
-
   font-family: inherit;
   cursor: pointer;
 }
@@ -392,27 +880,17 @@
   cursor: wait;
 }
 
-/*
- * دایره‌ها همیشه روی یک محور ثابت می‌مانند.
- */
 .about-journey__navigation-item > span {
   position: absolute;
-
   top: 50%;
   left: 45px;
-
   width: 10px;
   height: 10px;
-
   border: 3px solid #fafafa;
   border-radius: 50%;
-
   background-color: #c8ced4;
-
   box-shadow: 0 0 0 1px #c8ced4;
-
   transform: translate(-50%, -50%);
-
   transition:
     width 230ms ease,
     height 230ms ease,
@@ -421,39 +899,26 @@
     transform 230ms ease;
 }
 
-/*
- * متن به دایره نزدیک‌تر شده است.
- * متن‌های طولانی حداکثر در دو خط نمایش داده می‌شوند.
- */
 .about-journey__navigation-item small {
   position: absolute;
   top: 50%;
   left: 58px;
-
   width: 145px;
   max-height: 42px;
-
   display: -webkit-box;
   overflow: hidden;
-
   opacity: 0;
   visibility: hidden;
-
   color: #7d8791;
-
   direction: rtl;
   text-align: left;
   white-space: normal;
-
   font-size: 10px;
   font-weight: 600;
   line-height: 1.75;
-
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-
   transform: translate3d(-4px, -50%, 0);
-
   transition:
     opacity 210ms ease,
     visibility 210ms ease,
@@ -465,119 +930,83 @@
 .about-journey__navigation-item--active small {
   opacity: 1;
   visibility: visible;
-
   color: var(--color-primary);
-
   transform: translate3d(0, -50%, 0);
 }
 
 .about-journey__navigation-item:hover > span {
   background-color: var(--color-secondary);
-
   box-shadow:
     0 0 0 1px var(--color-secondary),
     0 0 0 5px rgba(0, 173, 234, 0.08);
-
   transform: translate(-50%, -50%) scale(1.05);
 }
 
 .about-journey__navigation-item--active > span {
   width: 15px;
   height: 15px;
-
   background-color: var(--color-accent);
-
   box-shadow:
     0 0 0 1px var(--color-accent),
     0 0 0 7px rgba(1, 210, 201, 0.11);
-
   transform: translate(-50%, -50%);
 }
-
-/* =========================
-   راهنمای اسکرول
-========================= */
 
 .about-journey__scroll-hint {
   position: absolute;
   z-index: 9;
-
   right: 50%;
   bottom: 18px;
-
   display: flex;
   align-items: center;
   gap: 11px;
-
   color: #8f979f;
   font-size: 10px;
-
   transform: translateX(50%);
 }
 
 .about-journey__scroll-hint i {
   position: relative;
-
   width: 22px;
   height: 35px;
-
   border: 1px solid #bfc6cc;
   border-radius: 13px;
 }
 
 .about-journey__scroll-hint i::after {
   position: absolute;
-
   top: 7px;
   left: 50%;
-
   width: 3px;
   height: 6px;
-
   content: "";
   border-radius: 3px;
-
   background-color: var(--color-accent);
-
   transform: translateX(-50%);
-
   animation: about-scroll-wheel 1.7s ease-in-out infinite;
 }
-
-/* =========================
-   نوار پیشرفت
-========================= */
 
 .about-journey__progress {
   position: absolute;
   z-index: 9;
-
   right: 0;
   bottom: 0;
   left: 0;
-
   height: 3px;
   overflow: hidden;
-
   background-color: rgba(26, 54, 93, 0.07);
 }
 
 .about-journey__progress span {
   height: 100%;
   display: block;
-
   background: linear-gradient(
     90deg,
     var(--color-secondary),
     var(--color-accent)
   );
-
   transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-
-/* =========================
-   انیمیشن‌ها
-========================= */
 
 @keyframes about-cursor-blink {
   0%,
@@ -594,7 +1023,6 @@
 @keyframes about-scroll-wheel {
   0% {
     opacity: 0;
-
     transform: translate(-50%, -2px);
   }
 
@@ -604,26 +1032,420 @@
 
   100% {
     opacity: 0;
-
     transform: translate(-50%, 10px);
   }
 }
 
-/* =========================
-   نمایشگرهای دسکتاپ کوچک‌تر
-========================= */
+@keyframes about-building-float-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -7px, 0) scale(1.004);
+  }
+}
+
+@keyframes about-building-shadow-soft {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.2;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes about-floating-cap-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-3deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -10px, 0) rotate(1.5deg) scale(1.006);
+  }
+}
+
+@keyframes about-cap-shadow-soft {
+  0%,
+  100% {
+    opacity: 0.24;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.15;
+    transform: scale(0.84);
+  }
+}
+
+@keyframes about-floating-certificate-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-17deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-7px, -8px, 0) rotate(-12deg) scale(1.01);
+  }
+}
+
+@keyframes about-certificate-shadow-soft {
+  0%,
+  100% {
+    opacity: 0.13;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.075;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes about-floating-microscope-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(5deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-5px, -8px, 0) rotate(1deg) scale(1.008);
+  }
+}
+
+@keyframes about-microscope-shadow-soft {
+  0%,
+  100% {
+    opacity: 0.13;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.075;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes about-floating-ai-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-2deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(8px, -9px, 0) rotate(2deg) scale(1.012);
+  }
+}
+
+@keyframes about-ai-shadow-soft {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.07;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes about-floating-satellite-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-9deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(7px, -10px, 0) rotate(-4deg) scale(1.01);
+  }
+}
+
+@keyframes about-satellite-shadow-soft {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.07;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes about-floating-gear-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-8deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(5px, -8px, 0) rotate(5deg) scale(1.01);
+  }
+}
+
+@keyframes about-gear-shadow-soft {
+  0%,
+  100% {
+    opacity: 0.11;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.065;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes about-floating-vr-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(2deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-6px, -9px, 0) rotate(-2deg) scale(1.01);
+  }
+}
+
+@keyframes about-vr-shadow-soft {
+  0%,
+  100% {
+    opacity: 0.13;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.075;
+    transform: scale(0.88);
+  }
+}
+
+@keyframes about-floating-coin-main-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-8deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-5px, -9px, 0) rotate(-2deg) scale(1.012);
+  }
+}
+
+@keyframes about-floating-coin-ghost-one {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(8deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(6px, -7px, 0) rotate(14deg) scale(1.02);
+  }
+}
+
+@keyframes about-floating-coin-ghost-two {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-12deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-6px, -6px, 0) rotate(-6deg) scale(1.018);
+  }
+}
+
+@keyframes about-coin-shadow-soft {
+  0%,
+  100% {
+    opacity: 0.1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.06;
+    transform: scale(0.88);
+  }
+}
+
+@keyframes about-floating-raise-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-2deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(7px, -9px, 0) rotate(2deg) scale(1.012);
+  }
+}
+
+@keyframes about-raise-shadow-soft {
+  0%,
+  100% {
+    opacity: 0.11;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.065;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes about-floating-vase-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(1deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -8px, 0) rotate(-1.5deg) scale(1.008);
+  }
+}
+
+@keyframes about-vase-shadow-soft {
+  0%,
+  100% {
+    opacity: 0.13;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.075;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes about-glass-drift-one {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  50% {
+    transform: translate3d(0, -10px, 0) rotate(6deg);
+  }
+}
+
+@keyframes about-glass-drift-two {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -8px, 0) scale(1.06);
+  }
+}
 
 @media (max-width: 1450px) {
   .about-journey__layout {
     width: calc(100% - 90px);
-
     grid-template-columns:
       minmax(0, 52%)
       minmax(440px, 48%);
   }
 
-  .about-journey__visual-item img {
-    width: min(74%, 560px);
+  .about-journey__university-scene {
+    width: min(96%, 680px);
+    transform: translate3d(24px, -18px, 0);
+  }
+
+  .about-journey__university-building {
+    width: min(85%, 600px);
+  }
+
+  .about-journey__university-cap {
+    width: min(38%, 270px);
+    left: 11%;
+    top: 10%;
+  }
+
+  .about-journey__university-certificate {
+    width: min(23%, 160px);
+    left: 67%;
+    top: 28%;
+  }
+
+  .about-journey__university-certificate-shadow {
+    left: 69%;
+    top: 65%;
+  }
+
+  .about-journey__university-microscope {
+    width: min(20%, 180px);
+    left: 70%;
+    top: 50%;
+  }
+
+  .about-journey__microscope-shadow {
+    left: 72%;
+    top: 82%;
+  }
+
+  .about-journey__university-ai {
+    width: min(30%, 220px);
+    left: 10%;
+    top: 15%;
+  }
+
+  .about-journey__university-satellite {
+    width: min(31%, 225px);
+    left: 8%;
+    top: 8%;
+  }
+
+  .about-journey__university-gear {
+    width: min(14%, 125px);
+    left: 28%;
+    top: 65%;
+  }
+
+  .about-journey__gear-shadow {
+    left: 29%;
+    top: 78%;
+  }
+
+  .about-journey__university-vr {
+    width: min(28%, 210px);
+    left: 70%;
+    top: 47%;
+  }
+
+  .about-journey__university-coin--main {
+    width: min(15%, 105px);
+    left: 77%;
+    top: 9%;
+  }
+
+  .about-journey__university-coin--ghost-one {
+    width: min(9%, 68px);
+    left: 66%;
+    top: 14%;
+  }
+
+  .about-journey__university-coin--ghost-two {
+    width: min(8%, 60px);
+    left: 86%;
+    top: 20%;
+  }
+
+  .about-journey__university-raise {
+    width: min(31%, 225px);
+    left: 55%;
+    top: 30%;
+  }
+
+  .about-journey__university-vase {
+    width: min(22%, 155px);
+    left: 10%;
+    top: 60%;
   }
 
   .about-journey__title {
@@ -646,19 +1468,39 @@
   }
 }
 
-/* =========================
-   کاهش موشن سیستم
-========================= */
-
 @media (prefers-reduced-motion: reduce) {
   .about-journey__visual-item,
   .about-journey__supporting-text,
-  .about-journey__progress span {
+  .about-journey__progress span,
+  .about-journey__floating-set {
     transition: none;
   }
 
   .about-journey__typing-cursor,
-  .about-journey__scroll-hint i::after {
+  .about-journey__scroll-hint i::after,
+  .about-journey__university-building,
+  .about-journey__university-building-shadow,
+  .about-journey__university-cap,
+  .about-journey__university-shadow,
+  .about-journey__university-certificate,
+  .about-journey__university-certificate-shadow,
+  .about-journey__university-microscope,
+  .about-journey__microscope-shadow,
+  .about-journey__university-ai,
+  .about-journey__ai-shadow,
+  .about-journey__university-satellite,
+  .about-journey__satellite-shadow,
+  .about-journey__university-gear,
+  .about-journey__gear-shadow,
+  .about-journey__university-vr,
+  .about-journey__vr-shadow,
+  .about-journey__university-coin,
+  .about-journey__coin-shadow,
+  .about-journey__university-raise,
+  .about-journey__raise-shadow,
+  .about-journey__university-vase,
+  .about-journey__vase-shadow,
+  .about-journey__university-glass {
     animation: none;
   }
 }

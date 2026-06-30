@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 import bannerImage from "../../assets/images/banner.png";
+import { uploadImageFileToSiteMedia } from "../../services/mediaStorageService";
 import {
   addInstructorActivity,
   getInstructorActivities,
@@ -1270,13 +1271,24 @@ function CreateCoursePanel({ onSubmitActivity }) {
     });
   };
 
-  const handleImageUpload = (event) => {
+  const handleImageUpload = async (event) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
+
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () =>
-      updateField("image", String(reader.result || bannerImage));
-    reader.readAsDataURL(file);
+
+    try {
+      const uploadedImage = await uploadImageFileToSiteMedia(file, {
+        folder: "activities/courses",
+        prefix: "course",
+        maxWidth: 1600,
+        maxHeight: 1100,
+        quality: 0.78,
+      });
+      updateField("image", uploadedImage.url || bannerImage);
+    } catch (error) {
+      window.alert(error?.message || "بارگذاری تصویر دوره انجام نشد.");
+    }
   };
 
   const buildCoursePayload = () => ({
@@ -1993,13 +2005,24 @@ function CreateEventPanel({ onSubmitActivity }) {
     });
   };
 
-  const handleImageUpload = (event) => {
+  const handleImageUpload = async (event) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
+
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () =>
-      updateField("image", String(reader.result || bannerImage));
-    reader.readAsDataURL(file);
+
+    try {
+      const uploadedImage = await uploadImageFileToSiteMedia(file, {
+        folder: "activities/events",
+        prefix: "event",
+        maxWidth: 1600,
+        maxHeight: 1100,
+        quality: 0.78,
+      });
+      updateField("image", uploadedImage.url || bannerImage);
+    } catch (error) {
+      window.alert(error?.message || "بارگذاری تصویر رویداد انجام نشد.");
+    }
   };
 
   const buildEventPayload = () => ({

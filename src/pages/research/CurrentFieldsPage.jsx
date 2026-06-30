@@ -1,339 +1,374 @@
-import { Link, useParams } from "react-router";
+import { Link } from "react-router";
 
 import bannerImage from "../../assets/images/banner.png";
-import ctaBannerImage from "../../assets/images/banner-2.png";
 
-import "./CallDetailsPage.css";
+import { getCalls, getPublishedCalls } from "../../services/callService";
+import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
 
-const callData = {
-  id: 1,
-  number: "۲",
-  title: "فراخوان اولین دوره هدایت اعتبارات توسعه فناوری (هاتف) ۱۴۰۴–۱۴۰۵",
-  category: "با محوریت هوش مصنوعی",
-  deadline: "مهلت تا: ۱۴۰۵/۰۵/۰۵",
-  status: "در حال دریافت طرح",
-};
+import "./CurrentFieldsPage.css";
 
-const quickLinks = [
-  {
-    id: 1,
-    label: "راهنمای ثبت‌نام",
-    href: "/research-support/guide-eligibility",
-    type: "route",
-  },
-  {
-    id: 2,
-    label: "شرایط احراز",
-    href: "/research-support/guide-eligibility#eligibility",
-    type: "route",
-  },
-  {
-    id: 3,
-    label: "راهنمای تدوین پروپوزال",
-    href: "/research-support/guide-eligibility#proposal-guideline",
-    type: "route",
-  },
-  {
-    id: 4,
-    label: "نسخه PDF",
-    href: "#download-pdf",
-    type: "anchor",
-    icon: "↓",
-  },
+const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+
+const CURRENT_AXIS_KEYWORDS = [
+  "سال جاری",
+  "هوش مصنوعی",
+  "داده",
+  "سلامت دیجیتال",
+  "فناوری دیجیتال",
 ];
 
-const sidebarGroups = [
-  {
-    id: 1,
-    title: "آخرین اخبار",
-    accent: "red",
-    items: [
-      "دومین نامه رئیس دانشگاه تهران به دبیرکل سازمان یونسکو",
-      "درخواست فوری برای محکومیت و توقف حملات به موسسات آموزشی و پژوهشی",
-      "دومین نامه رئیس دانشگاه تهران به دبیرکل سازمان یونسکو",
-      "درخواست فوری برای محکومیت و توقف حملات به موسسات آموزشی و پژوهشی",
-      "دومین نامه رئیس دانشگاه تهران به دبیرکل سازمان یونسکو",
-    ],
-  },
-  {
-    id: 2,
-    title: "آخرین رویدادها",
-    accent: "cyan",
-    items: [
-      "دومین نامه رئیس دانشگاه تهران به دبیرکل سازمان یونسکو",
-      "درخواست فوری برای محکومیت و توقف حملات به موسسات آموزشی و پژوهشی",
-      "دومین نامه رئیس دانشگاه تهران به دبیرکل سازمان یونسکو",
-      "درخواست فوری برای محکومیت و توقف حملات به موسسات آموزشی و پژوهشی",
-      "دومین نامه رئیس دانشگاه تهران به دبیرکل سازمان یونسکو",
-    ],
-  },
-];
+function toPersianNumber(value) {
+  return String(value).replace(/\d/g, (digit) => PERSIAN_DIGITS[Number(digit)]);
+}
 
-const faqItems = [
-  {
-    id: 1,
-    question: "عنوان سند راهبردی شماره ۱",
-    answer:
-      "توضیحات مربوط به این سوال در این بخش قرار می‌گیرد. این متن می‌تواند شامل شرایط، مدارک لازم و زمان‌بندی ارسال طرح باشد.",
-  },
-  {
-    id: 2,
-    question: "عنوان سند راهبردی شماره ۱",
-    answer:
-      "پاسخ این سوال می‌تواند درباره نحوه ثبت‌نام، بررسی اولیه، داوری تخصصی و مراحل بعدی دریافت حمایت باشد.",
-  },
-  {
-    id: 3,
-    question: "عنوان سند راهبردی شماره ۱",
-    answer:
-      "در این بخش می‌توان توضیحات تکمیلی درباره فرآیند ارسال طرح و پیگیری وضعیت آن را قرار داد.",
-  },
-];
+function getCallPath(call) {
+  return `/research-support/calls/${call.id}`;
+}
 
-function SectionTitle({ children }) {
+function getCallImage(call) {
+  return call.image || call.coverImage || call.bannerImage || bannerImage;
+}
+
+function getCallCategory(call) {
+  return call.field ? `با محوریت ${call.field}` : "فراخوان برنامه هاتف";
+}
+
+function getCallDeadline(call) {
+  if (!call.deadlineDate && !call.deadlineTime) {
+    return "مهلت ارسال مشخص نشده است";
+  }
+
+  if (call.deadlineDate && call.deadlineTime) {
+    return `مهلت تا: ${call.deadlineDate} ساعت ${call.deadlineTime}`;
+  }
+
+  return `مهلت تا: ${call.deadlineDate || call.deadlineTime}`;
+}
+
+function getCallStatusLabel(call) {
+  if (call.status === CALL_STATUS.PUBLISHED) {
+    return "در حال دریافت طرح";
+  }
+
+  return CALL_STATUS_LABELS[call.status] || call.statusLabel || "وضعیت نامشخص";
+}
+
+function getCallDescription(call) {
   return (
-    <header className="call-details__section-title">
-      <span />
-      <h2>{children}</h2>
-    </header>
+    call.description ||
+    call.summary ||
+    call.moreDescription ||
+    "این فراخوان در راستای محورهای پژوهشی و فناورانه برنامه هاتف منتشر شده است."
   );
 }
 
-function QuickActions() {
-  return (
-    <aside className="call-details__quick-actions">
-      {quickLinks.map((item) => {
-        const content = (
-          <>
-            {item.icon && <span aria-hidden="true">{item.icon}</span>}
-            {item.label}
-          </>
-        );
+function getCallTimeValue(call) {
+  const possibleDateValues = [
+    call.publishedAt,
+    call.updatedAt,
+    call.createdAt,
+    call.startDate,
+    call.deadlineDate,
+  ];
 
-        if (item.type === "route") {
-          return (
-            <Link
-              key={item.id}
-              to={item.href}
-              className="call-details__quick-link"
-            >
-              {content}
-            </Link>
-          );
-        }
+  for (const value of possibleDateValues) {
+    const time = Date.parse(value);
 
-        return (
-          <a
-            key={item.id}
-            href={item.href}
-            className="call-details__quick-link call-details__quick-link--download"
-          >
-            {content}
-          </a>
-        );
-      })}
+    if (!Number.isNaN(time)) {
+      return time;
+    }
+  }
 
-      <a href="#submit-call" className="call-details__submit-button">
-        ارسال طرح
-      </a>
-    </aside>
+  return 0;
+}
+
+function sortCallsNewestFirst(calls) {
+  return [...calls].sort((firstCall, secondCall) => {
+    return getCallTimeValue(secondCall) - getCallTimeValue(firstCall);
+  });
+}
+
+function hasCurrentYearFlag(call) {
+  return Boolean(
+    call.isCurrentYear ||
+    call.isCurrentYearField ||
+    call.isCurrentField ||
+    call.currentYear ||
+    call.currentField ||
+    call.showInCurrentFields ||
+    call.isCurrentSupportPlan ||
+    call.isFeatured ||
+    call.featured ||
+    call.currentAxis ||
+    call.isAnnualPriority,
   );
 }
 
-function CallSidebar() {
-  return (
-    <aside className="call-details__sidebar-content">
-      {sidebarGroups.map((group) => (
-        <section className="call-details__sidebar-box" key={group.id}>
-          <div className="call-details__sidebar-heading">
-            <span
-              className={`call-details__sidebar-dot call-details__sidebar-dot--${group.accent}`}
-            />
-            <h3>{group.title}</h3>
-          </div>
+function hasCurrentAxisKeyword(call) {
+  const searchableText = [
+    call.title,
+    call.field,
+    call.category,
+    call.description,
+    call.summary,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-          <ul>
-            {group.items.map((item, index) => (
-              <li key={`${group.id}-${index}`}>
-                <a href="#related">{item}</a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
-    </aside>
+  return CURRENT_AXIS_KEYWORDS.some((keyword) =>
+    searchableText.includes(keyword),
   );
 }
 
-function CallHero() {
-  return (
-    <section className="call-details__hero">
-      <div className="call-details__hero-image">
-        <img src={bannerImage} alt={callData.title} />
+function getCurrentAxisCalls(calls) {
+  const flaggedCalls = calls.filter(hasCurrentYearFlag);
 
-        <div className="call-details__hero-status">
-          <span className="call-details__status-badge">{callData.status}</span>
-          <span>{callData.deadline}</span>
-        </div>
+  if (flaggedCalls.length > 0) {
+    return sortCallsNewestFirst(flaggedCalls);
+  }
+
+  const keywordCalls = calls.filter(hasCurrentAxisKeyword);
+
+  if (keywordCalls.length > 0) {
+    return sortCallsNewestFirst(keywordCalls);
+  }
+
+  return sortCallsNewestFirst(calls).slice(0, 1);
+}
+
+function getPreviousAxisCalls(calls, currentAxisCalls) {
+  const currentCallIds = new Set(currentAxisCalls.map((call) => call.id));
+
+  return sortCallsNewestFirst(calls).filter(
+    (call) => !currentCallIds.has(call.id),
+  );
+}
+
+function getCurrentAxisTitle(currentAxisCalls) {
+  const firstCall = currentAxisCalls[0];
+
+  if (!firstCall) {
+    return "محور سال جاری";
+  }
+
+  return firstCall.field || firstCall.category || "محور سال جاری";
+}
+
+function SectionHeading({ title, warning = false }) {
+  return (
+    <div className="current-fields-page__subheading">
+      <div className="current-fields-page__subheading-label">
+        <span
+          className={`current-fields-page__subheading-dot ${
+            warning ? "current-fields-page__subheading-dot--warning" : ""
+          }`}
+        />
+
+        <h2>{title}</h2>
       </div>
 
-      <div className="call-details__hero-content">
-        <QuickActions />
-
-        <div className="call-details__hero-info">
-          <div className="call-details__meta">
-            <span className="call-details__number">{callData.number}</span>
-
-            <h1>{callData.title}</h1>
-
-            <span className="call-details__category">{callData.category}</span>
-          </div>
-
-          <p>
-            در این بخش، اولویت‌های پژوهشی سال جاری معرفی شده‌اند. پژوهشگران
-            می‌توانند با توجه به این محورها، طرح‌های پژوهشی و فناورانه خود را در
-            راستای اولویت‌های تعیین‌شده ارائه دهند.
-          </p>
-
-          <p>
-            این فراخوان با هدف حمایت از ایده‌ها و طرح‌های فناورانه دانشگاهی
-            طراحی شده و تلاش می‌کند مسیر تبدیل پژوهش به محصول، خدمت یا راهکار
-            کاربردی را کوتاه‌تر و دقیق‌تر کند.
-          </p>
-        </div>
-      </div>
-    </section>
+      <span className="current-fields-page__subheading-line" />
+    </div>
   );
 }
 
-function CallArticle() {
+function AxisCallCard({ call, index, compact = false }) {
+  const callPath = getCallPath(call);
+  const callStatusLabel = getCallStatusLabel(call);
+
+  const isClosed =
+    call.status === CALL_STATUS.CLOSED ||
+    call.status === "closed" ||
+    callStatusLabel.includes("آرشیو") ||
+    callStatusLabel.includes("پایان");
+
   return (
-    <article className="call-details__article">
-      <section id="current-fields">
-        <SectionTitle>محورهای پژوهشی سال جاری</SectionTitle>
+    <article
+      className={`current-fields-page__call ${
+        compact ? "current-fields-page__call--compact" : ""
+      }`}
+    >
+      <Link to={callPath} className="current-fields-page__call-media">
+        <img src={getCallImage(call)} alt={call.title} />
 
-        <p>
-          در این بخش، اولویت‌های پژوهشی سال جاری معرفی شده‌اند. پژوهشگران
-          می‌توانند با توجه به این محورها، طرح‌های پژوهشی و فناورانه خود را در
-          راستای اولویت‌های تعیین‌شده ارائه دهند.
-        </p>
+        <div className="current-fields-page__call-overlay">
+          <div className="current-fields-page__call-overlay-content">
+            <h3>{call.title}</h3>
 
-        <p>
-          هدف از اعلام این محورها، تمرکز بر نیازهای واقعی جامعه، صنعت و زیست‌بوم
-          فناوری کشور است. طرح‌های ارسالی باید مسئله‌محور، قابل توسعه و دارای
-          ظرفیت تبدیل‌شدن به محصول یا خدمت باشند.
-        </p>
+            <p>{getCallDescription(call)}</p>
 
-        <p>
-          پژوهشگران می‌توانند با توجه به محورهای اعلام‌شده، طرح‌های خود را آماده
-          کرده و اطلاعات لازم را مطابق راهنمای ثبت‌نام ارسال کنند. در این مسیر،
-          کیفیت ایده، امکان اجرا و اثرگذاری طرح اهمیت زیادی دارد.
-        </p>
-      </section>
+            <span>مشاهده جزئیات</span>
+          </div>
+        </div>
 
-      <section id="eligibility">
-        <SectionTitle>محورهای پژوهشی سال جاری</SectionTitle>
+        <span
+          className={`current-fields-page__call-badge ${
+            isClosed
+              ? "current-fields-page__call-badge--closed"
+              : "current-fields-page__call-badge--active"
+          }`}
+        >
+          {callStatusLabel}
+        </span>
 
-        <p>
-          طرح‌ها پس از ارسال، ابتدا از نظر کامل‌بودن مدارک و انطباق با محور
-          فراخوان بررسی می‌شوند. سپس طرح‌های واجد شرایط وارد مرحله ارزیابی تخصصی
-          خواهند شد.
-        </p>
+        <span className="current-fields-page__call-deadline">
+          {getCallDeadline(call)}
+        </span>
+      </Link>
 
-        <p>
-          در مرحله ارزیابی، معیارهایی مانند نوآوری، امکان اجرا، قابلیت توسعه،
-          اثرگذاری، ظرفیت تجاری‌سازی و ارتباط با نیازهای واقعی صنعت و جامعه مورد
-          توجه قرار می‌گیرد.
-        </p>
+      <div className="current-fields-page__call-info">
+        <div className="current-fields-page__call-title">
+          <span className="current-fields-page__call-number">
+            {toPersianNumber(index + 1)}
+          </span>
 
-        <p>
-          تیم‌های فناور لازم است اطلاعات طرح، اعضای تیم، سوابق مرتبط، برنامه
-          اجرایی، مستندات فنی و مدارک پشتیبان را با دقت آماده کنند.
-        </p>
-      </section>
+          <Link to={callPath}>{call.title}</Link>
+
+          <span className="current-fields-page__call-category">
+            {getCallCategory(call)}
+          </span>
+        </div>
+      </div>
     </article>
   );
 }
 
-function CallCta() {
-  return (
-    <section className="call-details__cta" id="submit-call">
-      <img src={ctaBannerImage} alt="" aria-hidden="true" />
-
-      <div className="call-details__cta-overlay" />
-
-      <div className="call-details__cta-content">
-        <h2>برای تدوین نقشه راه تجاری‌سازی اقدام کنید</h2>
-
-        <p>
-          در صورت تمایل به دریافت این خدمت، درخواست خود را ثبت کنید تا پس از
-          بررسی اولیه، فرآیند تدوین نقشه راه آغاز شود.
-        </p>
-
-        <div className="call-details__cta-actions">
-          <a href="#submit-form">تدوین نقشه راه</a>
-          <a href="#consultation">مشاوره با کارشناسان</a>
-        </div>
-      </div>
-    </section>
-  );
+function EmptyState({ children }) {
+  return <p className="current-fields-page__empty">{children}</p>;
 }
 
-function CallFaq() {
-  return (
-    <section className="call-details__faq">
-      <SectionTitle>سوالات شما</SectionTitle>
+function CurrentFieldsPage() {
+  const allCalls = sortCallsNewestFirst(getCalls());
+  const publishedCalls = sortCallsNewestFirst(getPublishedCalls());
+  const visibleCalls = publishedCalls.length > 0 ? publishedCalls : allCalls;
 
-      <div className="call-details__faq-list">
-        {faqItems.map((faq) => (
-          <details className="call-details__faq-item" key={faq.id}>
-            <summary>
-              <span>{faq.question}</span>
-              <i aria-hidden="true">+</i>
-            </summary>
-
-            <p>{faq.answer}</p>
-          </details>
-        ))}
-      </div>
-    </section>
+  const currentAxisCalls = getCurrentAxisCalls(visibleCalls);
+  const previousAxisCalls = getPreviousAxisCalls(
+    visibleCalls,
+    currentAxisCalls,
   );
-}
-
-function CallDetailsPage() {
-  const { callId } = useParams();
+  const currentAxisTitle = getCurrentAxisTitle(currentAxisCalls);
 
   return (
-    <main className="call-details">
-      <div className="call-details__container">
-        <CallHero />
+    <main className="current-fields-page">
+      <section className="current-fields-page__hero">
+        <img src={bannerImage} alt="" aria-hidden="true" />
 
-        <div className="call-details__content-layout">
-          <aside className="call-details__sidebar">
-            <CallSidebar />
-          </aside>
+        <div className="current-fields-page__hero-overlay" />
 
-          <div className="call-details__main">
-            <CallArticle />
+        <div className="current-fields-page__container current-fields-page__hero-inner">
+          <div className="current-fields-page__hero-content">
+            <span className="current-fields-page__eyebrow">
+              محورهای پژوهشی و فناورانه
+            </span>
+
+            <h1>محورهای سال جاری</h1>
+
+            <p>
+              در این صفحه، فراخوان‌های مرتبط با محور سال جاری و همچنین محورهای
+              سال‌های گذشته برنامه هاتف نمایش داده می‌شوند.
+            </p>
+
+            <div className="current-fields-page__hero-actions">
+              <a href="#current-year-axis">مشاهده محور سال جاری</a>
+              <a href="#previous-year-axis">محورهای سال‌های گذشته</a>
+            </div>
+          </div>
+
+          <div className="current-fields-page__hero-stats">
+            <div>
+              <strong>{toPersianNumber(currentAxisCalls.length)}</strong>
+              <span>فراخوان محور امسال</span>
+            </div>
+
+            <div>
+              <strong>{toPersianNumber(previousAxisCalls.length)}</strong>
+              <span>فراخوان سال‌های گذشته</span>
+            </div>
+
+            <div>
+              <strong>{toPersianNumber(visibleCalls.length)}</strong>
+              <span>کل فراخوان‌ها</span>
+            </div>
           </div>
         </div>
+      </section>
 
-        <CallCta />
+      <section className="current-fields-page__section" id="current-year-axis">
+        <div className="current-fields-page__container">
+          <SectionHeading
+            title={`فراخوان‌های محور امسال: ${currentAxisTitle}`}
+          />
 
-        <CallFaq />
-
-        <div className="call-details__back-wrap">
-          <Link to="/research-support/calls" className="call-details__back">
-            بازگشت به فهرست فراخوان‌ها
-          </Link>
-
-          <span className="call-details__page-id">
-            شناسه فراخوان: {callId || callData.id}
-          </span>
+          {currentAxisCalls.length > 0 ? (
+            <div className="current-fields-page__current-list">
+              {currentAxisCalls.map((call, index) => (
+                <AxisCallCard key={call.id} call={call} index={index} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState>
+              هنوز فراخوانی برای محور سال جاری ثبت یا منتشر نشده است.
+            </EmptyState>
+          )}
         </div>
-      </div>
+      </section>
+
+      <section
+        className="current-fields-page__section current-fields-page__section--previous"
+        id="previous-year-axis"
+      >
+        <div className="current-fields-page__container">
+          <SectionHeading title="محورهای سال‌های گذشته" warning />
+
+          {previousAxisCalls.length > 0 ? (
+            <div className="current-fields-page__previous-list">
+              {previousAxisCalls.map((call, index) => (
+                <AxisCallCard key={call.id} call={call} index={index} compact />
+              ))}
+            </div>
+          ) : (
+            <EmptyState>
+              هنوز فراخوانی برای محورهای سال‌های گذشته ثبت نشده است.
+            </EmptyState>
+          )}
+        </div>
+      </section>
+
+      <section className="current-fields-page__article">
+        <div className="current-fields-page__container">
+          <div className="current-fields-page__article-card">
+            <div className="current-fields-page__article-heading">
+              <span>درباره انتخاب محورها</span>
+              <h2>تمرکز بر نیازهای واقعی، اولویت‌های فناورانه و ظرفیت اجرا</h2>
+            </div>
+
+            <div className="current-fields-page__article-content">
+              <p>
+                محورهای سال جاری برنامه هاتف با هدف تمرکز حمایت‌ها بر نیازهای
+                واقعی جامعه، صنعت و زیست‌بوم فناوری انتخاب می‌شوند. طرح‌های
+                ارسالی باید با این محورها هم‌راستا باشند و ظرفیت تبدیل شدن به
+                محصول، خدمت یا راهکار کاربردی را داشته باشند.
+              </p>
+
+              <p>
+                محورهای سال‌های گذشته نیز در این صفحه نگهداری می‌شوند تا مسیر
+                اولویت‌گذاری، تغییر نیازها و روند توسعه فناوری در دوره‌های مختلف
+                قابل مشاهده باشد.
+              </p>
+            </div>
+
+            <Link
+              to="/research-support/calls"
+              className="current-fields-page__article-button"
+            >
+              مشاهده همه فراخوان‌ها
+            </Link>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
 
-export default CallDetailsPage;
+export default CurrentFieldsPage;

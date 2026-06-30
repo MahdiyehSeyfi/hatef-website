@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 
 import bannerImage from "../../assets/images/banner.png";
 
-import { getCalls, getPublishedCalls } from "../../services/callService";
+import {
+  CALLS_UPDATED_EVENT,
+  getCalls,
+  getPublishedCalls,
+  hydrateCallsFromSupabase,
+} from "../../services/callService";
 import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
 
 import "./CallsPage.css";
@@ -45,6 +50,16 @@ function getCallStatusLabel(call) {
   return CALL_STATUS_LABELS[call.status] || "وضعیت نامشخص";
 }
 
+function getCallImage(call) {
+  return (
+    call.image ||
+    call.bannerPreview ||
+    call.bannerImage ||
+    call.coverImage ||
+    bannerImage
+  );
+}
+
 function mapCallForCard(call, index) {
   return {
     ...call,
@@ -52,6 +67,7 @@ function mapCallForCard(call, index) {
     category: getCallCategory(call),
     deadline: getCallDeadline(call),
     statusLabel: getCallStatusLabel(call),
+    image: getCallImage(call),
   };
 }
 
@@ -94,7 +110,7 @@ function CallCard({ call, isActive = false }) {
         to={`/research-support/calls/${call.id}`}
         className="calls-page__call-media"
       >
-        <img src={bannerImage} alt={call.title} />
+        <img src={call.image || bannerImage} alt={call.title} />
 
         <div className="calls-page__call-overlay">
           <div className="calls-page__call-overlay-content">
@@ -174,6 +190,32 @@ function CallsArticle() {
 
 function CallsPage() {
   const [visiblePreviousCount, setVisiblePreviousCount] = useState(2);
+  const [, setCallsVersion] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const refreshCalls = () => {
+      if (!isMounted) {
+        return;
+      }
+
+      setCallsVersion((currentVersion) => currentVersion + 1);
+    };
+
+    hydrateCallsFromSupabase({ force: true })
+      .then(refreshCalls)
+      .catch((error) => {
+        console.warn("Public calls hydration failed:", error?.message || error);
+      });
+
+    window.addEventListener(CALLS_UPDATED_EVENT, refreshCalls);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener(CALLS_UPDATED_EVENT, refreshCalls);
+    };
+  }, []);
 
   const allCalls = getCalls();
 

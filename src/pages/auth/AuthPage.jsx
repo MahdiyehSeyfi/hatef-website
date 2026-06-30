@@ -79,42 +79,55 @@ function AuthPage() {
     setForgotStep("identify");
   };
 
-  const handleLogin = (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
     const identifier = formData.get("identifier");
     const password = formData.get("password");
-    const user = loginWithCredentials(identifier, password);
 
-    if (!user) {
-      window.alert("نام کاربری/ایمیل یا رمز عبور درست نیست.");
-      return;
+    try {
+      const user = await loginWithCredentials(identifier, password);
+
+      if (!user) {
+        window.alert("نام کاربری/ایمیل یا رمز عبور درست نیست.");
+        return;
+      }
+
+      navigate(getDashboardPathByRole(user.role));
+    } catch (error) {
+      window.alert(error?.message || "نام کاربری/ایمیل یا رمز عبور درست نیست.");
     }
-
-    navigate(getDashboardPathByRole(user.role));
   };
 
-  const handleRegister = (event) => {
+  const handleRegister = async (event) => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
-    const user = registerMockUser({
-      fullName: formData.get("fullName"),
-      email: formData.get("email"),
-      mobile: formData.get("mobile"),
-      password: formData.get("password"),
-      role: formData.get("role"),
-    });
 
-    if (!user) {
+    try {
+      const user = await registerMockUser({
+        fullName: String(formData.get("fullName") || "").trim(),
+        email: String(formData.get("email") || "").trim(),
+        mobile: String(formData.get("mobile") || "").trim(),
+        password: String(formData.get("password") || "").trim(),
+        role: String(formData.get("role") || USER_ROLES.INNOVATOR).trim(),
+      });
+
+      if (!user) {
+        window.alert(
+          "ثبت‌نام انجام نشد. لطفاً اطلاعات ضروری را کامل کنید یا ایمیل تکراری وارد نکنید.",
+        );
+        return;
+      }
+
+      navigate(getDashboardPathByRole(user.role));
+    } catch (error) {
       window.alert(
-        "ثبت‌نام انجام نشد. لطفاً اطلاعات ضروری را کامل کنید یا ایمیل تکراری وارد نکنید.",
+        error?.message ||
+          "ثبت‌نام انجام نشد. لطفاً اطلاعات ضروری را کامل کنید یا ایمیل تکراری وارد نکنید.",
       );
-      return;
     }
-
-    navigate(getDashboardPathByRole(user.role));
   };
 
   return (
@@ -279,7 +292,7 @@ function AuthPage() {
                       <input
                         id="register-phone"
                         name="mobile"
-                        type="text"
+                        type="tel"
                         placeholder="۰۹۱۲xxxxxxx"
                       />
                     </div>

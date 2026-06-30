@@ -1,5 +1,9 @@
 import { getCurrentUser } from "./authService";
 import { addNotificationOnce } from "./notificationService";
+import {
+  syncExecutionOrderToSupabase,
+  syncExecutionOrderUpdateToSupabase,
+} from "./supabaseExecutionOrderService";
 
 const EXECUTION_ORDERS_STORAGE_KEY = "hatef_execution_orders";
 
@@ -105,12 +109,12 @@ function normalizeOrder(order = {}) {
       normalizeValue(order.deadline) ||
       `${deadlineDate || "بدون تاریخ"}${deadlineTime ? ` - ساعت ${deadlineTime}` : ""}`,
     status: normalizeCommitteeStatus(order.status),
-    acceptedBy: normalizeValue(order.acceptedBy),
+    acceptedBy: normalizeValue(order.acceptedBy || order.acceptedByName),
     acceptedById: normalizeValue(order.acceptedById),
     acceptedAt: normalizeValue(order.acceptedAt),
     completedAt: normalizeValue(order.completedAt),
     createdAt: normalizeValue(order.createdAt, getCurrentPersianDateTime()),
-    createdBy: normalizeValue(order.createdBy, "committee"),
+    createdBy: normalizeValue(order.createdBy, getCurrentUser?.()?.id || ""),
     updatedAt: normalizeValue(order.updatedAt),
   };
 }
@@ -121,20 +125,6 @@ function normalizeOrders(orders) {
   }
 
   return orders.filter(Boolean).map(normalizeOrder);
-}
-
-function mergeOrders(existingOrders = [], seedOrders = []) {
-  const ordersById = new Map();
-
-  normalizeOrders(seedOrders).forEach((order) => {
-    ordersById.set(String(order.id), order);
-  });
-
-  normalizeOrders(existingOrders).forEach((order) => {
-    ordersById.set(String(order.id), order);
-  });
-
-  return Array.from(ordersById.values());
 }
 
 function sortNewest(orders) {
@@ -173,19 +163,8 @@ function writeOrders(orders) {
   return normalizedOrders;
 }
 
-function readOrders(seedOrders = []) {
-  const storedOrders = readOrdersFromStorage();
-  const mergedOrders = mergeOrders(storedOrders, seedOrders);
-
-  if (mergedOrders.length !== storedOrders.length) {
-    writeOrders(mergedOrders);
-  }
-
-  if (!storedOrders.length && seedOrders.length) {
-    writeOrders(mergedOrders);
-  }
-
-  return sortNewest(mergedOrders);
+function readOrders() {
+  return sortNewest(readOrdersFromStorage());
 }
 
 function toInstructorOrder(order) {
@@ -228,16 +207,16 @@ function notifyCommitteeOrderAccepted(order) {
   });
 }
 
-export function getExecutionOrders(seedOrders = []) {
-  return readOrders(seedOrders);
+export function getExecutionOrders() {
+  return readOrders();
 }
 
-export function getCommitteeExecutionOrders(seedOrders = []) {
-  return readOrders(seedOrders).map(toCommitteeOrder);
+export function getCommitteeExecutionOrders() {
+  return readOrders().map(toCommitteeOrder);
 }
 
-export function getInstructorExecutionOrders(seedOrders = []) {
-  return readOrders(seedOrders).map(toInstructorOrder);
+export function getInstructorExecutionOrders() {
+  return readOrders().map(toInstructorOrder);
 }
 
 export function createExecutionOrder(orderData = {}) {
@@ -247,11 +226,12 @@ export function createExecutionOrder(orderData = {}) {
     id: orderData.id || makeId(),
     status: "در انتظار پذیرش",
     createdAt: orderData.createdAt || getCurrentPersianDateTime(),
-    createdBy: currentUser?.id || "committee",
+    createdBy: currentUser?.id || "",
   });
 
   writeOrders([order, ...readOrders()]);
   notifyInstructorsNewOrder(order);
+  syncExecutionOrderToSupabase(order);
 
   return toCommitteeOrder(order);
 }
@@ -282,13 +262,14 @@ export function acceptExecutionOrder(orderId) {
 
   if (acceptedOrder) {
     notifyCommitteeOrderAccepted(acceptedOrder);
+    syncExecutionOrderUpdateToSupabase(acceptedOrder);
   }
 
   return acceptedOrder ? toInstructorOrder(acceptedOrder) : null;
 }
 
-export function getExecutionOrderStats(seedOrders = []) {
-  const orders = readOrders(seedOrders);
+export function getExecutionOrderStats() {
+  const orders = readOrders();
 
   return {
     total: orders.length,

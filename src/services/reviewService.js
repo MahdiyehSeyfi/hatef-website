@@ -4,20 +4,6 @@ import { addNotification } from "./notificationService";
 
 const REVIEWS_STORAGE_KEY = "hatef_reviews";
 
-const DEFAULT_REVIEWS = [
-  {
-    id: "review-001",
-    planId: "plan-001",
-    reviewerId: "reviewer-001",
-    score: 82,
-    recommendation: "accepted",
-    feedbackText:
-      "طرح از نظر نوآوری و امکان اجرا قابل قبول است و برای ورود به مرحله بعد پیشنهاد می‌شود.",
-    createdAt: "۱۴۰۵/۰۳/۱۰ - ساعت ۱۰:۳۰",
-    updatedAt: "۱۴۰۵/۰۳/۱۰ - ساعت ۱۰:۳۰",
-  },
-];
-
 let memoryReviews = [];
 
 function canUseStorage() {
@@ -58,7 +44,7 @@ function safeParseJson(value, fallbackValue) {
   }
 }
 
-function normalizeReview(review) {
+function normalizeReview(review = {}) {
   return {
     id: review.id || makeId(),
     planId: review.planId,
@@ -84,33 +70,20 @@ function normalizeReviews(reviews) {
 
 function readReviewsFromStorage() {
   if (!canUseStorage()) {
-    if (!memoryReviews.length) {
-      memoryReviews = normalizeReviews(DEFAULT_REVIEWS);
-    }
-
     return memoryReviews;
   }
 
   const storedReviews = window.localStorage.getItem(REVIEWS_STORAGE_KEY);
 
   if (!storedReviews) {
-    window.localStorage.setItem(
-      REVIEWS_STORAGE_KEY,
-      JSON.stringify(normalizeReviews(DEFAULT_REVIEWS)),
-    );
-
-    return normalizeReviews(DEFAULT_REVIEWS);
+    return [];
   }
 
-  const parsedReviews = safeParseJson(storedReviews, DEFAULT_REVIEWS);
+  const parsedReviews = safeParseJson(storedReviews, []);
 
   if (!Array.isArray(parsedReviews)) {
-    window.localStorage.setItem(
-      REVIEWS_STORAGE_KEY,
-      JSON.stringify(normalizeReviews(DEFAULT_REVIEWS)),
-    );
-
-    return normalizeReviews(DEFAULT_REVIEWS);
+    window.localStorage.setItem(REVIEWS_STORAGE_KEY, JSON.stringify([]));
+    return [];
   }
 
   return normalizeReviews(parsedReviews);
@@ -239,7 +212,7 @@ export function getReviewByReviewerAndPlan(reviewerId, planId) {
   );
 }
 
-export function addReview(reviewData) {
+export function addReview(reviewData = {}) {
   const reviews = getReviews();
 
   const newReview = normalizeReview({
@@ -254,7 +227,7 @@ export function addReview(reviewData) {
   return newReview;
 }
 
-export function updateReview(reviewId, reviewData) {
+export function updateReview(reviewId, reviewData = {}) {
   const reviews = getReviews();
   let updatedReview = null;
 
@@ -279,7 +252,7 @@ export function updateReview(reviewId, reviewData) {
   return updatedReview;
 }
 
-export function saveReview(reviewData) {
+export function saveReview(reviewData = {}) {
   const existingReview = getReviewByReviewerAndPlan(
     reviewData.reviewerId,
     reviewData.planId,
@@ -296,7 +269,7 @@ export function saveReview(reviewData) {
   return savedReview;
 }
 
-export function upsertReview(reviewData) {
+export function upsertReview(reviewData = {}) {
   return saveReview(reviewData);
 }
 
@@ -341,14 +314,7 @@ export function getReviewerStatsByReviewerId(reviewerId, plans = []) {
 }
 
 export function clearReviews() {
-  if (!canUseStorage()) {
-    memoryReviews = [];
-    return [];
-  }
-
-  window.localStorage.removeItem(REVIEWS_STORAGE_KEY);
-
-  return [];
+  return writeReviewsToStorage([]);
 }
 
 export { REVIEWS_STORAGE_KEY };

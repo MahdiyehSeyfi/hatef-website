@@ -4,6 +4,7 @@ import {
   getCurrentUserActivityRegistrations,
 } from "./activityRegistrationService";
 import { addNotification } from "./notificationService";
+import { syncActivityParticipantNoticeToSupabase } from "./supabaseActivityParticipantNoticeService";
 
 const ACTIVITY_PARTICIPANT_NOTICES_STORAGE_KEY =
   "hatef_activity_participant_notices";
@@ -29,6 +30,20 @@ function safeParseJson(value, fallbackValue) {
     return JSON.parse(value);
   } catch {
     return fallbackValue;
+  }
+}
+
+function safeSetStorageItem(key, value) {
+  if (!canUseStorage()) {
+    return false;
+  }
+
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    console.warn(`Unable to write ${key} to localStorage:`, error);
+    return false;
   }
 }
 
@@ -122,7 +137,7 @@ function writeNotices(notices) {
     return normalizedNotices;
   }
 
-  window.localStorage.setItem(
+  safeSetStorageItem(
     ACTIVITY_PARTICIPANT_NOTICES_STORAGE_KEY,
     JSON.stringify(normalizedNotices),
   );
@@ -312,6 +327,7 @@ export function sendActivityParticipantNotice({
 
   writeNotices([notice, ...getActivityParticipantNotices()]);
   notifyRecipients(notice, recipients);
+  syncActivityParticipantNoticeToSupabase(notice);
 
   return {
     success: true,

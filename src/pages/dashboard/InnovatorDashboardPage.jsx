@@ -3,8 +3,20 @@ import { Link, useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 
+import { uploadImageFileToSiteMedia } from "../../services/mediaStorageService";
+import {
+  getManagedFileDisplayName,
+  openManagedFile,
+  uploadPlanProposalFile,
+  uploadTaskResponseFile,
+} from "../../services/fileStorageService";
 import { getCurrentUser } from "../../services/authService";
-import { getPublishedCalls, getCallById } from "../../services/callService";
+import {
+  CALLS_UPDATED_EVENT,
+  getPublishedCalls,
+  getCallById,
+  hydrateCallsFromSupabase,
+} from "../../services/callService";
 import {
   addPlan,
   deletePlan as deletePlanFromService,
@@ -23,6 +35,7 @@ import {
   saveSitePublicationDraft,
   saveSitePublicationPreviewItem,
   submitSitePublicationDraft,
+  syncSitePublicationRequestNow,
   SITE_PUBLICATION_STATUS,
 } from "../../services/projectPublicationService";
 import { getCurrentUserActivityRegistrations } from "../../services/activityRegistrationService";
@@ -62,6 +75,7 @@ import {
   getCurrentDashboardProfile,
   saveCurrentDashboardProfile,
 } from "../../services/userProfileService";
+import { hydrateDashboardDataForCurrentSession } from "../../services/supabaseDashboardHydrationService";
 
 import "./InnovatorDashboardPage.css";
 
@@ -133,8 +147,6 @@ function getCallOptionsForInnovator() {
     status: "فعال",
   }));
 }
-
-const CALL_OPTIONS = getCallOptionsForInnovator();
 
 function getCurrentInnovatorUserId() {
   return getCurrentUser()?.id || "user-innovator-1";
@@ -250,41 +262,26 @@ function getDefaultBusinessOpportunityDetails(plan = {}) {
       ? plan.businessOpportunityDetails
       : {};
 
-  const field =
-    details.field || details.category || plan.field || "همکاری تجاری";
-  const summary =
-    details.summary ||
-    details.description ||
-    plan.finalDecisionNote ||
-    plan.committeeFeedback ||
-    "این طرح پس از تعیین وضعیت نهایی توسط کمیته برای همکاری تجاری معرفی شده است.";
+  const field = details.field || details.category || plan.field || "";
 
   return {
-    title: details.title || plan.title || "موقعیت همکاری تجاری",
+    title: details.title || plan.title || "",
     field,
     category: details.category || details.field || field,
-    collaborationType:
-      details.collaborationType || "همکاری تجاری روی طرح منتشرشده",
-    location: details.location || "قابل مذاکره",
-    estimatedSupport: details.estimatedSupport || "قابل مذاکره",
-    duration: details.duration || "براساس توافق طرفین",
-    summary,
-    challenge:
-      details.challenge ||
-      "چالش اصلی این موقعیت، بررسی ظرفیت همکاری تجاری و تبدیل خروجی طرح به مسیر اجرا یا بازار است.",
-    solution:
-      details.solution ||
-      "همکار تجاری می‌تواند برای بررسی مدل همکاری، اجرای پایلوت، توسعه بازار یا مشارکت تجاری درخواست ثبت کند.",
-    businessValue:
-      details.businessValue ||
-      "این موقعیت ظرفیت معرفی به همکاران تجاری و شروع مذاکره همکاری را دارد.",
+    collaborationType: details.collaborationType || "",
+    location: details.location || "",
+    estimatedSupport: details.estimatedSupport || "",
+    duration: details.duration || "",
+    summary: details.summary || details.description || "",
+    challenge: details.challenge || "",
+    solution: details.solution || "",
+    businessValue: details.businessValue || "",
     requirements: Array.isArray(details.requirements)
       ? details.requirements.join("\n")
-      : details.requirements ||
-        "بررسی خلاصه طرح و وضعیت نهایی کمیته\nاعلام علاقه‌مندی و ظرفیت همکاری\nثبت درخواست همکاری برای شروع پیگیری دبیرخانه",
+      : details.requirements || "",
     tags: Array.isArray(details.tags)
       ? details.tags.join("، ")
-      : details.tags || `${field}، طرح منتشرشده، همکاری تجاری`,
+      : details.tags || "",
     updatedAt: details.updatedAt || "",
   };
 }
@@ -360,9 +357,9 @@ function getInitialSitePublicationRequestsForCurrentUser() {
   );
 }
 
-const DEFAULT_SITE_PUBLICATION_REPORT = {
+const BLANK_SITE_PUBLICATION_REPORT = {
   id: "report-1",
-  title: "گزارش اولیه پروژه",
+  title: "",
   status: "تکمیل شده",
   text: "",
   type: "text",
@@ -378,7 +375,7 @@ function normalizeReportsForForm(reports = []) {
   const normalizedReports = Array.isArray(reports) ? reports : [];
 
   if (!normalizedReports.length) {
-    return [{ ...DEFAULT_SITE_PUBLICATION_REPORT }];
+    return [];
   }
 
   return normalizedReports.map((report, index) => ({
@@ -489,10 +486,18 @@ function normalizeSitePublicationFormForSave(form = {}) {
     ),
     investmentNeed: form.investmentNeed,
     image: form.image,
-    reports: normalizeReportsForForm(form.reports).map((report) => ({
-      ...report,
-      type: report.fileUrl ? "file" : "text",
-    })),
+    reports: normalizeReportsForForm(form.reports)
+      .filter(
+        (report) =>
+          String(report.title || "").trim() ||
+          String(report.text || "").trim() ||
+          String(report.fileName || "").trim() ||
+          String(report.fileUrl || "").trim(),
+      )
+      .map((report) => ({
+        ...report,
+        type: report.fileUrl ? "file" : "text",
+      })),
   };
 }
 
@@ -586,6 +591,12 @@ function getSitePublicationActionLabel(status) {
 
 function mapPlanForInnovatorDashboard(plan) {
   const call = getPlanCallInfo(plan);
+  const proposalFileReference =
+    plan.proposalFileUrl ||
+    plan.fileUrl ||
+    plan.fileName ||
+    plan.proposalFile ||
+    "";
 
   return {
     id: plan.id,
@@ -594,7 +605,13 @@ function mapPlanForInnovatorDashboard(plan) {
     call: call?.title || "فراخوان برنامه هاتف",
     deadline: call ? formatCallDeadline(call) : "مهلت مشخص نشده",
     date: plan.submittedAt || plan.updatedAt || "ثبت‌شده در سامانه",
-    fileName: plan.proposalFileUrl || `${plan.trackingCode || plan.id}.pdf`,
+    fileName: proposalFileReference
+      ? getManagedFileDisplayName(
+          proposalFileReference,
+          `${plan.trackingCode || plan.id}.pdf`,
+        )
+      : `${plan.trackingCode || plan.id}.pdf`,
+    fileUrl: proposalFileReference,
     status: getPlanStatusLabelFromCentralData(plan),
     finalStatus: plan.finalStatus,
     publishForBusiness: Boolean(plan.publishForBusiness),
@@ -646,7 +663,13 @@ function getInitialSelectedPlanTasksForCurrentUser() {
           managerMessage: task.managerMessage,
           managerFeedback: task.managerFeedback,
           description: task.innovatorResponseText,
-          fileName: task.innovatorFileUrl ? "فایل پاسخ فناور" : "",
+          fileName: task.innovatorFileUrl
+            ? getManagedFileDisplayName(
+                task.innovatorFileUrl,
+                "فایل پاسخ فناور",
+              )
+            : "",
+          fileUrl: task.innovatorFileUrl || "",
         },
       ],
     };
@@ -1386,10 +1409,41 @@ function isRevisionResubmissionPlan(plan) {
   );
 }
 
+function isDirectDownloadReference(fileReference = "") {
+  const value = String(fileReference || "").trim();
+  return (
+    value.startsWith("http") ||
+    value.startsWith("data:") ||
+    value.startsWith("blob:")
+  );
+}
+
 function getDownloadHref(plan) {
-  return `data:text/plain;charset=utf-8,${encodeURIComponent(
-    `این فایل نمونه برای طرح «${plan.title}» است.`,
-  )}`;
+  if (isDirectDownloadReference(plan?.fileUrl)) {
+    return plan.fileUrl;
+  }
+
+  if (!plan?.fileUrl) {
+    return `data:text/plain;charset=utf-8,${encodeURIComponent(
+      `این فایل نمونه برای طرح «${plan.title}» است.`,
+    )}`;
+  }
+
+  return "#download-plan-file";
+}
+
+async function handleManagedFileLinkClick(event, fileReference) {
+  if (!fileReference) {
+    return;
+  }
+
+  event.preventDefault();
+
+  try {
+    await openManagedFile(fileReference);
+  } catch (error) {
+    window.alert(error?.message || "دانلود فایل انجام نشد.");
+  }
 }
 
 function getFeedbackItems(plan) {
@@ -1510,6 +1564,7 @@ function SubmitPlanPanel() {
   const [selectedCallId, setSelectedCallId] = useState("");
   const [uploadedFile, setUploadedFile] = useState(null);
   const [existingFileName, setExistingFileName] = useState("");
+  const [isUploadingPlanFile, setIsUploadingPlanFile] = useState(false);
   const [submittedPlans, setSubmittedPlans] = useState(() =>
     getInitialSubmittedPlansForCurrentUser(),
   );
@@ -1521,7 +1576,42 @@ function SubmitPlanPanel() {
     getDefaultBusinessOpportunityDetails(),
   );
 
-  const selectedCall = CALL_OPTIONS.find((item) => item.id === selectedCallId);
+  const [callOptions, setCallOptions] = useState(() =>
+    getCallOptionsForInnovator(),
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const refreshCallOptions = () => {
+      if (!isMounted) return;
+      setCallOptions(getCallOptionsForInnovator());
+    };
+
+    refreshCallOptions();
+
+    hydrateCallsFromSupabase({ force: true })
+      .then(refreshCallOptions)
+      .catch((error) => {
+        console.warn(
+          "Innovator calls hydration failed:",
+          error?.message || error,
+        );
+      });
+
+    window.addEventListener(CALLS_UPDATED_EVENT, refreshCallOptions);
+    window.addEventListener("hatef:calls-updated", refreshCallOptions);
+    window.addEventListener("storage", refreshCallOptions);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener(CALLS_UPDATED_EVENT, refreshCallOptions);
+      window.removeEventListener("hatef:calls-updated", refreshCallOptions);
+      window.removeEventListener("storage", refreshCallOptions);
+    };
+  }, []);
+
+  const selectedCall = callOptions.find((item) => item.id === selectedCallId);
   const hasFile = Boolean(uploadedFile || existingFileName);
   const feedbackItems = getFeedbackItems(selectedPlan);
   const businessOpportunityPlans = [];
@@ -1565,7 +1655,7 @@ function SubmitPlanPanel() {
     setEditingPlanId(plan.id);
     setSelectedCallId(plan.callId);
     setPlanTitle(plan.title);
-    setExistingFileName(plan.fileName);
+    setExistingFileName(plan.fileUrl || plan.fileName);
     setUploadedFile(null);
     setSubmitMessage("");
   };
@@ -1673,53 +1763,72 @@ function SubmitPlanPanel() {
     setExistingFileName("");
   };
 
-  const handleSubmitPlan = (event) => {
+  const handleSubmitPlan = async (event) => {
     event.preventDefault();
 
-    if (!selectedCall || !hasFile) {
+    if (!selectedCall || !hasFile || isUploadingPlanFile) {
       return;
     }
 
-    const innovatorId = getCurrentInnovatorUserId();
-    const proposalFileName = uploadedFile?.name || existingFileName;
+    setIsUploadingPlanFile(true);
+    setSubmitMessage("در حال آپلود فایل طرح...");
 
-    if (mode === "edit" && editingPlanId) {
-      const planUpdates = {
-        title: planTitle || selectedPlan?.title || "طرح فناورانه",
+    try {
+      const innovatorId = getCurrentInnovatorUserId();
+      let proposalFileReference = existingFileName;
+
+      if (uploadedFile instanceof File) {
+        const uploadedProposal = await uploadPlanProposalFile(uploadedFile, {
+          prefix: planTitle || selectedCall.title || "plan-proposal",
+        });
+
+        proposalFileReference = uploadedProposal.url;
+      }
+
+      if (mode === "edit" && editingPlanId) {
+        const planUpdates = {
+          title: planTitle || selectedPlan?.title || "طرح فناورانه",
+          callId: selectedCall.id,
+          field: selectedCall.field,
+          proposalFileUrl: proposalFileReference,
+        };
+
+        if (isRevisionResubmissionPlan(selectedPlan)) {
+          resubmitPlanRevision(editingPlanId, planUpdates);
+        } else {
+          updatePlan(editingPlanId, planUpdates);
+        }
+
+        setMode("list");
+        resetForm();
+        setSubmittedPlans(getInitialSubmittedPlansForCurrentUser());
+        setSubmitMessage(
+          isRevisionResubmissionPlan(selectedPlan)
+            ? "طرح اصلاح‌شده با موفقیت ارسال شد و دوباره وارد چرخه بررسی شد."
+            : "تغییرات طرح با موفقیت ذخیره شد.",
+        );
+        return;
+      }
+
+      addPlan({
+        title: planTitle || "طرح جدید فناورانه",
         callId: selectedCall.id,
         field: selectedCall.field,
-        proposalFileUrl: proposalFileName,
-      };
-
-      if (isRevisionResubmissionPlan(selectedPlan)) {
-        resubmitPlanRevision(editingPlanId, planUpdates);
-      } else {
-        updatePlan(editingPlanId, planUpdates);
-      }
+        innovatorId,
+        proposalFileUrl: proposalFileReference,
+      });
 
       setMode("list");
       resetForm();
       setSubmittedPlans(getInitialSubmittedPlansForCurrentUser());
-      setSubmitMessage(
-        isRevisionResubmissionPlan(selectedPlan)
-          ? "طرح اصلاح‌شده با موفقیت ارسال شد و دوباره وارد چرخه بررسی شد."
-          : "تغییرات طرح با موفقیت ذخیره شد.",
-      );
-      return;
+      setSubmitMessage("طرح شما با موفقیت ارسال شد.");
+    } catch (error) {
+      const errorMessage = error?.message || String(error || "خطای نامشخص");
+      setSubmitMessage(`آپلود فایل طرح انجام نشد: ${errorMessage}`);
+      window.alert(`آپلود فایل طرح انجام نشد.\nجزئیات خطا: ${errorMessage}`);
+    } finally {
+      setIsUploadingPlanFile(false);
     }
-
-    addPlan({
-      title: planTitle || "طرح جدید فناورانه",
-      callId: selectedCall.id,
-      field: selectedCall.field,
-      innovatorId,
-      proposalFileUrl: proposalFileName,
-    });
-
-    setMode("list");
-    resetForm();
-    setSubmittedPlans(getInitialSubmittedPlansForCurrentUser());
-    setSubmitMessage("طرح شما با موفقیت ارسال شد.");
   };
   return (
     <section className="submit-plan">
@@ -1891,6 +2000,9 @@ function SubmitPlanPanel() {
               <a
                 href={getDownloadHref(selectedPlan)}
                 download={selectedPlan.fileName}
+                onClick={(event) =>
+                  handleManagedFileLinkClick(event, selectedPlan.fileUrl)
+                }
               >
                 <DownloadIcon />
                 دانلود فایل
@@ -2249,7 +2361,7 @@ function SubmitPlanPanel() {
               </div>
 
               <div className="submit-plan__call-grid">
-                {CALL_OPTIONS.map((call) => (
+                {callOptions.map((call) => (
                   <button
                     type="button"
                     key={call.id}
@@ -2266,6 +2378,14 @@ function SubmitPlanPanel() {
                     <strong>ددلاین: {call.deadline}</strong>
                   </button>
                 ))}
+
+                {!callOptions.length && (
+                  <div className="submit-plan__empty-state">
+                    فراخوان منتشرشده‌ای برای انتخاب وجود ندارد. اگر کمیته
+                    فراخوان منتشر کرده است، صفحه را یک‌بار تازه‌سازی کنید یا
+                    دوباره وارد داشبورد شوید.
+                  </div>
+                )}
               </div>
 
               <div className="submit-plan__footer-actions">
@@ -2316,7 +2436,10 @@ function SubmitPlanPanel() {
                 <div className="submit-plan__current-file">
                   <div>
                     <span>فایل فعلی</span>
-                    <strong>{uploadedFile?.name || existingFileName}</strong>
+                    <strong>
+                      {uploadedFile?.name ||
+                        getManagedFileDisplayName(existingFileName)}
+                    </strong>
                   </div>
 
                   <button type="button" onClick={removeCurrentFile}>
@@ -2356,13 +2479,15 @@ function SubmitPlanPanel() {
                 <button
                   type="submit"
                   className={mode === "edit" ? "submit-plan__edit-submit" : ""}
-                  disabled={!hasFile}
+                  disabled={!hasFile || isUploadingPlanFile}
                 >
-                  {mode === "edit"
-                    ? isRevisionResubmissionPlan(selectedPlan)
-                      ? "ارسال مجدد طرح"
-                      : "ذخیره تغییرات"
-                    : "ارسال طرح"}
+                  {isUploadingPlanFile
+                    ? "در حال آپلود..."
+                    : mode === "edit"
+                      ? isRevisionResubmissionPlan(selectedPlan)
+                        ? "ارسال مجدد طرح"
+                        : "ذخیره تغییرات"
+                      : "ارسال طرح"}
                 </button>
               </div>
             </form>
@@ -2386,6 +2511,43 @@ function SitePublicationPanel() {
   const [form, setForm] = useState(() => getDefaultSitePublicationForm());
   const [panelMessage, setPanelMessage] = useState("");
   const descriptionEditorRef = useRef(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    hydrateDashboardDataForCurrentSession()
+      .then(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        const nextRequests = getInitialSitePublicationRequestsForCurrentUser();
+        setRequests(nextRequests);
+
+        setSelectedRequestId((currentRequestId) => {
+          if (
+            currentRequestId &&
+            nextRequests.some(
+              (request) => String(request.id) === String(currentRequestId),
+            )
+          ) {
+            return currentRequestId;
+          }
+
+          return null;
+        });
+      })
+      .catch((error) => {
+        console.warn(
+          "Site publication requests hydration failed:",
+          error?.message || error,
+        );
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const selectedRequest = requests.find(
     (request) => String(request.id) === String(selectedRequestId),
@@ -2457,9 +2619,9 @@ function SitePublicationPanel() {
       reports: [
         ...normalizeReportsForForm(currentForm.reports),
         {
-          ...DEFAULT_SITE_PUBLICATION_REPORT,
+          ...BLANK_SITE_PUBLICATION_REPORT,
           id: makeLocalId("report"),
-          title: `گزارش ${normalizeReportsForForm(currentForm.reports).length + 1}`,
+          title: "",
         },
       ],
     }));
@@ -2473,9 +2635,7 @@ function SitePublicationPanel() {
 
       return {
         ...currentForm,
-        reports: nextReports.length
-          ? nextReports
-          : [{ ...DEFAULT_SITE_PUBLICATION_REPORT }],
+        reports: nextReports,
       };
     });
   };
@@ -2532,9 +2692,16 @@ function SitePublicationPanel() {
     }
 
     try {
-      const compressedImage = await readImageAsCompressedDataUrl(file);
-      updateFormField("image", compressedImage);
-      setPanelMessage("تصویر شاخص بارگذاری شد.");
+      setPanelMessage("در حال ذخیره تصویر در Supabase Storage...");
+      const uploadedImage = await uploadImageFileToSiteMedia(file, {
+        folder: "successful-projects",
+        prefix: "project",
+        maxWidth: 1600,
+        maxHeight: 1100,
+        quality: 0.78,
+      });
+      updateFormField("image", uploadedImage.url);
+      setPanelMessage("تصویر شاخص در Storage ذخیره شد.");
     } catch (error) {
       setPanelMessage(error?.message || "بارگذاری تصویر انجام نشد.");
     }
@@ -2600,16 +2767,38 @@ function SitePublicationPanel() {
     return true;
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     if (!selectedRequest) {
       return;
     }
 
-    saveSitePublicationDraft(
+    setPanelMessage("در حال ذخیره پیش‌نویس در Supabase...");
+
+    const updatedRequest = saveSitePublicationDraft(
       selectedRequest.id,
       normalizeSitePublicationFormForSave(form),
     );
 
+    if (!updatedRequest) {
+      setPanelMessage(
+        "ذخیره پیش‌نویس انجام نشد. صفحه را refresh کنید و دوباره تلاش کنید.",
+      );
+      return;
+    }
+
+    const syncedRequest = await syncSitePublicationRequestNow(
+      updatedRequest,
+      "saveDraft",
+    );
+
+    if (!syncedRequest) {
+      setPanelMessage(
+        "پیش‌نویس محلی ذخیره شد، اما ارسال به Supabase انجام نشد. Console را بررسی کنید.",
+      );
+      return;
+    }
+
+    await hydrateDashboardDataForCurrentSession();
     refreshRequests("اطلاعات صفحه معرفی طرح به‌صورت پیش‌نویس ذخیره شد.");
   };
 
@@ -2630,7 +2819,7 @@ function SitePublicationPanel() {
     );
   };
 
-  const handleSubmitToCommittee = () => {
+  const handleSubmitToCommittee = async () => {
     if (!selectedRequest || !validateForm()) {
       return;
     }
@@ -2643,11 +2832,33 @@ function SitePublicationPanel() {
       return;
     }
 
-    submitSitePublicationDraft(
+    setPanelMessage("در حال ارسال اطلاعات برای کمیته...");
+
+    const updatedRequest = submitSitePublicationDraft(
       selectedRequest.id,
       normalizeSitePublicationFormForSave(form),
     );
 
+    if (!updatedRequest) {
+      setPanelMessage(
+        "ارسال انجام نشد. صفحه را refresh کنید و دوباره تلاش کنید.",
+      );
+      return;
+    }
+
+    const syncedRequest = await syncSitePublicationRequestNow(
+      updatedRequest,
+      "submit",
+    );
+
+    if (!syncedRequest) {
+      setPanelMessage(
+        "اطلاعات محلی ثبت شد، اما ارسال به Supabase انجام نشد. Console را بررسی کنید.",
+      );
+      return;
+    }
+
+    await hydrateDashboardDataForCurrentSession();
     refreshRequests("اطلاعات صفحه معرفی طرح برای بررسی کمیته ارسال شد.");
     setMode("select");
   };
@@ -3322,37 +3533,68 @@ function SelectedPlansPanel() {
 
     updateTask(planId, taskId, {
       fileName: file.name,
+      pendingFile: file,
     });
   };
 
   const removeTaskFile = (planId, taskId) => {
     updateTask(planId, taskId, {
       fileName: "",
+      fileUrl: "",
+      pendingFile: null,
     });
   };
 
-  const saveTaskResponse = (planId, taskId) => {
+  const saveTaskResponse = async (planId, taskId) => {
     const task = (projectTasks[planId] || []).find(
       (item) => item.id === taskId,
     );
 
-    submitTaskResponse(taskId, {
-      description: task?.description || "",
-      fileName: task?.fileName || "",
-    });
+    setTaskSubmitMessage("در حال آپلود فایل پاسخ...");
 
-    updateTask(planId, taskId, {
-      status: "ارسال شده",
-      isNew: false,
-    });
+    try {
+      let taskFileReference = task?.fileUrl || "";
+      let taskFileName = task?.fileName || "";
 
-    setTaskSubmitMessage("پاسخ شما با موفقیت برای مدیر ارسال شد.");
+      if (task?.pendingFile instanceof File) {
+        const uploadedTaskFile = await uploadTaskResponseFile(
+          task.pendingFile,
+          {
+            prefix: task.title || "task-response",
+          },
+        );
 
-    window.setTimeout(() => {
-      reloadProjectTasks();
-      setTaskSubmitMessage("");
-      setSelectedTaskId(null);
-    }, 1100);
+        taskFileReference = uploadedTaskFile.url;
+        taskFileName = uploadedTaskFile.fileName;
+      }
+
+      submitTaskResponse(taskId, {
+        description: task?.description || "",
+        fileName: taskFileName,
+        fileUrl: taskFileReference,
+        innovatorFileUrl: taskFileReference,
+      });
+
+      updateTask(planId, taskId, {
+        status: "ارسال شده",
+        isNew: false,
+        fileName: taskFileName,
+        fileUrl: taskFileReference,
+        pendingFile: null,
+      });
+
+      setTaskSubmitMessage("پاسخ شما با موفقیت برای مدیر ارسال شد.");
+
+      window.setTimeout(() => {
+        reloadProjectTasks();
+        setTaskSubmitMessage("");
+        setSelectedTaskId(null);
+      }, 1100);
+    } catch (error) {
+      const errorMessage = error?.message || String(error || "خطای نامشخص");
+      setTaskSubmitMessage(`آپلود فایل پاسخ انجام نشد: ${errorMessage}`);
+      window.alert(`آپلود فایل پاسخ انجام نشد.\nجزئیات خطا: ${errorMessage}`);
+    }
   };
 
   if (selectedPlan && selectedTask) {
@@ -3548,6 +3790,9 @@ function SelectedPlansPanel() {
               <a
                 href={getDownloadHref(selectedPlan)}
                 download={selectedPlan.fileName}
+                onClick={(event) =>
+                  handleManagedFileLinkClick(event, selectedPlan.fileUrl)
+                }
               >
                 <DownloadIcon />
                 دانلود فایل

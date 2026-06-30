@@ -45,6 +45,7 @@ function ActivitiesCarousel({
   const [activePage, setActivePage] = useState(0);
 
   const pageCount = pages.length;
+  const shouldShowViewAll = Boolean(viewAllPath);
 
   const showNextPage = () => {
     setActivePage((currentPage) => {
@@ -73,6 +74,10 @@ function ActivitiesCarousel({
       window.clearTimeout(timer);
     };
   }, [activePage, pageCount]);
+
+  useEffect(() => {
+    setActivePage(0);
+  }, [items]);
 
   if (pageCount === 0) {
     return null;
@@ -152,12 +157,14 @@ function ActivitiesCarousel({
         </div>
       </div>
 
-      <div className="activity-carousel__footer">
-        <Link to={viewAllPath} className="activity-carousel__view-all">
-          {viewAllLabel}
-          <span aria-hidden="true">←</span>
-        </Link>
-      </div>
+      {shouldShowViewAll && (
+        <div className="activity-carousel__footer">
+          <Link to={viewAllPath} className="activity-carousel__view-all">
+            {viewAllLabel}
+            <span aria-hidden="true">←</span>
+          </Link>
+        </div>
+      )}
     </section>
   );
 }

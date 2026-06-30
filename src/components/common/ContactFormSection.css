@@ -86,6 +86,16 @@
   padding: 10px 20px;
 }
 
+.contact-form__field input[type="tel"] {
+  direction: rtl;
+  text-align: right;
+}
+
+.contact-form__field input[type="tel"]::placeholder {
+  direction: rtl;
+  text-align: right;
+}
+
 .contact-form__field textarea {
   min-height: 205px;
   padding: 18px 20px;

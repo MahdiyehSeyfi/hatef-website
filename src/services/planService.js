@@ -5,97 +5,15 @@ import {
 } from "../constants/statuses";
 import { addNotificationOnce } from "./notificationService";
 
+import {
+  syncPlanFinalDecisionToSupabase,
+  syncPlanResultsPublicationToSupabase,
+} from "./supabasePlanWriteService";
+
 const PLANS_STORAGE_KEY = "hatef_plans";
 const REVIEWS_STORAGE_KEY = "hatef_reviews";
 const REVIEWER_ACTIVITY_STORAGE_KEY = "hatef_reviewer_activity";
 const COMMITTEE_WORKSPACE_STORAGE_KEY = "hatef_committee_workspace";
-
-const LEGACY_PLAN_STORAGE_KEYS = [
-  "plans",
-  "submitted_plans",
-  "hatef_submitted_plans",
-];
-
-const DEFAULT_PLANS = [
-  {
-    id: "plan-001",
-    trackingCode: "HTF-1405-001",
-    title: "سامانه هوشمند پایش مصرف انرژی",
-    field: "انرژی و پایداری",
-    callId: "call-001",
-    innovatorId: "user-innovator-1",
-    status: PLAN_STATUS.SUBMITTED,
-    currentReviewStatus: PLAN_REVIEW_STATUS.PENDING,
-    finalStatus: PLAN_FINAL_STATUS.NONE,
-    submittedAt: "۱۴۰۵/۰۳/۱۰",
-    updatedAt: "۱۴۰۵/۰۳/۱۰",
-    proposalFileUrl: "energy-monitoring-proposal.pdf",
-    committeeFeedback: "",
-    committeeReviewRecommendation: "",
-    committeeReviewScore: "",
-    finalDecisionNote: "",
-    finalStatusDate: "",
-    revisionRound: 0,
-    publishForBusiness: false,
-    businessIntroducedAt: "",
-    businessOpportunityPublished: false,
-    businessPublishedAt: "",
-    businessOpportunityDetails: {},
-    resultsPublished: false,
-  },
-  {
-    id: "plan-002",
-    trackingCode: "HTF-1405-002",
-    title: "پلتفرم تحلیل داده‌های سلامت دیجیتال",
-    field: "سلامت دیجیتال",
-    callId: "call-001",
-    innovatorId: "user-innovator-1",
-    status: PLAN_STATUS.SUBMITTED,
-    currentReviewStatus: PLAN_REVIEW_STATUS.PENDING,
-    finalStatus: PLAN_FINAL_STATUS.NONE,
-    submittedAt: "۱۴۰۵/۰۳/۱۲",
-    updatedAt: "۱۴۰۵/۰۳/۱۲",
-    proposalFileUrl: "digital-health-data-platform.pdf",
-    committeeFeedback: "",
-    committeeReviewRecommendation: "",
-    committeeReviewScore: "",
-    finalDecisionNote: "",
-    finalStatusDate: "",
-    revisionRound: 0,
-    publishForBusiness: false,
-    businessIntroducedAt: "",
-    businessOpportunityPublished: false,
-    businessPublishedAt: "",
-    businessOpportunityDetails: {},
-    resultsPublished: false,
-  },
-  {
-    id: "plan-003",
-    trackingCode: "HTF-1405-003",
-    title: "مدل تجاری‌سازی دستیار هوشمند آموزشی",
-    field: "تجاری‌سازی",
-    callId: "call-001",
-    innovatorId: "user-innovator-1",
-    status: PLAN_STATUS.UNDER_REVIEW,
-    currentReviewStatus: PLAN_REVIEW_STATUS.PENDING,
-    finalStatus: PLAN_FINAL_STATUS.NONE,
-    submittedAt: "۱۴۰۵/۰۳/۱۳",
-    updatedAt: "۱۴۰۵/۰۳/۱۳",
-    proposalFileUrl: "ai-education-commercialization.pdf",
-    committeeFeedback: "",
-    committeeReviewRecommendation: "",
-    committeeReviewScore: "",
-    finalDecisionNote: "",
-    finalStatusDate: "",
-    revisionRound: 0,
-    publishForBusiness: false,
-    businessIntroducedAt: "",
-    businessOpportunityPublished: false,
-    businessPublishedAt: "",
-    businessOpportunityDetails: {},
-    resultsPublished: false,
-  },
-];
 
 let memoryPlans = [];
 
@@ -105,12 +23,16 @@ function canUseStorage() {
   );
 }
 
-function makeId(prefix = "plan") {
+function makeId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return `${prefix}-${crypto.randomUUID()}`;
+    return crypto.randomUUID();
   }
 
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = char === "x" ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
 }
 
 function toEnglishDigits(value) {
@@ -184,9 +106,14 @@ function normalizeBusinessOpportunityDetails(details = {}) {
   };
 }
 
-function createTrackingCode(plans) {
-  const orderNumber = String(plans.length + 1).padStart(3, "0");
-  return `HTF-1405-${orderNumber}`;
+function createTrackingCode() {
+  const timestampPart = Date.now().toString(36).toUpperCase();
+  const randomPart = Math.floor(Math.random() * 1296)
+    .toString(36)
+    .toUpperCase()
+    .padStart(2, "0");
+
+  return `HTF-1405-${timestampPart}-${randomPart}`;
 }
 
 function isEmptyFinalStatus(finalStatus) {
@@ -438,7 +365,7 @@ function notifyBusinessPartnersNewOpportunity(plan) {
   });
 }
 
-function normalizePlan(plan) {
+function normalizePlan(plan = {}) {
   const today = getTodayPersianDate();
 
   return {
@@ -449,8 +376,8 @@ function normalizePlan(plan) {
       `HTF-1405-${String(Date.now()).slice(-3)}`,
     title: plan.title || "طرح فناورانه",
     field: normalizeField(plan.field),
-    callId: plan.callId || plan.call || "call-001",
-    innovatorId: plan.innovatorId || plan.userId || "user-innovator-1",
+    callId: plan.callId || plan.call || "",
+    innovatorId: plan.innovatorId || plan.userId || "",
     status: plan.status || PLAN_STATUS.SUBMITTED,
     currentReviewStatus: plan.currentReviewStatus || PLAN_REVIEW_STATUS.PENDING,
     finalStatus: plan.finalStatus || PLAN_FINAL_STATUS.NONE,
@@ -519,30 +446,10 @@ function writePlansToStorage(plans) {
 
 function readPlansFromStorage() {
   if (!canUseStorage()) {
-    if (!memoryPlans.length) {
-      memoryPlans = normalizePlans(DEFAULT_PLANS);
-    }
-
     return memoryPlans;
   }
 
-  const mainPlans = readPlansFromStorageKey(PLANS_STORAGE_KEY);
-
-  if (mainPlans.length) {
-    return mainPlans;
-  }
-
-  for (const legacyKey of LEGACY_PLAN_STORAGE_KEYS) {
-    const legacyPlans = readPlansFromStorageKey(legacyKey);
-
-    if (legacyPlans.length) {
-      writePlansToStorage(legacyPlans);
-      return legacyPlans;
-    }
-  }
-
-  writePlansToStorage(DEFAULT_PLANS);
-  return normalizePlans(DEFAULT_PLANS);
+  return readPlansFromStorageKey(PLANS_STORAGE_KEY);
 }
 
 function sortPlansByNewest(plans) {
@@ -598,14 +505,14 @@ export function getPlansByCallId(callId) {
   return getPlans().filter((plan) => String(plan.callId) === String(callId));
 }
 
-export function addPlan(planData) {
+export function addPlan(planData = {}) {
   const plans = getPlans();
   const today = getTodayPersianDate();
 
   const newPlan = normalizePlan({
     ...planData,
     id: planData.id || makeId(),
-    trackingCode: planData.trackingCode || createTrackingCode(plans),
+    trackingCode: planData.trackingCode || createTrackingCode(),
     status: planData.status || PLAN_STATUS.SUBMITTED,
     currentReviewStatus:
       planData.currentReviewStatus || PLAN_REVIEW_STATUS.PENDING,
@@ -831,6 +738,13 @@ export function savePlanFinalDecision(
 
   if (updatedPlan) {
     notifyInnovatorFinalDecision(updatedPlan);
+
+    syncPlanFinalDecisionToSupabase({
+      planId: updatedPlan.id,
+      finalStatus: updatedPlan.finalStatus,
+      finalDecisionNote: updatedPlan.finalDecisionNote,
+      resultsPublished: updatedPlan.resultsPublished,
+    });
   }
 
   return updatedPlan;
@@ -864,6 +778,12 @@ export function publishPlanResults(planIds = []) {
   });
 
   writePlansToStorage(updatedPlans);
+
+  const publishedPlanIds = updatedPlans
+    .filter((plan) => !isEmptyFinalStatus(plan.finalStatus))
+    .map((plan) => plan.id);
+
+  syncPlanResultsPublicationToSupabase(publishedPlanIds);
 
   plansToNotify.forEach((plan) => {
     const publishedPlan = {
@@ -998,8 +918,8 @@ export function clearPlans() {
 }
 
 export function resetPlans() {
-  writePlansToStorage(DEFAULT_PLANS);
-  return normalizePlans(DEFAULT_PLANS);
+  writePlansToStorage([]);
+  return [];
 }
 
 export { PLANS_STORAGE_KEY };

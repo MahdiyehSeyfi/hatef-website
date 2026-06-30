@@ -16,6 +16,13 @@ const PREVIEW_ALLOWED_ROLES = new Set([
 const PUBLIC_ACTIVITY_PREVIEW_DRAFTS_STORAGE_KEY =
   "hatef_public_activity_preview_drafts";
 
+const ACTIVITY_STATUS_LABELS = {
+  registering: "ثبت‌نام فعال",
+  ongoing: "در حال برگزاری",
+  past: "برگزار شده",
+  "coming-soon": "به‌زودی",
+};
+
 function canUseStorage() {
   return (
     typeof window !== "undefined" && typeof window.localStorage !== "undefined"
@@ -76,19 +83,44 @@ function normalizeRole(role) {
 function normalizeActivityStatus(status) {
   const normalizedStatus = String(status || "").trim();
 
+  if (
+    normalizedStatus === "registering" ||
+    normalizedStatus === "ثبت‌نام فعال" ||
+    normalizedStatus === "ثبت نام فعال" ||
+    normalizedStatus === "در حال ثبت‌نام" ||
+    normalizedStatus === "در حال ثبت نام"
+  ) {
+    return "registering";
+  }
+
   if (normalizedStatus === "در حال برگزاری" || normalizedStatus === "ongoing") {
     return "ongoing";
   }
 
   if (
     normalizedStatus === "برگزار شده" ||
+    normalizedStatus === "برگزارشده" ||
     normalizedStatus === "پایان یافته" ||
+    normalizedStatus === "پایان‌یافته" ||
     normalizedStatus === "past"
   ) {
     return "past";
   }
 
+  if (
+    normalizedStatus === "به‌زودی" ||
+    normalizedStatus === "به زودی" ||
+    normalizedStatus === "coming-soon" ||
+    normalizedStatus === "comingSoon"
+  ) {
+    return "coming-soon";
+  }
+
   return "registering";
+}
+
+function getActivityStatusLabel(status) {
+  return ACTIVITY_STATUS_LABELS[status] || ACTIVITY_STATUS_LABELS.registering;
 }
 
 function normalizeString(value, fallback = "") {
@@ -154,7 +186,29 @@ function getActivityCapacity(activity) {
   return capacity || "";
 }
 
-function mapInstructorCourseToPublicItem(activity) {
+function getCoursePath(activity) {
+  return activity.path || `/courses/${activity.slug || activity.id}`;
+}
+
+function getEventPath(activity) {
+  return activity.path || `/events/${activity.slug || activity.id}`;
+}
+
+function getCourseStartDate(activity) {
+  return normalizeString(
+    activity.startDate || activity.registrationDate,
+    "زمان‌بندی اعلام نشده",
+  );
+}
+
+function getEventStartDate(activity) {
+  return normalizeString(
+    activity.eventDate || activity.startDate || activity.date,
+    "زمان‌بندی اعلام نشده",
+  );
+}
+
+function normalizeCourseItem(activity) {
   const status = normalizeActivityStatus(
     activity.secondaryStatus || activity.publicStatus || activity.status,
   );
@@ -166,7 +220,11 @@ function mapInstructorCourseToPublicItem(activity) {
     title: normalizeString(activity.title, "دوره آموزشی هاتف"),
     image: getActivityImage(activity),
     status,
-    startDate: normalizeString(activity.startDate, activity.createdAt || ""),
+    statusLabel: activity.statusLabel || getActivityStatusLabel(status),
+    path: getCoursePath(activity),
+    firstMetaLabel: activity.firstMetaLabel || "شروع از:",
+    buttonLabel: activity.buttonLabel || "مشاهده دوره",
+    startDate: getCourseStartDate(activity),
     startTime: activity.startTime || "",
     endDate: activity.endDate || "",
     endTime: activity.endTime || "",
@@ -192,14 +250,22 @@ function mapInstructorCourseToPublicItem(activity) {
     instructors: normalizeList(activity.instructors, []),
     benefits: normalizeList(activity.benefits, []),
     faqs: normalizeList(activity.faqs, []),
-    source: "instructor",
   };
 }
 
-function mapInstructorEventToPublicItem(activity) {
+function normalizeEventItem(activity) {
   const status = normalizeActivityStatus(
     activity.secondaryStatus || activity.publicStatus || activity.status,
   );
+
+  const eventDate = getEventStartDate(activity);
+  const presenter =
+    activity.presenter ||
+    activity.presenterName ||
+    activity.secretaryName ||
+    activity.instructorName ||
+    activity.instructor ||
+    "ارائه‌دهنده رویداد";
 
   return {
     ...activity,
@@ -208,26 +274,17 @@ function mapInstructorEventToPublicItem(activity) {
     title: normalizeString(activity.title, "رویداد هاتف"),
     image: getActivityImage(activity),
     status,
-    startDate: normalizeString(
-      activity.eventDate || activity.startDate,
-      activity.createdAt || "",
-    ),
-    eventDate: normalizeString(
-      activity.eventDate || activity.startDate,
-      activity.createdAt || "",
-    ),
+    statusLabel: activity.statusLabel || getActivityStatusLabel(status),
+    path: getEventPath(activity),
+    firstMetaLabel: activity.firstMetaLabel || "زمان:",
+    buttonLabel: activity.buttonLabel || "مشاهده رویداد",
+    startDate: eventDate,
+    eventDate,
     startTime: activity.startTime || "",
     endTime: activity.endTime || "",
-    instructor:
-      activity.secretaryName ||
-      activity.instructorName ||
-      activity.instructor ||
-      "دبیر رویداد هاتف",
-    secretaryName:
-      activity.secretaryName ||
-      activity.instructorName ||
-      activity.instructor ||
-      "دبیر رویداد هاتف",
+    presenter,
+    instructor: presenter,
+    secretaryName: presenter,
     organizer: activity.organizer || "برنامه هاتف دانشگاه تهران",
     duration: activity.duration || "تعیین نشده",
     format: activity.format || "تعیین نشده",
@@ -241,6 +298,19 @@ function mapInstructorEventToPublicItem(activity) {
     agenda: normalizeList(activity.agenda, []),
     speakers: normalizeList(activity.speakers, []),
     faqs: normalizeList(activity.faqs, []),
+  };
+}
+
+function mapInstructorCourseToPublicItem(activity) {
+  return {
+    ...normalizeCourseItem(activity),
+    source: "instructor",
+  };
+}
+
+function mapInstructorEventToPublicItem(activity) {
+  return {
+    ...normalizeEventItem(activity),
     source: "instructor",
   };
 }
@@ -286,15 +356,25 @@ function getInstructorEventItems(options = {}) {
 }
 
 export function getPublicCourseItems(options = {}) {
-  return [...getInstructorCourseItems(options), ...courseItems];
+  return [
+    ...getInstructorCourseItems(options),
+    ...courseItems.map((activity) => normalizeCourseItem(activity)),
+  ];
 }
 
 export function getPublicEventItems(options = {}) {
-  return [...getInstructorEventItems(options), ...eventItems];
+  return [
+    ...getInstructorEventItems(options),
+    ...eventItems.map((activity) => normalizeEventItem(activity)),
+  ];
 }
 
 export function getPublicActivitiesByStatus(items, status) {
-  return items.filter((item) => item.status === status);
+  const normalizedStatus = normalizeActivityStatus(status);
+
+  return items.filter((item) => {
+    return normalizeActivityStatus(item.status) === normalizedStatus;
+  });
 }
 
 export function getPublicCourseById(courseId, options = {}) {

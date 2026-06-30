@@ -1,6 +1,10 @@
-import { getCurrentUser, getUsers } from "./authService";
+import { getCurrentUser } from "./authService";
 import { addNotification } from "./notificationService";
 import { getPlans } from "./planService";
+import {
+  syncBusinessCollaborationRequestToSupabase,
+  syncBusinessCollaborationRequestUpdateToSupabase,
+} from "./supabaseBusinessRequestService";
 
 const BUSINESS_PARTNERS_STORAGE_KEY = "hatef_business_partners";
 const BUSINESS_OPPORTUNITIES_STORAGE_KEY = "hatef_business_opportunities";
@@ -12,65 +16,6 @@ const BUSINESS_REQUEST_STATUS = {
   NEEDS_INFO: "نیازمند تکمیل اطلاعات",
   ANSWERED: "پاسخ داده شده",
 };
-
-const DEFAULT_BUSINESS_PARTNERS = [
-  {
-    id: "business-1",
-    userId: "business-1",
-    name: "مهدی رضایی",
-    role: "همکار تجاری",
-    organization: "شرکت توسعه بازار نوآوران",
-    field: "توسعه بازار و فروش سازمانی",
-    email: "mehdi.rezaei@business.example.com",
-    phone: "09121234567",
-    joinedAt: "۱۴۰۴/۰۸/۱۸",
-    viewedOpportunities: 18,
-    favoriteOpportunities: 5,
-    activeCollaborations: 2,
-  },
-  {
-    id: "business-2",
-    userId: "business-2",
-    name: "سارا احمدی",
-    role: "همکار تجاری",
-    organization: "هلدینگ سرمایه‌گذاری فناوری شرق",
-    field: "سرمایه‌گذاری مشترک و پایلوت صنعتی",
-    email: "sara.ahmadi@business.example.com",
-    phone: "09124567890",
-    joinedAt: "۱۴۰۴/۰۹/۰۵",
-    viewedOpportunities: 12,
-    favoriteOpportunities: 3,
-    activeCollaborations: 1,
-  },
-  {
-    id: "business-3",
-    userId: "business-3",
-    name: "علی کریمی",
-    role: "همکار تجاری",
-    organization: "شرکت راهکارهای هوشمند صنعت",
-    field: "هوش مصنوعی صنعتی و B2B",
-    email: "ali.karimi@business.example.com",
-    phone: "09127894561",
-    joinedAt: "۱۴۰۴/۱۰/۱۲",
-    viewedOpportunities: 24,
-    favoriteOpportunities: 7,
-    activeCollaborations: 3,
-  },
-  {
-    id: "business-4",
-    userId: "business-4",
-    name: "الهام محمدی",
-    role: "همکار تجاری",
-    organization: "گروه مشاوره تجاری‌سازی سلامت",
-    field: "سلامت دیجیتال و توسعه بازار",
-    email: "elham.mohammadi@business.example.com",
-    phone: "09123334455",
-    joinedAt: "۱۴۰۵/۰۱/۲۰",
-    viewedOpportunities: 9,
-    favoriteOpportunities: 2,
-    activeCollaborations: 0,
-  },
-];
 
 let memoryPartners = [];
 let memoryOpportunities = [];
@@ -126,36 +71,37 @@ function safeParseJson(value, fallbackValue) {
   }
 }
 
-function readCollection(storageKey, defaultItems, memoryItems) {
+function readCollection(storageKey, memoryItems) {
   if (!canUseStorage()) {
-    return memoryItems.length ? memoryItems : defaultItems;
+    return Array.isArray(memoryItems) ? memoryItems : [];
   }
 
   const storedValue = window.localStorage.getItem(storageKey);
 
   if (!storedValue) {
-    window.localStorage.setItem(storageKey, JSON.stringify(defaultItems));
-    return defaultItems;
+    return [];
   }
 
-  const parsedValue = safeParseJson(storedValue, defaultItems);
+  const parsedValue = safeParseJson(storedValue, []);
 
   if (!Array.isArray(parsedValue)) {
-    window.localStorage.setItem(storageKey, JSON.stringify(defaultItems));
-    return defaultItems;
+    window.localStorage.setItem(storageKey, JSON.stringify([]));
+    return [];
   }
 
   return parsedValue;
 }
 
 function writeCollection(storageKey, items, memorySetter) {
+  const normalizedItems = Array.isArray(items) ? items : [];
+
   if (!canUseStorage()) {
-    memorySetter(items);
-    return items;
+    memorySetter(normalizedItems);
+    return normalizedItems;
   }
 
-  window.localStorage.setItem(storageKey, JSON.stringify(items));
-  return items;
+  window.localStorage.setItem(storageKey, JSON.stringify(normalizedItems));
+  return normalizedItems;
 }
 
 function normalizeArray(value, fallback = []) {
@@ -179,18 +125,6 @@ function getUserDisplayName(user) {
     `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
     user?.name ||
     "همکار تجاری"
-  );
-}
-
-function isBusinessUser(user) {
-  return (
-    user?.role === "business" ||
-    user?.role === "business-collaboration" ||
-    user?.role === "business_collaboration" ||
-    user?.role === "businessPartner" ||
-    user?.role === "commercial" ||
-    user?.role === "همکار تجاری" ||
-    user?.role === "همکاری تجاری"
   );
 }
 
@@ -232,7 +166,7 @@ function isNeedsInfoBusinessStatus(status) {
   ].includes(status);
 }
 
-function normalizePartner(partner) {
+function normalizePartner(partner = {}) {
   return {
     id: partner.id || partner.userId || makeId("business"),
     userId: partner.userId || partner.id || "",
@@ -250,61 +184,46 @@ function normalizePartner(partner) {
   };
 }
 
-function normalizeOpportunity(opportunity) {
-  const field = opportunity.field || opportunity.category || "همکاری تجاری";
-  const finalStatusLabel =
-    opportunity.finalStatusLabel ||
-    getFinalStatusLabel(opportunity.finalStatus);
-  const publishedAt =
-    opportunity.publishedAt || opportunity.date || getTodayPersianDate();
-  const summary =
-    opportunity.summary ||
-    opportunity.description ||
-    "این طرح پس از تکمیل اطلاعات توسط فناور، برای همکاری تجاری منتشر شده است.";
+function normalizeOpportunity(opportunity = {}) {
+  const field = opportunity.field || opportunity.category || "";
+  const category = opportunity.category || opportunity.field || "";
+  const summary = opportunity.summary || opportunity.description || "";
 
   return {
     id: opportunity.id || opportunity.planId || makeId("business-opportunity"),
     planId: opportunity.planId || opportunity.id || "",
     title: opportunity.title || "موقعیت همکاری تجاری",
     field,
-    category: opportunity.category || field,
-    collaborationType: opportunity.collaborationType || "همکاری تجاری",
+    category,
+    collaborationType: opportunity.collaborationType || "",
     stage: opportunity.stage || "منتشر شده برای همکاری تجاری",
-    status: opportunity.status || "جدید",
-    owner: opportunity.owner || "دبیرخانه هاتف",
+    status: opportunity.status || "منتشر شده",
+    owner: opportunity.owner || "",
     finalStatus: opportunity.finalStatus || "",
-    finalStatusLabel,
-    publishedAt,
-    date: publishedAt,
+    finalStatusLabel:
+      opportunity.finalStatusLabel ||
+      getFinalStatusLabel(opportunity.finalStatus),
+    publishedAt: opportunity.publishedAt || opportunity.date || "",
+    date: opportunity.date || opportunity.publishedAt || "",
     trackingCode: opportunity.trackingCode || "",
-    location: opportunity.location || "قابل مذاکره",
-    estimatedSupport: opportunity.estimatedSupport || "قابل مذاکره",
-    duration: opportunity.duration || "براساس توافق طرفین",
+    location: opportunity.location || "",
+    estimatedSupport: opportunity.estimatedSupport || "",
+    duration: opportunity.duration || "",
     summary,
-    description: opportunity.description || summary,
-    challenge:
-      opportunity.challenge ||
-      "چالش اصلی این موقعیت، تبدیل ظرفیت فناورانه طرح به یک مسیر همکاری تجاری قابل اجرا است.",
-    solution:
-      opportunity.solution ||
-      "راهکار پیشنهادی، مذاکره با همکار تجاری، تعریف مدل همکاری و شروع پایلوت یا توسعه بازار است.",
-    businessValue:
-      opportunity.businessValue ||
-      "این موقعیت می‌تواند مسیر توسعه بازار، جذب شریک تجاری، اجرای پایلوت یا تجاری‌سازی طرح را فعال کند.",
-    requirements: normalizeArray(opportunity.requirements, [
-      "بررسی اولیه طرح و مدل همکاری",
-      "اعلام ظرفیت همکاری توسط همکار تجاری",
-      "مذاکره با دبیرخانه برای تعیین مسیر اجرا",
-    ]),
-    tags: normalizeArray(opportunity.tags, [
-      field,
-      finalStatusLabel,
-      "منتشرشده توسط فناور",
-    ]),
+    description: opportunity.description || opportunity.summary || "",
+    descriptionHtml: opportunity.descriptionHtml || "",
+    challenge: opportunity.challenge || "",
+    solution: opportunity.solution || "",
+    businessValue: opportunity.businessValue || "",
+    collaborationReadiness: opportunity.collaborationReadiness || "",
+    commercializationCapacity: opportunity.commercializationCapacity || "",
+    requirements: normalizeArray(opportunity.requirements, []),
+    tags: normalizeArray(opportunity.tags, []),
+    reports: Array.isArray(opportunity.reports) ? opportunity.reports : [],
   };
 }
 
-function normalizeRequest(request) {
+function normalizeRequest(request = {}) {
   const normalizedStatus =
     request.status === "پاسخ نهایی داده شده"
       ? BUSINESS_REQUEST_STATUS.ANSWERED
@@ -357,62 +276,41 @@ function normalizeRequests(requests) {
     : [];
 }
 
-function mapPlanToBusinessOpportunity(plan) {
+function mapPlanToBusinessOpportunity(plan = {}) {
   const details = plan.businessOpportunityDetails || {};
-  const finalStatusLabel = getFinalStatusLabel(plan.finalStatus);
-  const field =
-    details.field || details.category || plan.field || "همکاری تجاری";
-  const publishedAt =
-    plan.businessPublishedAt || plan.finalStatusDate || getTodayPersianDate();
-  const summary =
-    details.summary ||
-    details.description ||
-    plan.finalDecisionNote ||
-    plan.committeeFeedback ||
-    "این طرح پس از تکمیل اطلاعات توسط فناور، برای همکاری تجاری منتشر شده است.";
+  const field = details.field || details.category || plan.field || "";
+  const summary = details.summary || details.description || "";
+  const publishedAt = plan.businessPublishedAt || "";
 
   return normalizeOpportunity({
     id: plan.id,
     planId: plan.id,
     title: details.title || plan.title,
     field,
-    category: details.category || field,
-    collaborationType:
-      details.collaborationType || "همکاری تجاری روی طرح منتشرشده",
+    category: details.category || details.field || field,
+    collaborationType: details.collaborationType || "",
     stage: "منتشر شده برای همکاری تجاری",
-    status: "جدید",
-    owner: "دبیرخانه هاتف",
+    status: "منتشر شده",
+    owner: details.owner || "دبیرخانه هاتف",
     finalStatus: plan.finalStatus,
-    finalStatusLabel,
+    finalStatusLabel: getFinalStatusLabel(plan.finalStatus),
     publishedAt,
     date: publishedAt,
     trackingCode: plan.trackingCode || "",
-    location: details.location || "قابل مذاکره",
-    estimatedSupport: details.estimatedSupport || "قابل مذاکره",
-    duration: details.duration || "براساس توافق طرفین",
+    location: details.location || "",
+    estimatedSupport: details.estimatedSupport || "",
+    duration: details.duration || "",
     summary,
-    description: details.description || summary,
-    challenge:
-      details.challenge ||
-      "چالش اصلی این موقعیت، بررسی ظرفیت همکاری تجاری و تبدیل خروجی طرح به مسیر اجرا یا بازار است.",
-    solution:
-      details.solution ||
-      "همکار تجاری می‌تواند برای بررسی مدل همکاری، اجرای پایلوت، توسعه بازار یا مشارکت تجاری درخواست ثبت کند.",
-    businessValue:
-      details.businessValue ||
-      "این موقعیت به دلیل عبور از مرحله تعیین وضعیت نهایی کمیته و تکمیل اطلاعات توسط فناور، آماده بررسی تجاری است.",
-    requirements:
-      details.requirements && details.requirements.length
-        ? details.requirements
-        : [
-            "بررسی خلاصه طرح و وضعیت نهایی کمیته",
-            "اعلام علاقه‌مندی و ظرفیت همکاری",
-            "ثبت درخواست همکاری برای شروع پیگیری دبیرخانه",
-          ],
-    tags:
-      details.tags && details.tags.length
-        ? details.tags
-        : [field, finalStatusLabel, "طرح منتشرشده"],
+    description: details.description || details.summary || "",
+    descriptionHtml: details.descriptionHtml || "",
+    challenge: details.challenge || "",
+    solution: details.solution || "",
+    businessValue: details.businessValue || "",
+    collaborationReadiness: details.collaborationReadiness || "",
+    commercializationCapacity: details.commercializationCapacity || "",
+    requirements: details.requirements || [],
+    tags: details.tags || [],
+    reports: details.reports || [],
   });
 }
 
@@ -516,11 +414,7 @@ function notifyCommitteeRequestResubmitted(request) {
 
 export function getBusinessPartners() {
   return normalizePartners(
-    readCollection(
-      BUSINESS_PARTNERS_STORAGE_KEY,
-      DEFAULT_BUSINESS_PARTNERS,
-      memoryPartners,
-    ),
+    readCollection(BUSINESS_PARTNERS_STORAGE_KEY, memoryPartners),
   );
 }
 
@@ -554,7 +448,7 @@ export function setBusinessOpportunityOverviews(opportunities) {
 
 export function getBusinessCollaborationRequests() {
   return normalizeRequests(
-    readCollection(BUSINESS_REQUESTS_STORAGE_KEY, [], memoryRequests),
+    readCollection(BUSINESS_REQUESTS_STORAGE_KEY, memoryRequests),
   );
 }
 
@@ -635,17 +529,11 @@ export function createOrUpdateBusinessPartnerFromUser(user) {
 export function getCurrentBusinessPartner() {
   const currentUser = getCurrentUser?.();
 
-  if (currentUser) {
-    return createOrUpdateBusinessPartnerFromUser(currentUser);
+  if (!currentUser) {
+    return null;
   }
 
-  const businessUser = getUsers?.().find(isBusinessUser);
-
-  if (businessUser) {
-    return createOrUpdateBusinessPartnerFromUser(businessUser);
-  }
-
-  return getBusinessPartners()[0] || null;
+  return createOrUpdateBusinessPartnerFromUser(currentUser);
 }
 
 export function getBusinessPartnerProfiles() {
@@ -764,7 +652,7 @@ export function getBusinessCollaborationRequestStatsForInnovator(innovatorId) {
     .filter((item) => item.total > 0);
 }
 
-export function addBusinessCollaborationRequest(requestData) {
+export function addBusinessCollaborationRequest(requestData = {}) {
   const partner =
     requestData.partnerId || requestData.partnerUserId
       ? null
@@ -818,6 +706,7 @@ export function addBusinessCollaborationRequest(requestData) {
   });
 
   notifyInnovatorNewBusinessCollaborationRequest(newRequest);
+  syncBusinessCollaborationRequestToSupabase(newRequest);
 
   return newRequest;
 }
@@ -841,6 +730,10 @@ export function updateBusinessCollaborationRequest(requestId, updates = {}) {
   });
 
   setBusinessCollaborationRequests(updatedRequests);
+
+  if (updatedRequest) {
+    syncBusinessCollaborationRequestUpdateToSupabase(updatedRequest);
+  }
 
   return updatedRequest;
 }

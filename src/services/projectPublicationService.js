@@ -1,4 +1,8 @@
 import { addNotification } from "./notificationService";
+import {
+  fetchSitePublicationRequestsFromSupabase,
+  syncSitePublicationRequestToSupabase,
+} from "./supabaseSitePublicationService";
 
 const SITE_PUBLICATION_REQUESTS_STORAGE_KEY = "hatef_site_publication_requests";
 const SITE_PUBLICATION_PREVIEW_STORAGE_KEY = "hatef_site_publication_preview";
@@ -63,6 +67,181 @@ export const COOPERATION_NEED_OPTIONS = [
 
 let memoryRequests = [];
 let memoryPreview = null;
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || ""),
+  );
+}
+
+function getComparableDestination(value = "") {
+  const normalized = String(value || "").trim();
+
+  if (
+    normalized === SITE_PUBLICATION_DESTINATIONS.OPPORTUNITIES ||
+    normalized === SITE_PUBLICATION_TYPES.COMMERCIAL_OPPORTUNITY ||
+    normalized === "business_opportunity" ||
+    normalized === "opportunities" ||
+    normalized === "موقعیت‌های تجاری"
+  ) {
+    return SITE_PUBLICATION_DESTINATIONS.OPPORTUNITIES;
+  }
+
+  if (
+    normalized === SITE_PUBLICATION_DESTINATIONS.SUCCESSFUL_PROJECTS ||
+    normalized === SITE_PUBLICATION_TYPES.SUCCESSFUL_PROJECT ||
+    normalized === "successful_project" ||
+    normalized === "successful_projects"
+  ) {
+    return SITE_PUBLICATION_DESTINATIONS.SUCCESSFUL_PROJECTS;
+  }
+
+  return normalized;
+}
+
+function isSamePublicationRequest(first = {}, second = {}) {
+  const firstId = String(first.supabaseId || first.id || "");
+  const secondId = String(second.supabaseId || second.id || "");
+
+  if (firstId && secondId && firstId === secondId) {
+    return true;
+  }
+
+  const firstPlanId = String(first.planId || "");
+  const secondPlanId = String(second.planId || "");
+
+  if (
+    isUuid(firstPlanId) &&
+    isUuid(secondPlanId) &&
+    firstPlanId === secondPlanId &&
+    getComparableDestination(first.destination) ===
+      getComparableDestination(second.destination)
+  ) {
+    return true;
+  }
+
+  const firstTrackingCode = String(first.trackingCode || "").trim();
+  const secondTrackingCode = String(second.trackingCode || "").trim();
+
+  if (
+    firstTrackingCode &&
+    secondTrackingCode &&
+    firstTrackingCode === secondTrackingCode &&
+    getComparableDestination(first.destination) ===
+      getComparableDestination(second.destination)
+  ) {
+    return true;
+  }
+
+  const firstTitle = String(first.planTitle || first.title || "").trim();
+  const secondTitle = String(second.planTitle || second.title || "").trim();
+
+  return Boolean(
+    firstTitle &&
+    secondTitle &&
+    firstTitle === secondTitle &&
+    getComparableDestination(first.destination) ===
+      getComparableDestination(second.destination),
+  );
+}
+
+function mergeSyncedRequestIntoStorage(syncedRequest) {
+  if (!syncedRequest) {
+    return null;
+  }
+
+  const currentRequests = getSitePublicationRequests();
+  const nextRequests = currentRequests.filter(
+    (request) => !isSamePublicationRequest(request, syncedRequest),
+  );
+  const normalizedRequest = normalizeRequest(syncedRequest);
+
+  writeRequests([normalizedRequest, ...nextRequests]);
+
+  return normalizedRequest;
+}
+
+async function resolveRequestForSupabase(request = {}) {
+  const normalizedRequest = normalizeRequest(request);
+
+  if (
+    isUuid(normalizedRequest.planId) &&
+    isUuid(normalizedRequest.innovatorId)
+  ) {
+    return normalizedRequest;
+  }
+
+  const remoteRequests = await fetchSitePublicationRequestsFromSupabase();
+  const matchedRemoteRequest = remoteRequests.find((remoteRequest) =>
+    isSamePublicationRequest(normalizedRequest, remoteRequest),
+  );
+
+  if (!matchedRemoteRequest) {
+    return normalizedRequest;
+  }
+
+  return normalizeRequest({
+    ...matchedRemoteRequest,
+    ...normalizedRequest,
+    id: matchedRemoteRequest.id || normalizedRequest.id,
+    supabaseId: matchedRemoteRequest.supabaseId || matchedRemoteRequest.id,
+    planId: matchedRemoteRequest.planId || normalizedRequest.planId,
+    innovatorId:
+      matchedRemoteRequest.innovatorId || normalizedRequest.innovatorId,
+    trackingCode:
+      normalizedRequest.trackingCode || matchedRemoteRequest.trackingCode,
+    planTitle: normalizedRequest.planTitle || matchedRemoteRequest.planTitle,
+    destination:
+      normalizedRequest.destination || matchedRemoteRequest.destination,
+    publicationType:
+      normalizedRequest.publicationType || matchedRemoteRequest.publicationType,
+    draft: {
+      ...(matchedRemoteRequest.draft || {}),
+      ...(normalizedRequest.draft || {}),
+    },
+  });
+}
+
+export async function syncSitePublicationRequestNow(
+  request,
+  action = "upsert",
+) {
+  if (!request) {
+    return null;
+  }
+
+  const resolvedRequest = await resolveRequestForSupabase(request);
+  const syncedRequest = await syncSitePublicationRequestToSupabase(
+    resolvedRequest,
+    action,
+  );
+
+  if (!syncedRequest) {
+    console.warn(
+      "Supabase site publication request sync returned empty result.",
+      {
+        action,
+        request: resolvedRequest,
+      },
+    );
+    return null;
+  }
+
+  return mergeSyncedRequestIntoStorage(syncedRequest);
+}
+
+function syncSitePublicationRequestChange(request, action = "upsert") {
+  if (!request) {
+    return;
+  }
+
+  syncSitePublicationRequestNow(request, action).catch((error) => {
+    console.warn(
+      "Supabase site publication request sync failed:",
+      error?.message || error,
+    );
+  });
+}
 
 function canUseStorage() {
   return (
@@ -741,6 +920,8 @@ export function upsertSitePublicationCandidateFromPlan(
 
   writeRequests([nextRequest, ...otherRequests]);
 
+  syncSitePublicationRequestChange(nextRequest, "upsertCandidate");
+
   if (shouldSendNotification) {
     notifyInnovatorCandidateCreated(nextRequest);
   }
@@ -796,6 +977,11 @@ export function saveSitePublicationDraft(requestId, draftData = {}) {
   });
 
   writeRequests(updatedRequests);
+
+  if (updatedRequest) {
+    syncSitePublicationRequestChange(updatedRequest, "saveDraft");
+  }
+
   return updatedRequest;
 }
 
@@ -828,6 +1014,7 @@ export function submitSitePublicationDraft(requestId, draftData = {}) {
   writeRequests(updatedRequests);
 
   if (updatedRequest) {
+    syncSitePublicationRequestChange(updatedRequest, "submit");
     notifyCommitteeDraftSubmitted(updatedRequest);
   }
 
@@ -873,6 +1060,7 @@ export function returnSitePublicationForRevision(requestId, feedback = "") {
   writeRequests(updatedRequests);
 
   if (updatedRequest) {
+    syncSitePublicationRequestChange(updatedRequest, "return");
     notifyInnovatorRevisionRequested(updatedRequest);
   }
 
@@ -923,6 +1111,10 @@ export function publishSitePublicationRequest(requestId, options = {}) {
   });
 
   writeRequests(updatedRequests);
+
+  if (updatedRequest) {
+    syncSitePublicationRequestChange(updatedRequest, "publish");
+  }
 
   if (updatedRequest && shouldNotifyPublished) {
     notifyInnovatorPublished(updatedRequest);

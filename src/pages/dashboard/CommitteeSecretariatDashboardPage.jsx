@@ -52,6 +52,12 @@ import {
   createExecutionOrder,
   getCommitteeExecutionOrders,
 } from "../../services/executionOrderService";
+import { uploadImageFileToSiteMedia } from "../../services/mediaStorageService";
+import {
+  getManagedFileDisplayName,
+  openManagedFile,
+  uploadCallPdfFile,
+} from "../../services/fileStorageService";
 import {
   createNewsItem,
   deleteNewsItem,
@@ -90,6 +96,11 @@ import {
   saveCommitteePersonalPlanNote,
   toggleCommitteePersonalPlanFolder,
 } from "../../services/committeeWorkspaceService";
+
+import {
+  deleteCallFromSupabase,
+  syncCallToSupabase,
+} from "../../services/supabaseCallWriteService";
 
 import {
   getCurrentDashboardProfile,
@@ -580,26 +591,7 @@ const INITIAL_PROFILE = {
 const CALL_DETAILS_PREVIEW_CSS =
   ":root { --color-white:#ffffff; --color-primary:#0a274f; --color-secondary:#00adea; --color-accent:#01d2c9; --color-warning:#f9bd31; --color-black:#111111; --color-muted:#6b7280; --container-padding:65px; }\n* { box-sizing: border-box; }\nbody { margin:0; font-family: IRANSans, Tahoma, Arial, sans-serif; direction:rtl; background:#ffffff; }\na { text-decoration:none; }\n.call-details {\n  --call-details-width: 1360px;\n\n  padding: 38px 0 82px;\n\n  background-color: #ffffff;\n}\n\n.call-details__container {\n  width: min(calc(100% - 170px), var(--call-details-width));\n\n  margin-inline: auto;\n}\n\n/* Hero */\n\n.call-details__hero {\n  margin-bottom: 78px;\n}\n\n.call-details__hero-image {\n  position: relative;\n\n  height: 390px;\n\n  overflow: hidden;\n\n  background-color: var(--color-primary);\n  box-shadow: 0 18px 48px rgba(20, 44, 74, 0.08);\n}\n\n.call-details__hero-image img {\n  width: 100%;\n  height: 100%;\n\n  display: block;\n\n  object-fit: cover;\n}\n\n.call-details__hero-status {\n  position: absolute;\n  right: 24px;\n  bottom: 18px;\n  z-index: 2;\n\n  display: flex;\n  align-items: center;\n  gap: 14px;\n\n  color: #ffffff;\n\n  font-size: 12px;\n  font-weight: 800;\n}\n\n.call-details__hero-content {\n  display: grid;\n  grid-template-columns: 220px minmax(0, 1fr);\n  gap: 54px;\n\n  padding-top: 22px;\n\n  direction: ltr;\n}\n\n.call-details__quick-actions {\n  display: grid;\n  gap: 10px;\n\n  align-content: start;\n\n  direction: rtl;\n}\n\n.call-details__quick-link,\n.call-details__submit-button {\n  min-height: 38px;\n\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n\n  border: 1px solid #cbd1d8;\n\n  color: #29323b;\n  background-color: #ffffff;\n\n  font-size: 12px;\n  font-weight: 700;\n\n  transition:\n    color 180ms ease,\n    border-color 180ms ease,\n    background-color 180ms ease,\n    transform 180ms ease;\n}\n\n.call-details__quick-link:hover {\n  color: var(--color-primary);\n  border-color: var(--color-accent);\n\n  transform: translateY(-2px);\n}\n\n.call-details__quick-link--download {\n  color: #111111;\n  background-color: #f8f8f8;\n}\n\n.call-details__submit-button {\n  border-color: var(--color-secondary);\n\n  color: #ffffff;\n  background-color: var(--color-secondary);\n}\n\n.call-details__submit-button:hover {\n  background-color: var(--color-primary);\n  border-color: var(--color-primary);\n\n  transform: translateY(-2px);\n}\n\n.call-details__hero-info {\n  direction: rtl;\n  text-align: right;\n}\n\n.call-details__meta {\n  display: flex;\n  align-items: center;\n  justify-content: flex-start;\n  gap: 14px;\n\n  margin-bottom: 24px;\n}\n\n.call-details__number {\n  width: 32px;\n  height: 32px;\n\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n\n  border: 2px solid var(--color-warning);\n  border-radius: 50%;\n\n  color: var(--color-warning);\n\n  font-size: 16px;\n  font-weight: 900;\n}\n\n.call-details__meta h1 {\n  margin: 0;\n\n  color: #050505;\n\n  font-size: 22px;\n  font-weight: 900;\n  line-height: 1.8;\n}\n\n.call-details__badge {\n  min-height: 30px;\n\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n\n  padding: 5px 16px;\n\n  border-radius: 999px;\n\n  color: #111111;\n  background-color: var(--color-accent);\n\n  font-size: 12px;\n  font-weight: 900;\n\n  white-space: nowrap;\n}\n\n.call-details__badge--active {\n  background-color: var(--color-warning);\n}\n\n.call-details__hero-info p {\n  margin: 0 0 18px;\n\n  color: #2b333b;\n\n  font-size: 14px;\n  line-height: 2.25;\n}\n\n/* Main layout */\n\n.call-details__layout {\n  display: grid;\n  grid-template-columns: 320px minmax(0, 1fr);\n  gap: 78px;\n\n  align-items: start;\n\n  padding-top: 76px;\n\n  border-top: 1px solid #edf0f3;\n\n  direction: ltr;\n}\n\n.call-details__sidebar {\n  direction: rtl;\n}\n\n.call-details__main {\n  direction: rtl;\n}\n\n.call-details__article section {\n  margin-bottom: 70px;\n}\n\n.call-details__section-title {\n  display: flex;\n  align-items: center;\n  gap: 18px;\n\n  margin-bottom: 24px;\n\n  direction: rtl;\n}\n\n.call-details__section-title span {\n  width: 10px;\n  height: 10px;\n\n  flex: 0 0 auto;\n\n  border-radius: 50%;\n\n  background-color: var(--color-accent);\n}\n\n.call-details__section-title h2 {\n  margin: 0;\n\n  color: #050505;\n\n  font-size: 32px;\n  font-weight: 900;\n  line-height: 1.6;\n}\n\n.call-details__article p {\n  margin: 0 0 18px;\n\n  color: #27313a;\n\n  font-size: 14px;\n  line-height: 2.35;\n  text-align: justify;\n}\n\n/* CTA */\n\n.call-details__cta {\n  position: relative;\n\n  min-height: 270px;\n\n  display: flex;\n  align-items: center;\n  justify-content: center;\n\n  overflow: hidden;\n\n  margin: 50px 0 78px;\n\n  border-radius: 8px;\n\n  color: #ffffff;\n  background-color: #03192f;\n}\n\n.call-details__cta img {\n  position: absolute;\n  inset: 0;\n\n  width: 100%;\n  height: 100%;\n\n  object-fit: contain;\n  object-position: center;\n\n  background-color: #03192f;\n}\n\n.call-details__cta-overlay {\n  position: absolute;\n  inset: 0;\n\n  background: linear-gradient(\n    90deg,\n    rgba(0, 25, 48, 0.78),\n    rgba(4, 37, 72, 0.62)\n  );\n}\n\n.call-details__cta-content {\n  position: relative;\n  z-index: 1;\n\n  max-width: 760px;\n\n  padding: 36px 28px;\n\n  text-align: center;\n}\n\n.call-details__cta-content h2 {\n  margin: 0 0 18px;\n\n  color: #ffffff;\n\n  font-size: 31px;\n  font-weight: 900;\n  line-height: 1.6;\n}\n\n.call-details__cta-content p {\n  margin: 0 0 28px;\n\n  color: rgba(255, 255, 255, 0.88);\n\n  font-size: 14px;\n  line-height: 2;\n}\n\n.call-details__cta-actions {\n  display: flex;\n  justify-content: center;\n  gap: 24px;\n}\n\n.call-details__cta-actions a {\n  width: 170px;\n  min-height: 44px;\n\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n\n  border: 1px solid rgba(255, 255, 255, 0.75);\n\n  color: #ffffff;\n\n  font-size: 13px;\n  font-weight: 800;\n\n  transition:\n    border-color 180ms ease,\n    background-color 180ms ease,\n    color 180ms ease,\n    transform 180ms ease;\n}\n\n.call-details__cta-actions a:first-child {\n  border-color: var(--color-secondary);\n\n  background-color: var(--color-secondary);\n}\n\n.call-details__cta-actions a:hover {\n  border-color: #ffffff;\n\n  color: var(--color-primary);\n  background-color: #ffffff;\n\n  transform: translateY(-3px);\n}\n\n/* FAQ */\n\n.call-details__faq {\n  padding-bottom: 40px;\n}\n\n.call-details__faq .call-details__section-title {\n  justify-content: flex-start;\n}\n\n.call-details__faq-list {\n  border-top: 1px solid #e5e9ed;\n}\n\n.call-details__faq-item {\n  border-bottom: 1px solid #e5e9ed;\n}\n\n.call-details__faq-item summary {\n  min-height: 66px;\n\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 30px;\n\n  padding: 8px 4px;\n\n  color: #111111;\n\n  font-size: 14px;\n  font-weight: 800;\n\n  cursor: pointer;\n\n  list-style: none;\n}\n\n.call-details__faq-item summary::-webkit-details-marker {\n  display: none;\n}\n\n.call-details__faq-item summary i {\n  color: #9aa2a8;\n\n  font-size: 26px;\n  font-style: normal;\n  font-weight: 300;\n\n  transition:\n    color 200ms ease,\n    transform 200ms ease;\n}\n\n.call-details__faq-item[open] summary i {\n  color: var(--color-accent);\n\n  transform: rotate(45deg);\n}\n\n.call-details__faq-item p {\n  margin: 0;\n\n  padding: 0 4px 24px;\n\n  color: #4b555d;\n\n  font-size: 13px;\n  line-height: 2.1;\n}\n\n/* Back */\n\n.call-details__back-wrap {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n\n  padding-top: 20px;\n\n  direction: rtl;\n}\n\n.call-details__back {\n  min-width: 190px;\n  min-height: 44px;\n\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n\n  border: 1px solid #cbd1d8;\n\n  color: #27313a;\n  background-color: #ffffff;\n\n  font-size: 13px;\n  font-weight: 800;\n\n  transition:\n    color 180ms ease,\n    border-color 180ms ease,\n    background-color 180ms ease,\n    transform 180ms ease;\n}\n\n.call-details__back:hover {\n  color: #ffffff;\n  border-color: var(--color-primary);\n  background-color: var(--color-primary);\n\n  transform: translateY(-2px);\n}\n\n.call-details__page-id {\n  color: #8a9299;\n\n  font-size: 12px;\n  font-weight: 700;\n}\n\n@media (max-width: 1450px) {\n  .call-details {\n    --call-details-width: 1180px;\n  }\n\n  .call-details__container {\n    width: min(calc(100% - 120px), var(--call-details-width));\n  }\n\n  .call-details__hero-image {\n    height: 340px;\n  }\n\n  .call-details__layout {\n    grid-template-columns: 300px minmax(0, 1fr);\n    gap: 62px;\n  }\n\n  .call-details__section-title h2 {\n    font-size: 29px;\n  }\n}\n\n.call-details__sidebar-card { padding:20px; border:1px solid #edf0f3; border-radius:14px; background:#fafafa; }\n.call-details__sidebar-card h3 { margin:0 0 12px; color:#050505; font-size:17px; font-weight:900; }\n.call-details__sidebar-card p { margin:0 0 10px; color:#4b555d; font-size:12px; line-height:2; }\n";
 
-const CALL_DEFAULT_FAQS = [
-  {
-    id: 1,
-    question: "چه کسانی می‌توانند در این فراخوان شرکت کنند؟",
-    answer:
-      "پژوهشگران، تیم‌های فناور و صاحبان ایده مرتبط با محور فراخوان می‌توانند ثبت‌نام کنند.",
-  },
-  {
-    id: 2,
-    question: "مدارک موردنیاز برای ارسال طرح چیست؟",
-    answer:
-      "پروپوزال، اطلاعات تیم، مستندات فنی و فایل‌های پشتیبان مطابق راهنمای فراخوان دریافت می‌شود.",
-  },
-  {
-    id: 3,
-    question: "فرآیند بررسی طرح‌ها چگونه انجام می‌شود؟",
-    answer:
-      "طرح‌ها ابتدا توسط دبیرخانه بررسی اولیه شده و سپس در صورت احراز شرایط وارد داوری تخصصی می‌شوند.",
-  },
-];
+const CALL_EMPTY_FAQS = [];
 
 const CALL_FORM_DEFAULT = {
   bannerFile: null,
@@ -609,11 +601,14 @@ const CALL_FORM_DEFAULT = {
   number: "۱",
   deadline: "1405/05/05",
   heroDescription: "",
+  pdfFile: null,
+  pdfFileUrl: "",
   pdfFileName: "",
+  pdfOriginalFileName: "",
   moreTitle: "توضیحات بیشتر فراخوان",
   moreDescription: "",
   isAnnualTheme: false,
-  faqs: CALL_DEFAULT_FAQS,
+  faqs: CALL_EMPTY_FAQS,
 };
 
 const INITIAL_CALLS = [
@@ -631,7 +626,7 @@ const INITIAL_CALLS = [
     pdfFileName: "call-or-announcement-1405.pdf",
     bannerPreview: "",
     isAnnualTheme: true,
-    faqs: CALL_DEFAULT_FAQS,
+    faqs: CALL_EMPTY_FAQS,
     status: "منتشر شده",
     createdAt: "1405/03/12",
     publishedAt: "1405/03/12",
@@ -651,7 +646,7 @@ const INITIAL_CALLS = [
     pdfFileName: "",
     bannerPreview: "",
     isAnnualTheme: false,
-    faqs: CALL_DEFAULT_FAQS,
+    faqs: CALL_EMPTY_FAQS,
     status: "پیش‌نویس",
     createdAt: "1405/03/18",
     publishedAt: "",
@@ -671,7 +666,7 @@ const INITIAL_CALLS = [
     pdfFileName: "green-call.pdf",
     bannerPreview: "",
     isAnnualTheme: false,
-    faqs: CALL_DEFAULT_FAQS,
+    faqs: CALL_EMPTY_FAQS,
     status: "غیرفعال",
     createdAt: "1404/08/01",
     publishedAt: "1404/08/01",
@@ -1300,10 +1295,37 @@ function buildAcceptedTaskDeadline(deadlineDate, deadlineTime) {
   return "";
 }
 
+function isDirectDownloadReference(fileReference = "") {
+  const value = String(fileReference || "").trim();
+  return (
+    value.startsWith("http") ||
+    value.startsWith("data:") ||
+    value.startsWith("blob:")
+  );
+}
+
 function getAcceptedTaskFileHref(task) {
-  return `data:text/plain;charset=utf-8,${encodeURIComponent(
-    `فایل نمونه ارسال‌شده برای وظیفه «${task.title}»`,
-  )}`;
+  return isDirectDownloadReference(task?.userFileName)
+    ? task.userFileName
+    : "#download-task-file";
+}
+
+function getAcceptedTaskFileLabel(task) {
+  return getManagedFileDisplayName(task?.userFileName, "فایل پاسخ فناور");
+}
+
+async function handleManagedFileLinkClick(event, fileReference) {
+  if (!fileReference) {
+    return;
+  }
+
+  event.preventDefault();
+
+  try {
+    await openManagedFile(fileReference);
+  } catch (error) {
+    window.alert(error?.message || "دانلود فایل انجام نشد.");
+  }
 }
 
 const INITIAL_RECEIVED_REQUESTS = [
@@ -3053,13 +3075,19 @@ function getPlanCallType(plan) {
 }
 
 function getPlanDownloadHref(plan) {
-  return `data:text/plain;charset=utf-8,${encodeURIComponent(`فایل نمونه پروپوزال برای طرح ${plan.trackingId} - ${plan.title}`)}`;
+  return isDirectDownloadReference(plan?.proposalFile)
+    ? plan.proposalFile
+    : "#download-proposal";
+}
+
+function getPlanProposalFileLabel(plan) {
+  return getManagedFileDisplayName(plan?.proposalFile, "فایل پروپوزال");
 }
 
 function formatRichText(value) {
   const text = String(value || "").trim();
   if (!text) {
-    return "<p>در این بخش توضیحات تکمیلی فراخوان، شرایط شرکت، مسیر ارسال طرح و نکات مهم برای متقاضیان نمایش داده می‌شود.</p>";
+    return "";
   }
 
   return text
@@ -3101,10 +3129,25 @@ function createCallFromForm(form, status, editingCall) {
     heroDescription: form.heroDescription.trim(),
     moreTitle: form.moreTitle?.trim() || "توضیحات بیشتر فراخوان",
     moreDescription: form.moreDescription.trim(),
-    pdfFileName: form.pdfFileName,
+    pdfFileUrl:
+      form.pdfFileUrl ||
+      (String(form.pdfFileName || "").startsWith("http")
+        ? form.pdfFileName
+        : ""),
+    pdfFileName:
+      form.pdfOriginalFileName ||
+      (String(form.pdfFileName || "").startsWith("http")
+        ? getManagedFileDisplayName(form.pdfFileName, "call-notice.pdf")
+        : form.pdfFileName),
     bannerPreview: form.bannerPreview,
     isAnnualTheme: form.isAnnualTheme,
-    faqs: form.faqs,
+    faqs: Array.isArray(form.faqs)
+      ? form.faqs.filter(
+          (faq) =>
+            String(faq?.question || "").trim() ||
+            String(faq?.answer || "").trim(),
+        )
+      : [],
     status,
     createdAt: editingCall?.createdAt || now,
     publishedAt:
@@ -3117,10 +3160,19 @@ function createCallFromForm(form, status, editingCall) {
 
 function buildCallPreviewHtml(call) {
   const banner = call.bannerPreview || bannerImage;
-  const pdfLink = call.pdfFileName || "نسخه PDF فراخوان یا اطلاعیه";
+  const pdfLink = getManagedFileDisplayName(
+    call.pdfFileUrl || call.pdfFileName,
+    "نسخه PDF فراخوان یا اطلاعیه",
+  );
   const statusText =
     call.status === "منتشر شده" ? "در حال دریافت طرح" : "پیش‌نمایش فراخوان";
-  const faqs = call.faqs?.length ? call.faqs : CALL_DEFAULT_FAQS;
+  const faqs = Array.isArray(call.faqs)
+    ? call.faqs.filter(
+        (faq) =>
+          String(faq?.question || "").trim() ||
+          String(faq?.answer || "").trim(),
+      )
+    : CALL_EMPTY_FAQS;
 
   return `<!doctype html>
 <html lang="fa" dir="rtl">
@@ -3218,12 +3270,17 @@ function CallStatusBadge({ status }) {
 
 function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
   const [step, setStep] = useState(0);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [form, setForm] = useState(() => ({
     ...CALL_FORM_DEFAULT,
     ...(editingCall || {}),
     bannerFile: null,
     bannerPreview: editingCall?.bannerPreview || "",
-    faqs: editingCall?.faqs?.length ? editingCall.faqs : CALL_DEFAULT_FAQS,
+    pdfFile: null,
+    pdfFileUrl: editingCall?.pdfFileUrl || "",
+    pdfOriginalFileName:
+      editingCall?.pdfOriginalFileName || editingCall?.pdfFileName || "",
+    faqs: editingCall?.faqs?.length ? editingCall.faqs : CALL_EMPTY_FAQS,
   }));
 
   useEffect(() => {
@@ -3233,7 +3290,11 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
       ...(editingCall || {}),
       bannerFile: null,
       bannerPreview: editingCall?.bannerPreview || "",
-      faqs: editingCall?.faqs?.length ? editingCall.faqs : CALL_DEFAULT_FAQS,
+      pdfFile: null,
+      pdfFileUrl: editingCall?.pdfFileUrl || "",
+      pdfOriginalFileName:
+        editingCall?.pdfOriginalFileName || editingCall?.pdfFileName || "",
+      faqs: editingCall?.faqs?.length ? editingCall.faqs : CALL_EMPTY_FAQS,
     });
   }, [editingCall]);
 
@@ -3280,9 +3341,16 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
     updateField("bannerPreview", URL.createObjectURL(file));
   };
 
-  const handleFileName = (field, event) => {
+  const handlePdfFileChange = (event) => {
     const file = event.target.files?.[0];
-    updateField(field, file?.name || "");
+
+    updateField("pdfFile", file || null);
+    updateField("pdfFileName", file?.name || "");
+    updateField("pdfOriginalFileName", file?.name || "");
+
+    if (file) {
+      updateField("pdfFileUrl", "");
+    }
   };
 
   const previewCall = createCallFromForm(
@@ -3294,9 +3362,60 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
     step !== 1 ||
     (form.title.trim() && form.category.trim() && form.deadline.trim());
 
-  const saveAs = (status) => {
-    const finalCall = createCallFromForm(form, status, editingCall);
-    onSaveCall(finalCall, Boolean(editingCall));
+  const saveAs = async (status) => {
+    if (isUploadingBanner) return;
+
+    setIsUploadingBanner(true);
+
+    try {
+      let finalForm = form;
+
+      if (form.bannerFile instanceof File) {
+        const uploadedBanner = await uploadImageFileToSiteMedia(
+          form.bannerFile,
+          {
+            folder: "calls",
+            prefix: form.title || "call-banner",
+            maxWidth: 1800,
+            maxHeight: 1000,
+            quality: 0.8,
+          },
+        );
+
+        finalForm = {
+          ...finalForm,
+          bannerFile: null,
+          bannerPreview: uploadedBanner.url || form.bannerPreview,
+        };
+      }
+
+      if (finalForm.pdfFile instanceof File) {
+        const uploadedPdf = await uploadCallPdfFile(finalForm.pdfFile, {
+          prefix: finalForm.title || "call-notice",
+        });
+
+        finalForm = {
+          ...finalForm,
+          pdfFile: null,
+          pdfFileUrl: uploadedPdf.url,
+          pdfFileName: uploadedPdf.fileName,
+          pdfOriginalFileName: uploadedPdf.fileName,
+        };
+      }
+
+      setForm(finalForm);
+
+      const finalCall = createCallFromForm(finalForm, status, editingCall);
+      onSaveCall(finalCall, Boolean(editingCall));
+    } catch (error) {
+      const errorMessage = error?.message || String(error || "خطای نامشخص");
+      console.warn("Call banner upload failed:", errorMessage, error);
+      window.alert(
+        `آپلود فایل یا تصویر فراخوان انجام نشد.\nجزئیات خطا: ${errorMessage}`,
+      );
+    } finally {
+      setIsUploadingBanner(false);
+    }
   };
 
   return (
@@ -3345,11 +3464,17 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
         <div className="committee-call-builder__grid">
           <label className="committee-call-builder__field committee-call-builder__field--full">
             <span>بنر فراخوان</span>
-            <input type="file" accept="image/*" onChange={handleBannerUpload} />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleBannerUpload}
+              disabled={isUploadingBanner}
+            />
           </label>
           <div className="committee-call-builder__banner-preview committee-call-builder__field--full">
             <img src={form.bannerPreview || bannerImage} alt="پیش‌نمایش بنر" />
             <p>این تصویر در بالای صفحه فراخوان نمایش داده می‌شود.</p>
+            {isUploadingBanner && <small>در حال آپلود تصویر فراخوان...</small>}
           </div>
           <label className="committee-call-builder__toggle committee-call-builder__field--full">
             <input
@@ -3418,9 +3543,18 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
             <input
               type="file"
               accept="application/pdf"
-              onChange={(event) => handleFileName("pdfFileName", event)}
+              onChange={handlePdfFileChange}
             />
-            {form.pdfFileName && <small>{form.pdfFileName}</small>}
+            {(form.pdfOriginalFileName ||
+              form.pdfFileUrl ||
+              form.pdfFileName) && (
+              <small>
+                {form.pdfOriginalFileName ||
+                  getManagedFileDisplayName(
+                    form.pdfFileUrl || form.pdfFileName,
+                  )}
+              </small>
+            )}
           </label>
 
           <label className="committee-call-builder__field committee-call-builder__field--full">
@@ -3540,22 +3674,28 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
             </div>
           </article>
           <div className="committee-call-builder__review-actions">
-            <button type="button" onClick={() => openCallPreview(previewCall)}>
+            <button
+              type="button"
+              onClick={() => openCallPreview(previewCall)}
+              disabled={isUploadingBanner}
+            >
               پیش‌نمایش
             </button>
             <button
               type="button"
               className="committee-call-builder__draft"
               onClick={() => saveAs("پیش‌نویس")}
+              disabled={isUploadingBanner}
             >
-              ذخیره پیش‌نویس
+              {isUploadingBanner ? "در حال آپلود..." : "ذخیره پیش‌نویس"}
             </button>
             <button
               type="button"
               className="committee-call-builder__publish"
               onClick={() => saveAs("منتشر شده")}
+              disabled={isUploadingBanner}
             >
-              انتشار نهایی
+              {isUploadingBanner ? "در حال آپلود..." : "انتشار نهایی"}
             </button>
           </div>
         </div>
@@ -3565,7 +3705,7 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
         <button
           type="button"
           onClick={() => setStep((currentStep) => Math.max(0, currentStep - 1))}
-          disabled={step === 0}
+          disabled={step === 0 || isUploadingBanner}
         >
           مرحله قبل
         </button>
@@ -3576,7 +3716,9 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
               Math.min(CALL_STEPS.length - 1, currentStep + 1),
             )
           }
-          disabled={step === CALL_STEPS.length - 1 || !canGoNext}
+          disabled={
+            step === CALL_STEPS.length - 1 || !canGoNext || isUploadingBanner
+          }
         >
           مرحله بعد
         </button>
@@ -4297,14 +4439,21 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
                 </div>
                 <div>
                   <dt>فایل پروپوزال</dt>
-                  <dd>{plan.proposalFile || "ثبت نشده"}</dd>
+                  <dd>
+                    {plan.proposalFile
+                      ? getPlanProposalFileLabel(plan)
+                      : "ثبت نشده"}
+                  </dd>
                 </div>
               </dl>
             </div>
 
             <a
               href={getPlanDownloadHref(plan)}
-              download={plan.proposalFile}
+              download={getPlanProposalFileLabel(plan)}
+              onClick={(event) =>
+                handleManagedFileLinkClick(event, plan.proposalFile)
+              }
               className="committee-plans__download-link"
             >
               دانلود پروپوزال
@@ -4472,7 +4621,10 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
 
           <a
             href={getPlanDownloadHref(plan)}
-            download={plan.proposalFile}
+            download={getPlanProposalFileLabel(plan)}
+            onClick={(event) =>
+              handleManagedFileLinkClick(event, plan.proposalFile)
+            }
             className="committee-plans__download-link"
           >
             دانلود پروپوزال
@@ -4877,7 +5029,10 @@ function FinalDecisionPanel({
             </div>
             <a
               href={getPlanDownloadHref(selectedPlan)}
-              download={selectedPlan.proposalFile}
+              download={getPlanProposalFileLabel(selectedPlan)}
+              onClick={(event) =>
+                handleManagedFileLinkClick(event, selectedPlan.proposalFile)
+              }
               className="committee-plans__download-link"
             >
               دانلود پروپوزال
@@ -5352,9 +5507,12 @@ function AcceptedPlansPanel({ plans }) {
               <a
                 className="accepted-projects__file-download"
                 href={getAcceptedTaskFileHref(selectedTask)}
-                download={selectedTask.userFileName}
+                download={getAcceptedTaskFileLabel(selectedTask)}
+                onClick={(event) =>
+                  handleManagedFileLinkClick(event, selectedTask.userFileName)
+                }
               >
-                دانلود فایل ارسالی: {selectedTask.userFileName}
+                دانلود فایل ارسالی: {getAcceptedTaskFileLabel(selectedTask)}
               </a>
             ) : (
               <strong>فایلی بارگذاری نشده است</strong>
@@ -8214,10 +8372,16 @@ function NewsBuilderPanel({
     }
 
     try {
-      setFormError("در حال آماده‌سازی و فشرده‌سازی تصویر...");
-      const compressedImage = await compressNewsImageFile(file);
-      updateField("image", compressedImage);
-      setImageUploadName(`${file.name} - فشرده شد`);
+      setFormError("در حال فشرده‌سازی و ذخیره تصویر در Supabase Storage...");
+      const uploadedImage = await uploadImageFileToSiteMedia(file, {
+        folder: "news",
+        prefix: "news",
+        maxWidth: 1600,
+        maxHeight: 1100,
+        quality: 0.78,
+      });
+      updateField("image", uploadedImage.url);
+      setImageUploadName(`${file.name} - در Storage ذخیره شد`);
       setFormError("");
     } catch (error) {
       setFormError(
@@ -8961,6 +9125,7 @@ function CommitteeSecretariatDashboardPage() {
               }
               return [call, ...currentCalls];
             });
+            syncCallToSupabase(call);
             setEditingCall(null);
             setCallFormResetKey((key) => key + 1);
             setCallNotice(
@@ -8992,19 +9157,26 @@ function CommitteeSecretariatDashboardPage() {
             setCalls((currentCalls) =>
               currentCalls.filter((call) => call.id !== callId),
             );
+            deleteCallFromSupabase(callId);
           }}
           onPublishCall={(callId) => {
             setCalls((currentCalls) =>
-              currentCalls.map((call) =>
-                call.id === callId
-                  ? {
-                      ...call,
-                      status: "منتشر شده",
-                      publishedAt:
-                        call.publishedAt || getCurrentSimplePersianDate(),
-                    }
-                  : call,
-              ),
+              currentCalls.map((call) => {
+                if (call.id !== callId) {
+                  return call;
+                }
+
+                const publishedCall = {
+                  ...call,
+                  status: "منتشر شده",
+                  publishedAt:
+                    call.publishedAt || getCurrentSimplePersianDate(),
+                };
+
+                syncCallToSupabase(publishedCall);
+
+                return publishedCall;
+              }),
             );
           }}
         />

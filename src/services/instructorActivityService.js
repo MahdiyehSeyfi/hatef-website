@@ -1,5 +1,10 @@
 import { getCurrentUser } from "./authService";
 import { addNotificationOnce } from "./notificationService";
+import {
+  deleteInstructorActivityFromSupabase,
+  syncInstructorActivityToSupabase,
+  syncInstructorActivityUpdateToSupabase,
+} from "./supabaseInstructorActivityService";
 
 const INSTRUCTOR_ACTIVITIES_STORAGE_KEY = "hatef_instructor_activities";
 
@@ -39,6 +44,20 @@ function safeParseJson(value, fallbackValue) {
   }
 }
 
+function safeSetStorageItem(key, value) {
+  if (!canUseStorage()) {
+    return false;
+  }
+
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    console.warn(`Unable to write ${key} to localStorage:`, error);
+    return false;
+  }
+}
+
 function getCurrentPersianDateTime() {
   const now = new Date();
 
@@ -58,12 +77,7 @@ function getCurrentPersianDateTime() {
 function getCurrentInstructorId() {
   const currentUser = getCurrentUser?.();
 
-  return (
-    currentUser?.id ||
-    currentUser?.userId ||
-    currentUser?.email ||
-    "user-instructor-1"
-  );
+  return currentUser?.id || currentUser?.userId || currentUser?.email || "";
 }
 
 function getCurrentInstructorName() {
@@ -211,7 +225,7 @@ function writeActivitiesToStorage(activities) {
     return normalizedActivities;
   }
 
-  window.localStorage.setItem(
+  safeSetStorageItem(
     INSTRUCTOR_ACTIVITIES_STORAGE_KEY,
     JSON.stringify(normalizedActivities),
   );
@@ -219,12 +233,8 @@ function writeActivitiesToStorage(activities) {
   return normalizedActivities;
 }
 
-function readActivitiesFromStorage(seedActivities = []) {
+function readActivitiesFromStorage() {
   if (!canUseStorage()) {
-    if (!memoryActivities.length && seedActivities.length) {
-      memoryActivities = normalizeActivities(seedActivities);
-    }
-
     return memoryActivities;
   }
 
@@ -233,17 +243,13 @@ function readActivitiesFromStorage(seedActivities = []) {
   );
 
   if (!storedValue) {
-    if (seedActivities.length) {
-      return writeActivitiesToStorage(seedActivities);
-    }
-
     return [];
   }
 
   const parsedValue = safeParseJson(storedValue, []);
 
   if (!Array.isArray(parsedValue)) {
-    return writeActivitiesToStorage(seedActivities);
+    return writeActivitiesToStorage([]);
   }
 
   return normalizeActivities(parsedValue);
@@ -298,8 +304,8 @@ function updateActivityCollection(activityId, updater) {
   return updatedActivity;
 }
 
-export function getInstructorActivities(seedActivities = []) {
-  return sortActivitiesByNewest(readActivitiesFromStorage(seedActivities));
+export function getInstructorActivities() {
+  return sortActivitiesByNewest(readActivitiesFromStorage());
 }
 
 export function setInstructorActivities(activities) {
@@ -354,11 +360,19 @@ export function addInstructorActivity(activityData = {}) {
   writeActivitiesToStorage([newActivity, ...activities]);
   notifyCommitteeNewActivity(newActivity);
 
+  syncInstructorActivityToSupabase(newActivity).then((result) => {
+    if (!result) {
+      console.warn(
+        "Instructor activity was saved locally but was not synced to Supabase.",
+      );
+    }
+  });
+
   return newActivity;
 }
 
 export function updateInstructorActivity(activityId, updates = {}) {
-  return updateActivityCollection(activityId, (activity) => ({
+  const updatedActivity = updateActivityCollection(activityId, (activity) => ({
     ...activity,
     ...updates,
     id: activity.id,
@@ -368,6 +382,18 @@ export function updateInstructorActivity(activityId, updates = {}) {
     createdAt: updates.createdAt || activity.createdAt,
     updatedAt: getCurrentPersianDateTime(),
   }));
+
+  if (updatedActivity) {
+    syncInstructorActivityUpdateToSupabase(updatedActivity).then((result) => {
+      if (!result) {
+        console.warn(
+          "Instructor activity was updated locally but was not synced to Supabase.",
+        );
+      }
+    });
+  }
+
+  return updatedActivity;
 }
 
 export function saveInstructorActivityDecision(
@@ -440,7 +466,15 @@ export function deleteInstructorActivity(activityId) {
     (activity) => String(activity.id) !== String(activityId),
   );
 
-  return writeActivitiesToStorage(nextActivities);
+  writeActivitiesToStorage(nextActivities);
+
+  if (targetActivity) {
+    deleteInstructorActivityFromSupabase(targetActivity);
+  } else {
+    deleteInstructorActivityFromSupabase(activityId);
+  }
+
+  return nextActivities;
 }
 
 export function getInstructorActivityStats() {

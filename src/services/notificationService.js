@@ -1,4 +1,8 @@
 import { getCurrentUser } from "./authService";
+import {
+  buildEqFilter,
+  supabaseRestRequest,
+} from "./supabaseRestSessionService";
 
 const NOTIFICATIONS_STORAGE_KEY = "hatef_notifications";
 
@@ -16,6 +20,12 @@ function makeId(prefix = "notification") {
   }
 
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || ""),
+  );
 }
 
 function getCurrentPersianDateTime() {
@@ -39,6 +49,20 @@ function safeParseJson(value, fallbackValue) {
     return JSON.parse(value);
   } catch {
     return fallbackValue;
+  }
+}
+
+function safeSetStorageItem(key, value) {
+  if (!canUseStorage()) {
+    return false;
+  }
+
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    console.warn(`Unable to write ${key} to localStorage:`, error);
+    return false;
   }
 }
 
@@ -88,27 +112,50 @@ function normalizeRole(role) {
   return value || "user";
 }
 
-function normalizeNotification(notification) {
+function toIsoDateOrNow(value) {
+  if (!value) {
+    return new Date().toISOString();
+  }
+
+  const parsedDate = new Date(value);
+
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return parsedDate.toISOString();
+  }
+
+  return new Date().toISOString();
+}
+
+function normalizeNotification(notification = {}) {
   const targetRole = normalizeRole(
     notification.targetRole || notification.role,
   );
 
   return {
-    id: notification.id || makeId(),
+    id:
+      notification.id ||
+      notification.localNotificationId ||
+      notification.local_notification_id ||
+      makeId(),
     title: notification.title || "اعلان جدید",
     body: notification.body || notification.message || "",
     category: notification.category || "پیام سامانه",
     sentAt:
       notification.sentAt ||
       notification.createdAt ||
+      notification.created_at ||
       getCurrentPersianDateTime(),
-    targetUserId: notification.targetUserId || notification.userId || "",
+    targetUserId:
+      notification.targetUserId ||
+      notification.target_user_id ||
+      notification.userId ||
+      "",
     targetRole,
-    sourceType: notification.sourceType || "system",
-    sourceId: notification.sourceId || "",
-    eventKey: notification.eventKey || "",
-    isRead: Boolean(notification.isRead),
-    isImportant: Boolean(notification.isImportant),
+    sourceType: notification.sourceType || notification.source_type || "system",
+    sourceId: notification.sourceId || notification.source_id || "",
+    eventKey: notification.eventKey || notification.event_key || "",
+    isRead: Boolean(notification.isRead || notification.is_read),
+    isImportant: Boolean(notification.isImportant || notification.is_important),
   };
 }
 
@@ -142,7 +189,7 @@ function writeNotifications(notifications) {
     return normalizedNotifications;
   }
 
-  window.localStorage.setItem(
+  safeSetStorageItem(
     NOTIFICATIONS_STORAGE_KEY,
     JSON.stringify(normalizedNotifications),
   );
@@ -204,6 +251,115 @@ function isSameNotification(firstNotification, secondNotification) {
   );
 }
 
+function toSupabaseNotification(notification = {}) {
+  const normalizedNotification = normalizeNotification(notification);
+  const targetUserId = isUuid(normalizedNotification.targetUserId)
+    ? normalizedNotification.targetUserId
+    : null;
+
+  return {
+    local_notification_id: normalizedNotification.id,
+    title: normalizedNotification.title,
+    body: normalizedNotification.body,
+    category: normalizedNotification.category,
+    sent_at: toIsoDateOrNow(normalizedNotification.sentAt),
+    target_user_id: targetUserId,
+    target_role: normalizedNotification.targetRole || null,
+    source_type: normalizedNotification.sourceType || "system",
+    source_id: normalizedNotification.sourceId || "",
+    event_key: normalizedNotification.eventKey || "",
+    is_read: Boolean(normalizedNotification.isRead),
+    is_important: Boolean(normalizedNotification.isImportant),
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function findSupabaseNotificationRow(notification = {}) {
+  const normalizedNotification = normalizeNotification(notification);
+
+  if (!normalizedNotification.id) {
+    return null;
+  }
+
+  const { data, error } = await supabaseRestRequest("notifications", {
+    method: "GET",
+    query: `?select=id&${buildEqFilter(
+      "local_notification_id",
+      normalizedNotification.id,
+    )}`,
+    prefer: "",
+  });
+
+  if (error) {
+    console.warn("Supabase notification lookup failed:", error.message);
+    return null;
+  }
+
+  return Array.isArray(data) ? data[0] || null : null;
+}
+
+async function syncNotificationToSupabase(notification = {}) {
+  const payload = toSupabaseNotification(notification);
+
+  if (!payload.title) {
+    return null;
+  }
+
+  const existingRow = await findSupabaseNotificationRow(notification);
+
+  if (existingRow?.id) {
+    const { data, error } = await supabaseRestRequest("notifications", {
+      method: "PATCH",
+      query: `?${buildEqFilter("id", existingRow.id)}`,
+      body: payload,
+    });
+
+    if (error) {
+      console.warn("Supabase notification update failed:", error.message);
+      return null;
+    }
+
+    return Array.isArray(data) ? data[0]?.id || existingRow.id : existingRow.id;
+  }
+
+  const { error } = await supabaseRestRequest("notifications", {
+    method: "POST",
+    body: {
+      ...payload,
+      created_at: new Date().toISOString(),
+    },
+    prefer: "return=minimal",
+  });
+
+  if (error) {
+    console.warn("Supabase notification insert failed:", error.message);
+    return null;
+  }
+
+  return true;
+}
+
+async function deleteNotificationFromSupabase(notification = {}) {
+  const normalizedNotification = normalizeNotification(notification);
+
+  if (!normalizedNotification.id) {
+    return false;
+  }
+
+  const { error } = await supabaseRestRequest("notifications", {
+    method: "DELETE",
+    query: `?${buildEqFilter("local_notification_id", normalizedNotification.id)}`,
+    prefer: "",
+  });
+
+  if (error) {
+    console.warn("Supabase notification delete failed:", error.message);
+    return false;
+  }
+
+  return true;
+}
+
 export function getNotifications() {
   return sortNewest(readNotifications());
 }
@@ -227,7 +383,7 @@ export function getCommitteeNotifications() {
   return getNotificationsForUser("committee", "committee");
 }
 
-export function addNotification(notificationData) {
+export function addNotification(notificationData = {}) {
   const notifications = getNotifications();
   const newNotification = normalizeNotification({
     ...notificationData,
@@ -237,11 +393,12 @@ export function addNotification(notificationData) {
   });
 
   writeNotifications([newNotification, ...notifications]);
+  syncNotificationToSupabase(newNotification);
 
   return newNotification;
 }
 
-export function addNotificationOnce(notificationData) {
+export function addNotificationOnce(notificationData = {}) {
   const notifications = getNotifications();
   const newNotification = normalizeNotification({
     ...notificationData,
@@ -255,68 +412,122 @@ export function addNotificationOnce(notificationData) {
   );
 
   if (existingNotification) {
+    syncNotificationToSupabase(existingNotification);
     return existingNotification;
   }
 
   writeNotifications([newNotification, ...notifications]);
+  syncNotificationToSupabase(newNotification);
+
   return newNotification;
 }
 
 export function markNotificationAsRead(notificationId) {
   const notifications = getNotifications();
-  const updatedNotifications = notifications.map((notification) =>
-    String(notification.id) === String(notificationId)
-      ? { ...notification, isRead: true }
-      : notification,
-  );
+  let updatedNotification = null;
+
+  const updatedNotifications = notifications.map((notification) => {
+    if (String(notification.id) !== String(notificationId)) {
+      return notification;
+    }
+
+    updatedNotification = {
+      ...notification,
+      isRead: true,
+    };
+
+    return updatedNotification;
+  });
 
   writeNotifications(updatedNotifications);
 
-  return updatedNotifications.find(
-    (notification) => String(notification.id) === String(notificationId),
-  );
+  if (updatedNotification) {
+    syncNotificationToSupabase(updatedNotification);
+  }
+
+  return updatedNotification;
 }
 
 export function markAllNotificationsAsReadForCurrentUser() {
   const currentUser = getCurrentUserInfo();
   const notifications = getNotifications();
+  const changedNotifications = [];
 
-  const updatedNotifications = notifications.map((notification) =>
-    matchesTarget(notification, currentUser.id, currentUser.role)
-      ? { ...notification, isRead: true }
-      : notification,
-  );
+  const updatedNotifications = notifications.map((notification) => {
+    if (!matchesTarget(notification, currentUser.id, currentUser.role)) {
+      return notification;
+    }
+
+    const updatedNotification = {
+      ...notification,
+      isRead: true,
+    };
+
+    changedNotifications.push(updatedNotification);
+    return updatedNotification;
+  });
 
   writeNotifications(updatedNotifications);
+
+  changedNotifications.forEach((notification) => {
+    syncNotificationToSupabase(notification);
+  });
+
   return getNotificationsForCurrentUser();
 }
 
 export function markAllCommitteeNotificationsAsRead() {
   const notifications = getNotifications();
+  const changedNotifications = [];
 
-  const updatedNotifications = notifications.map((notification) =>
-    matchesTarget(notification, "committee", "committee")
-      ? { ...notification, isRead: true }
-      : notification,
-  );
+  const updatedNotifications = notifications.map((notification) => {
+    if (!matchesTarget(notification, "committee", "committee")) {
+      return notification;
+    }
+
+    const updatedNotification = {
+      ...notification,
+      isRead: true,
+    };
+
+    changedNotifications.push(updatedNotification);
+    return updatedNotification;
+  });
 
   writeNotifications(updatedNotifications);
+
+  changedNotifications.forEach((notification) => {
+    syncNotificationToSupabase(notification);
+  });
+
   return getCommitteeNotifications();
 }
 
 export function deleteNotification(notificationId) {
   const notifications = getNotifications();
+  const targetNotification = notifications.find(
+    (notification) => String(notification.id) === String(notificationId),
+  );
+
   const updatedNotifications = notifications.filter(
     (notification) => String(notification.id) !== String(notificationId),
   );
 
   writeNotifications(updatedNotifications);
+
+  if (targetNotification) {
+    deleteNotificationFromSupabase(targetNotification);
+  }
+
   return updatedNotifications;
 }
 
 export function deleteAllNotificationsForCurrentUser() {
   const currentUser = getCurrentUserInfo();
   const notifications = getNotifications();
+  const deletedNotifications = notifications.filter((notification) =>
+    matchesTarget(notification, currentUser.id, currentUser.role),
+  );
 
   const updatedNotifications = notifications.filter(
     (notification) =>
@@ -324,16 +535,30 @@ export function deleteAllNotificationsForCurrentUser() {
   );
 
   writeNotifications(updatedNotifications);
+
+  deletedNotifications.forEach((notification) => {
+    deleteNotificationFromSupabase(notification);
+  });
+
   return [];
 }
 
 export function deleteAllCommitteeNotifications() {
   const notifications = getNotifications();
+  const deletedNotifications = notifications.filter((notification) =>
+    matchesTarget(notification, "committee", "committee"),
+  );
+
   const updatedNotifications = notifications.filter(
     (notification) => !matchesTarget(notification, "committee", "committee"),
   );
 
   writeNotifications(updatedNotifications);
+
+  deletedNotifications.forEach((notification) => {
+    deleteNotificationFromSupabase(notification);
+  });
+
   return [];
 }
 

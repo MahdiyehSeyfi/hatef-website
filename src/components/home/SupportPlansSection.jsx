@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import bannerImage from "../../assets/images/banner.png";
@@ -8,7 +9,12 @@ import {
   getCurrentUserDashboardPath,
 } from "../../services/authService";
 
-import { getCalls, getPublishedCalls } from "../../services/callService";
+import {
+  CALLS_UPDATED_EVENT,
+  getCalls,
+  getPublishedCalls,
+  hydrateCallsFromSupabase,
+} from "../../services/callService";
 import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
 
 import "./SupportPlansSection.css";
@@ -53,6 +59,16 @@ function getCallDescription(call) {
     call.summary ||
     call.moreDescription ||
     "فراخوان برنامه هاتف با هدف حمایت از طرح‌ها و محصولات فناورانه دانشگاهی منتشر شده است."
+  );
+}
+
+function getCallImage(call) {
+  return (
+    call.image ||
+    call.bannerPreview ||
+    call.bannerImage ||
+    call.coverImage ||
+    bannerImage
   );
 }
 
@@ -185,6 +201,35 @@ function EmptySupportPlans() {
 
 function SupportPlansSection() {
   const navigate = useNavigate();
+  const [, setCallsVersion] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const refreshCalls = () => {
+      if (!isMounted) {
+        return;
+      }
+
+      setCallsVersion((currentVersion) => currentVersion + 1);
+    };
+
+    hydrateCallsFromSupabase({ force: true })
+      .then(refreshCalls)
+      .catch((error) => {
+        console.warn(
+          "Support plans hydration failed:",
+          error?.message || error,
+        );
+      });
+
+    window.addEventListener(CALLS_UPDATED_EVENT, refreshCalls);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener(CALLS_UPDATED_EVENT, refreshCalls);
+    };
+  }, []);
 
   const allCalls = getCalls();
   const mainCall = getMainCall();
@@ -226,7 +271,7 @@ function SupportPlansSection() {
           <div className="current-plan__media">
             <img
               className="current-plan__image"
-              src={bannerImage}
+              src={getCallImage(mainCall)}
               alt={mainCall.title}
             />
 
@@ -302,7 +347,7 @@ function SupportPlansSection() {
                   >
                     <img
                       className="previous-plan-card__image"
-                      src={bannerImage}
+                      src={getCallImage(call)}
                       alt={call.title}
                     />
 

@@ -1,4 +1,9 @@
 import { addNotification } from "./notificationService";
+import {
+  deleteContactRequestFromSupabase,
+  syncContactRequestToSupabase,
+  syncContactRequestUpdateToSupabase,
+} from "./supabaseContactRequestService";
 
 const CONTACT_REQUESTS_STORAGE_KEY = "hatef_contact_requests";
 const CONTACT_REQUESTS_UPDATED_EVENT = "hatef-contact-requests-updated";
@@ -185,7 +190,9 @@ function notifyCommitteeAboutGuestContactRequest(request) {
   addNotification({
     targetRole: "committee",
     title: "درخواست جدید از فرم تماس سایت",
-    body: `${request.sourceTitle || "فرم تماس سایت"} - ${request.fullName || "کاربر سایت"}: ${request.subject}`,
+    body: `${
+      request.sourceTitle || "فرم تماس سایت"
+    } - ${request.fullName || "کاربر سایت"}: ${request.subject}`,
     category: "درخواست‌ها",
     sourceType: "guest-contact-request",
     sourceId: request.id,
@@ -221,6 +228,7 @@ export function createContactRequest(requestData = {}) {
 
   writeStoredContactRequests([newRequest, ...getContactRequests()]);
   notifyCommitteeAboutGuestContactRequest(newRequest);
+  syncContactRequestToSupabase(newRequest);
 
   return newRequest;
 }
@@ -248,6 +256,11 @@ export function updateContactRequest(requestId, updates = {}) {
   });
 
   writeStoredContactRequests(updatedRequests);
+
+  if (updatedRequest) {
+    syncContactRequestUpdateToSupabase(updatedRequest);
+  }
+
   return updatedRequest;
 }
 
@@ -280,11 +293,20 @@ export function saveContactRequestReply(
 }
 
 export function deleteContactRequest(requestId) {
+  const targetRequest = getContactRequestById(requestId);
+
   const updatedRequests = getContactRequests().filter(
     (request) => String(request.id) !== String(requestId),
   );
 
   writeStoredContactRequests(updatedRequests);
+
+  if (targetRequest) {
+    deleteContactRequestFromSupabase(targetRequest);
+  } else {
+    deleteContactRequestFromSupabase(requestId);
+  }
+
   return updatedRequests;
 }
 
@@ -306,6 +328,12 @@ export function getContactRequestStats() {
 }
 
 export function clearContactRequests() {
+  const requests = getContactRequests();
+
+  requests.forEach((request) => {
+    deleteContactRequestFromSupabase(request);
+  });
+
   return writeStoredContactRequests([]);
 }
 

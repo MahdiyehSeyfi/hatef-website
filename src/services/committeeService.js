@@ -256,7 +256,12 @@ export function getCommitteeCalls() {
     moreTitle: "توضیحات تکمیلی فراخوان",
     moreDescription: call.moreDescription,
     pdfFileName: call.pdfFileUrl ? "call-file.pdf" : "",
-    bannerPreview: "",
+    bannerPreview:
+      call.bannerPreview ||
+      call.image ||
+      call.bannerImage ||
+      call.coverImage ||
+      "",
     isAnnualTheme: false,
     faqs: [],
     status: getCommitteeCallStatus(call.status),
@@ -280,10 +285,26 @@ export function getCommitteePlans() {
 
     return {
       id: plan.id,
+      sourceId: plan.id,
+      planId: plan.id,
       trackingId: plan.trackingCode,
+      trackingCode: plan.trackingCode,
       title: plan.title,
       field: plan.field,
       call: plan.callId,
+      callId: plan.callId,
+      callTitle: plan.callTitle || plan.call || plan.callName || "",
+      innovatorId: plan.innovatorId,
+      ownerId: plan.ownerId || plan.innovatorId,
+      userId: plan.userId || plan.innovatorId,
+      senderId: plan.senderId || plan.innovatorId,
+      innovatorName:
+        innovator?.fullName || plan.innovatorName || "فناور ثبت‌کننده طرح",
+      innovatorOrganization:
+        innovator?.organization ||
+        plan.innovatorOrganization ||
+        plan.organization ||
+        "تیم فناور",
       innovator: {
         name: innovator?.fullName || "فناور ثبت‌کننده طرح",
         organization: innovator?.organization || "تیم فناور",
@@ -315,7 +336,6 @@ export function getCommitteePlans() {
         : "",
       resultsPublished: Boolean(plan.resultsPublished),
       proposalFile: plan.proposalFileUrl || "",
-      sourceId: plan.id,
       orderNumber: index + 1,
       originalStatus: PLAN_STATUS_LABELS[plan.status] || "",
     };

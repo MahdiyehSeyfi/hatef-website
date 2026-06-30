@@ -11,6 +11,8 @@ import mellatVenturesLogo from "../../assets/logos/mellat-ventures-logo.png";
 
 import "./BusinessCollaborationPage.css";
 
+const BUSINESS_SCROLL_OFFSET = 118;
+
 const processSteps = [
   {
     id: 1,
@@ -205,31 +207,48 @@ const faqs = [
   },
 ];
 
+function scrollToBusinessHash(hashValue) {
+  const hash = decodeURIComponent(hashValue.replace("#", ""));
+
+  if (!hash) {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+
+    return;
+  }
+
+  const element = document.getElementById(hash);
+
+  if (!element) {
+    return;
+  }
+
+  const targetTop =
+    element.getBoundingClientRect().top +
+    window.scrollY -
+    BUSINESS_SCROLL_OFFSET;
+
+  window.scrollTo({
+    top: Math.max(targetTop, 0),
+    behavior: "smooth",
+  });
+}
+
 function useBusinessHashScroll() {
   const location = useLocation();
 
   useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      const hash = decodeURIComponent(location.hash.replace("#", ""));
-
-      if (!hash) {
-        window.scrollTo({
-          top: 0,
-          behavior: "smooth",
-        });
-
-        return;
-      }
-
-      const element = document.getElementById(hash);
-
-      element?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
+    const firstFrameId = window.requestAnimationFrame(() => {
+      const secondFrameId = window.requestAnimationFrame(() => {
+        scrollToBusinessHash(location.hash);
       });
+
+      return () => window.cancelAnimationFrame(secondFrameId);
     });
 
-    return () => window.cancelAnimationFrame(frameId);
+    return () => window.cancelAnimationFrame(firstFrameId);
   }, [location.pathname, location.hash]);
 }
 
@@ -356,7 +375,8 @@ function PartnersSection() {
 
         <div className="business-collab__partner-actions">
           <Link to="/business/opportunities">مشاهده فرصت‌های همکاری</Link>
-          <a href="#contact">ارتباط جهت مشارکت</a>
+
+          <a href="#participation-contact">ارتباط جهت مشارکت</a>
         </div>
       </div>
     </section>
@@ -396,7 +416,9 @@ function FrameworksSection() {
 
           <div className="business-collab__framework-panel">
             <span>مدل همکاری</span>
+
             <h3>{activeFramework.title}</h3>
+
             <p>{activeFramework.summary}</p>
 
             <ul>
@@ -436,7 +458,7 @@ function FaqSection() {
 
 function ContactSection() {
   return (
-    <section className="business-collab__contact" id="contact">
+    <section className="business-collab__contact" id="participation-contact">
       <div className="business-collab__container">
         <SectionTitle subtitle="برای شروع همکاری، مشارکت صنعتی، سرمایه‌گذاری یا دریافت مشاوره، فرم زیر را تکمیل کنید.">
           ارتباط جهت مشارکت
@@ -476,10 +498,11 @@ function BusinessCollaborationPage() {
           </p>
 
           <div className="business-collab__hero-actions">
-            <a href="#collaboration-top">نحوه همکاری</a>
+            <a href="#process">نحوه همکاری</a>
             <a href="#benefits">مزایای همکاری</a>
             <a href="#partners">همکاران تجاری</a>
             <a href="#frameworks">چارچوب‌ها</a>
+            <a href="#participation-contact">ارتباط جهت مشارکت</a>
           </div>
         </div>
       </section>

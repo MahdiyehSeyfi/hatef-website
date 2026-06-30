@@ -1,24 +1,51 @@
 import { newsItems as staticNewsItems } from "../data/newsData";
+import { supabase } from "../lib/supabaseClient";
 
 const NEWS_STORAGE_KEY = "hatef_news_items";
 const NEWS_PREVIEW_STORAGE_KEY = "hatef_news_preview_item";
 const NEWS_UPDATED_EVENT = "hatef-news-updated";
 const MAX_STORED_NEWS_ITEMS = 40;
-const MAX_EMBEDDED_IMAGE_LENGTH = 320000;
-const MAX_HTML_CONTENT_LENGTH = 160000;
-const MAX_SUMMARY_LENGTH = 2500;
+const AUTO_HYDRATE_FLAG = "__HATEF_NEWS_AUTO_HYDRATE_STARTED__";
+
+const NEWS_STATUS = {
+  DRAFT: "پیش‌نویس",
+  PUBLISHED: "منتشر شده",
+};
+
+const DB_STATUS = {
+  draft: "draft",
+  published: "published",
+  [NEWS_STATUS.DRAFT]: "draft",
+  [NEWS_STATUS.PUBLISHED]: "published",
+  "پیش نویس": "draft",
+  پیش‌نویس: "draft",
+  منتشرشده: "published",
+  "منتشر شده": "published",
+};
+
+const LOCAL_STATUS = {
+  draft: NEWS_STATUS.DRAFT,
+  published: NEWS_STATUS.PUBLISHED,
+  [NEWS_STATUS.DRAFT]: NEWS_STATUS.DRAFT,
+  [NEWS_STATUS.PUBLISHED]: NEWS_STATUS.PUBLISHED,
+  "پیش نویس": NEWS_STATUS.DRAFT,
+  پیش‌نویس: NEWS_STATUS.DRAFT,
+  منتشرشده: NEWS_STATUS.PUBLISHED,
+  "منتشر شده": NEWS_STATUS.PUBLISHED,
+};
 
 export const NEWS_CATEGORY_OPTIONS = [
   "اخبار و اطلاع‌رسانی",
-  "فراخوان‌ها",
-  "رویدادها",
-  "دستاوردها",
-  "حمایت‌ها و تسهیلات",
-  "همکاری‌های فناورانه",
-  "اطلاعیه‌های مهم",
+  "فراخوان‌ها و رویدادها",
+  "دستاوردها و پروژه‌ها",
+  "آموزش و توانمندسازی",
+  "همکاری‌های راهبردی",
+  "گزارش‌های دبیرخانه",
 ];
 
 let memoryNewsItems = [];
+let memoryPreviewItem = null;
+let hydratePromise = null;
 
 function canUseStorage() {
   return (
@@ -26,29 +53,79 @@ function canUseStorage() {
   );
 }
 
-function makeId(prefix = "news") {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return `${prefix}-${crypto.randomUUID()}`;
-  }
-
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+function canDispatchEvent() {
+  return (
+    typeof window !== "undefined" && typeof window.dispatchEvent === "function"
+  );
 }
 
-function safeParseJson(value, fallbackValue) {
+function makeId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = char === "x" ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
+}
+
+function isUuid(value = "") {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || ""),
+  );
+}
+
+function safeParseJson(value, fallback) {
+  if (!value) return fallback;
+
   try {
     return JSON.parse(value);
   } catch {
-    return fallbackValue;
+    return fallback;
+  }
+}
+
+function saveJsonToStorage(key, value) {
+  if (!canUseStorage()) return false;
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
   }
 }
 
 function normalizeValue(value, fallback = "") {
-  const normalizedValue = String(value || "").trim();
-  return normalizedValue || fallback;
+  const normalized = String(value ?? "").trim();
+  return normalized || fallback;
 }
 
 function normalizeBoolean(value) {
   return value === true || value === "true" || value === 1 || value === "1";
+}
+
+function normalizeTimestamp(value, fallback = 0) {
+  const numericValue = Number(value || 0);
+
+  if (Number.isFinite(numericValue) && numericValue > 0) {
+    return numericValue;
+  }
+
+  return fallback;
+}
+
+function toTimestamp(value) {
+  if (!value) return 0;
+
+  if (typeof value === "number") {
+    return normalizeTimestamp(value, 0);
+  }
+
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
 function getCurrentPersianDate() {
@@ -81,41 +158,13 @@ function getCurrentPersianDateTime() {
   }
 }
 
-function isEmbeddedImage(value = "") {
-  return /^data:image\//i.test(String(value || ""));
-}
-
-function isQuotaError(error) {
-  return (
-    error?.name === "QuotaExceededError" ||
-    error?.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
-    String(error?.message || "")
-      .toLowerCase()
-      .includes("quota") ||
-    String(error?.message || "").includes("exceeded the quota")
-  );
-}
-
-function truncateValue(value = "", maxLength = 0) {
-  const normalizedValue = String(value || "");
-
-  if (!maxLength || normalizedValue.length <= maxLength) {
-    return normalizedValue;
-  }
-
-  return normalizedValue.slice(0, maxLength);
-}
-
 function sanitizeNewsHtml(value = "") {
-  return truncateValue(
-    String(value || "")
-      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "")
-      .replace(/\son\w+=("[^"]*"|'[^']*'|[^\s>]*)/gi, "")
-      .replace(/href=("|')\s*javascript:[\s\S]*?\1/gi, 'href="#"')
-      .replace(/src=("|')\s*javascript:[\s\S]*?\1/gi, 'src=""'),
-    MAX_HTML_CONTENT_LENGTH,
-  );
+  return String(value || "")
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "")
+    .replace(/\son\w+=("[^"]*"|'[^']*'|[^\s>]*)/gi, "")
+    .replace(/href=("|')\s*javascript:[\s\S]*?\1/gi, 'href="#"')
+    .replace(/src=("|')\s*javascript:[\s\S]*?\1/gi, 'src=""');
 }
 
 function htmlToPlainText(value = "") {
@@ -133,93 +182,50 @@ function htmlToPlainText(value = "") {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/[ \t]+/g, " ")
-    .replace(/\n\s+/g, "\n")
     .trim();
 }
 
-function normalizeBody(value, summary = "", contentHtml = "") {
-  if (Array.isArray(value)) {
-    return value
-      .map((paragraph) => normalizeValue(paragraph))
-      .filter(Boolean)
-      .slice(0, 20);
-  }
-
-  const sourceText = contentHtml
-    ? htmlToPlainText(contentHtml)
-    : normalizeValue(value);
-
-  if (!sourceText) {
-    return summary ? [summary] : [];
-  }
-
-  return sourceText
-    .split(/\n{2,}/)
-    .map((paragraph) => normalizeValue(paragraph))
-    .filter(Boolean)
-    .slice(0, 20);
+function normalizeImageForRuntime(image = "") {
+  return normalizeValue(image);
 }
 
-function normalizeStatus(status) {
-  const value = normalizeValue(status);
-
-  if (value === "منتشر شده" || value === "published" || value === "public") {
-    return "منتشر شده";
-  }
-
-  return "پیش‌نویس";
-}
-
-function getDefaultImage() {
+function getFallbackImage() {
   return staticNewsItems?.[0]?.image || "";
 }
 
 function normalizeCategory(category = "") {
   const normalizedCategory = normalizeValue(category, NEWS_CATEGORY_OPTIONS[0]);
 
-  if (NEWS_CATEGORY_OPTIONS.includes(normalizedCategory)) {
-    return normalizedCategory;
-  }
-
-  return normalizedCategory;
+  return NEWS_CATEGORY_OPTIONS.includes(normalizedCategory)
+    ? normalizedCategory
+    : NEWS_CATEGORY_OPTIONS[0];
 }
 
-function normalizeTimestamp(value, fallbackValue = 0) {
-  const numericValue = Number(value || 0);
-  return Number.isFinite(numericValue) && numericValue > 0
-    ? numericValue
-    : fallbackValue;
+function normalizeStatus(status = "") {
+  const normalized = normalizeValue(status, NEWS_STATUS.DRAFT);
+  return LOCAL_STATUS[normalized] || NEWS_STATUS.DRAFT;
 }
 
-function normalizeImageForRuntime(image = "") {
-  const normalizedImage = normalizeValue(image);
-
-  if (!normalizedImage) {
-    return getDefaultImage();
-  }
-
-  return normalizedImage;
+function normalizeDbStatus(status = "") {
+  const normalized = normalizeValue(status, "draft");
+  return DB_STATUS[normalized] || "draft";
 }
 
-function normalizeImageForStorage(image = "", stripEmbeddedImages = false) {
-  const normalizedImage = normalizeValue(image);
-
-  if (!normalizedImage) {
-    return "";
+function normalizeBody(body = "", contentHtml = "") {
+  if (Array.isArray(body)) {
+    return body.map((paragraph) => normalizeValue(paragraph)).filter(Boolean);
   }
 
-  if (!isEmbeddedImage(normalizedImage)) {
-    return normalizedImage;
+  const bodyText = htmlToPlainText(contentHtml || body);
+
+  if (!bodyText) {
+    return [];
   }
 
-  if (
-    stripEmbeddedImages ||
-    normalizedImage.length > MAX_EMBEDDED_IMAGE_LENGTH
-  ) {
-    return "";
-  }
-
-  return normalizedImage;
+  return bodyText
+    .split(/\n{2,}/)
+    .map((paragraph) => normalizeValue(paragraph))
+    .filter(Boolean);
 }
 
 function normalizeNewsDraftRevision(draftRevision = null) {
@@ -228,35 +234,13 @@ function normalizeNewsDraftRevision(draftRevision = null) {
   }
 
   const contentHtml = sanitizeNewsHtml(
-    draftRevision.contentHtml ||
-      draftRevision.html ||
-      (typeof draftRevision.body === "string" &&
-      /<[^>]+>/.test(draftRevision.body)
-        ? draftRevision.body
-        : ""),
-  );
-
-  const bodyText = contentHtml ? htmlToPlainText(contentHtml) : "";
-
-  const summary = truncateValue(
-    normalizeValue(
-      draftRevision.summary,
-      bodyText ||
-        (Array.isArray(draftRevision.body) ? draftRevision.body[0] : ""),
-    ),
-    MAX_SUMMARY_LENGTH,
-  );
-
-  const body = normalizeBody(
-    draftRevision.body || draftRevision.content,
-    summary,
-    contentHtml,
+    draftRevision.contentHtml || draftRevision.html || draftRevision.body || "",
   );
 
   return {
-    title: normalizeValue(draftRevision.title, "خبر جدید هاتف"),
-    summary,
-    body,
+    title: normalizeValue(draftRevision.title),
+    summary: normalizeValue(draftRevision.summary),
+    body: contentHtml || normalizeValue(draftRevision.body),
     contentHtml,
     image: normalizeImageForRuntime(
       draftRevision.image || draftRevision.coverImage,
@@ -272,16 +256,13 @@ function normalizeNewsDraftRevision(draftRevision = null) {
       getCurrentPersianDateTime(),
     ),
     updatedAtTimestamp: normalizeTimestamp(
-      draftRevision.updatedAtTimestamp || draftRevision.updatedAtMs,
+      draftRevision.updatedAtTimestamp,
       Date.now(),
     ),
   };
 }
 
-function compactNewsDraftRevisionForStorage(
-  draftRevision = null,
-  options = {},
-) {
+function compactNewsDraftRevisionForStorage(draftRevision = null) {
   const normalizedDraftRevision = normalizeNewsDraftRevision(draftRevision);
 
   if (!normalizedDraftRevision) {
@@ -289,29 +270,20 @@ function compactNewsDraftRevisionForStorage(
   }
 
   return {
-    ...normalizedDraftRevision,
-    image: normalizeImageForStorage(
-      normalizedDraftRevision.image,
-      options.stripEmbeddedImages,
-    ),
-    summary: truncateValue(normalizedDraftRevision.summary, MAX_SUMMARY_LENGTH),
-    contentHtml: truncateValue(
-      normalizedDraftRevision.contentHtml,
-      MAX_HTML_CONTENT_LENGTH,
-    ),
-    body: Array.isArray(normalizedDraftRevision.body)
-      ? normalizedDraftRevision.body
-          .map((paragraph) => truncateValue(paragraph, 5000))
-          .slice(0, 20)
-      : normalizedDraftRevision.body,
+    title: normalizedDraftRevision.title,
+    summary: normalizedDraftRevision.summary,
+    body: normalizedDraftRevision.body,
+    contentHtml: normalizedDraftRevision.contentHtml,
+    image: normalizedDraftRevision.image,
+    category: normalizedDraftRevision.category,
+    isImportant: normalizedDraftRevision.isImportant,
+    updatedAt: normalizedDraftRevision.updatedAt,
+    updatedAtTimestamp: normalizedDraftRevision.updatedAtTimestamp,
   };
 }
 
 function normalizeNewsItem(newsItem = {}) {
-  const source = newsItem.source || "committee";
-  const isStaticItem = source === "static";
-  const nowTimestamp = Date.now();
-  const fallbackTimestamp = isStaticItem ? 0 : nowTimestamp;
+  const source = normalizeValue(newsItem.source, "committee");
 
   const contentHtml = sanitizeNewsHtml(
     newsItem.contentHtml ||
@@ -321,49 +293,42 @@ function normalizeNewsItem(newsItem = {}) {
         : ""),
   );
 
-  const bodyText = contentHtml ? htmlToPlainText(contentHtml) : "";
-
-  const summary = truncateValue(
-    normalizeValue(
-      newsItem.summary,
-      bodyText || (Array.isArray(newsItem.body) ? newsItem.body[0] : ""),
-    ),
-    MAX_SUMMARY_LENGTH,
-  );
-
-  const body = normalizeBody(
-    newsItem.body || newsItem.content,
-    summary,
-    contentHtml,
-  );
-
+  const body = normalizeBody(newsItem.body || newsItem.content, contentHtml);
+  const bodyText = htmlToPlainText(contentHtml) || body.join("\n\n");
   const status = normalizeStatus(newsItem.status);
+  const nowTimestamp = Date.now();
+
   const createdAtTimestamp = normalizeTimestamp(
-    newsItem.createdAtTimestamp || newsItem.createdAtMs,
-    fallbackTimestamp,
+    newsItem.createdAtTimestamp ||
+      newsItem.createdAtMs ||
+      toTimestamp(newsItem.createdAt),
+    nowTimestamp,
   );
+
   const updatedAtTimestamp = normalizeTimestamp(
-    newsItem.updatedAtTimestamp || newsItem.updatedAtMs,
+    newsItem.updatedAtTimestamp ||
+      newsItem.updatedAtMs ||
+      toTimestamp(newsItem.updatedAt),
     createdAtTimestamp,
   );
-  const publishedAtTimestamp = normalizeTimestamp(
-    newsItem.publishedAtTimestamp || newsItem.publishedAtMs,
-    status === "منتشر شده" ? updatedAtTimestamp || createdAtTimestamp : 0,
-  );
 
-  const date = normalizeValue(
-    newsItem.date || newsItem.publishedAt,
-    status === "منتشر شده" ? getCurrentPersianDate() : "",
+  const publishedAtTimestamp = normalizeTimestamp(
+    newsItem.publishedAtTimestamp ||
+      newsItem.publishedAtMs ||
+      toTimestamp(newsItem.publishedAt || newsItem.date),
+    status === NEWS_STATUS.PUBLISHED ? updatedAtTimestamp : 0,
   );
 
   return {
-    id: newsItem.id || makeId(),
+    id: normalizeValue(newsItem.id, makeId()),
     title: normalizeValue(newsItem.title, "خبر جدید هاتف"),
-    summary,
+    summary: normalizeValue(
+      newsItem.summary,
+      bodyText || "خلاصه خبر هنوز وارد نشده است.",
+    ),
     body,
     contentHtml,
     image: normalizeImageForRuntime(newsItem.image || newsItem.coverImage),
-    date,
     views: Number(newsItem.views || 0),
     status,
     category: normalizeCategory(newsItem.category),
@@ -371,85 +336,101 @@ function normalizeNewsItem(newsItem = {}) {
       newsItem.isImportant || newsItem.important || newsItem.featured,
     ),
     author: normalizeValue(newsItem.author, "دبیرخانه هاتف"),
+    source,
     createdAt: normalizeValue(newsItem.createdAt, getCurrentPersianDateTime()),
     updatedAt: normalizeValue(newsItem.updatedAt),
     publishedAt: normalizeValue(
       newsItem.publishedAt,
-      status === "منتشر شده" ? date || getCurrentPersianDate() : "",
+      status === NEWS_STATUS.PUBLISHED
+        ? newsItem.date || getCurrentPersianDate()
+        : "",
+    ),
+    date: normalizeValue(
+      newsItem.date,
+      status === NEWS_STATUS.PUBLISHED
+        ? newsItem.publishedAt || getCurrentPersianDate()
+        : "",
     ),
     createdAtTimestamp,
     updatedAtTimestamp,
     publishedAtTimestamp,
     draftRevision: normalizeNewsDraftRevision(newsItem.draftRevision),
-    source,
+    metadata:
+      newsItem.metadata && typeof newsItem.metadata === "object"
+        ? newsItem.metadata
+        : {},
   };
 }
 
 function normalizeNewsItems(items) {
-  if (!Array.isArray(items)) {
-    return [];
-  }
-
-  return items.filter(Boolean).map(normalizeNewsItem);
+  return Array.isArray(items)
+    ? items.filter(Boolean).map(normalizeNewsItem)
+    : [];
 }
 
 function compactNewsItemForStorage(newsItem = {}, options = {}) {
   const normalizedItem = normalizeNewsItem(newsItem);
+  const keepLargeImage = Boolean(options.keepLargeImage);
 
   return {
-    ...normalizedItem,
-    image: normalizeImageForStorage(
-      normalizedItem.image,
-      options.stripEmbeddedImages,
-    ),
-    summary: truncateValue(normalizedItem.summary, MAX_SUMMARY_LENGTH),
-    contentHtml: truncateValue(
-      normalizedItem.contentHtml,
-      MAX_HTML_CONTENT_LENGTH,
-    ),
-    body: Array.isArray(normalizedItem.body)
-      ? normalizedItem.body
-          .map((paragraph) => truncateValue(paragraph, 5000))
-          .slice(0, 20)
-      : normalizedItem.body,
+    id: normalizedItem.id,
+    title: normalizedItem.title,
+    summary: normalizedItem.summary,
+    body: normalizedItem.body,
+    contentHtml: normalizedItem.contentHtml,
+    image: keepLargeImage ? normalizedItem.image : normalizedItem.image,
+    views: normalizedItem.views,
+    status: normalizedItem.status,
+    category: normalizedItem.category,
+    isImportant: normalizedItem.isImportant,
+    author: normalizedItem.author,
+    source: normalizedItem.source,
+    createdAt: normalizedItem.createdAt,
+    updatedAt: normalizedItem.updatedAt,
+    publishedAt: normalizedItem.publishedAt,
+    date: normalizedItem.date,
+    createdAtTimestamp: normalizedItem.createdAtTimestamp,
+    updatedAtTimestamp: normalizedItem.updatedAtTimestamp,
+    publishedAtTimestamp: normalizedItem.publishedAtTimestamp,
     draftRevision: compactNewsDraftRevisionForStorage(
       normalizedItem.draftRevision,
-      options,
     ),
+    metadata: normalizedItem.metadata,
   };
 }
 
 function prepareNewsItemsForStorage(items = [], options = {}) {
   return normalizeNewsItems(items)
+    .sort(sortByNewest)
     .slice(0, MAX_STORED_NEWS_ITEMS)
     .map((item) => compactNewsItemForStorage(item, options));
 }
 
 function notifyNewsUpdated() {
-  if (typeof window === "undefined" || !window.dispatchEvent) {
-    return;
-  }
+  if (!canDispatchEvent()) return;
 
   window.dispatchEvent(new CustomEvent(NEWS_UPDATED_EVENT));
 }
 
-function saveJsonToStorage(key, value, friendlyMessage) {
-  if (!canUseStorage()) {
-    return;
-  }
+function sortByNewest(first, second) {
+  return (
+    Number(
+      second.publishedAtTimestamp ||
+        second.updatedAtTimestamp ||
+        second.createdAtTimestamp ||
+        0,
+    ) -
+    Number(
+      first.publishedAtTimestamp ||
+        first.updatedAtTimestamp ||
+        first.createdAtTimestamp ||
+        0,
+    )
+  );
+}
 
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    if (!isQuotaError(error)) {
-      throw error;
-    }
-
-    throw new Error(
-      friendlyMessage ||
-        "فضای ذخیره‌سازی مرورگر پر شده است. تصویر خبر را کوچک‌تر کنید یا چند داده آزمایشی قدیمی را پاک کنید.",
-    );
-  }
+function sortNewest(items = []) {
+  return [...items].sort(sortByNewest);
 }
 
 function readStoredNewsItems() {
@@ -458,17 +439,11 @@ function readStoredNewsItems() {
   }
 
   const storedValue = window.localStorage.getItem(NEWS_STORAGE_KEY);
-
-  if (!storedValue) {
-    return [];
-  }
-
   return normalizeNewsItems(safeParseJson(storedValue, []));
 }
 
 function writeStoredNewsItems(items) {
-  const normalizedItems = normalizeNewsItems(items);
-  const compactItems = prepareNewsItemsForStorage(normalizedItems);
+  const compactItems = prepareNewsItemsForStorage(items);
 
   if (!canUseStorage()) {
     memoryNewsItems = compactItems;
@@ -476,131 +451,240 @@ function writeStoredNewsItems(items) {
     return compactItems;
   }
 
-  try {
-    saveJsonToStorage(NEWS_STORAGE_KEY, compactItems);
-  } catch (firstError) {
-    if (canUseStorage()) {
-      window.localStorage.removeItem(NEWS_PREVIEW_STORAGE_KEY);
-    }
-
-    try {
-      const extraCompactItems = prepareNewsItemsForStorage(normalizedItems, {
-        stripEmbeddedImages: true,
-      });
-
-      saveJsonToStorage(
-        NEWS_STORAGE_KEY,
-        extraCompactItems,
-        "فضای ذخیره‌سازی مرورگر پر شده است. خبر بدون تصویر ذخیره شدنی نیست؛ چند داده آزمایشی قدیمی را پاک کنید یا از آدرس تصویر استفاده کنید.",
-      );
-      notifyNewsUpdated();
-      return extraCompactItems;
-    } catch (secondError) {
-      throw new Error(
-        secondError?.message ||
-          firstError?.message ||
-          "ذخیره خبر انجام نشد چون فضای مرورگر پر است.",
-      );
-    }
-  }
-
+  saveJsonToStorage(NEWS_STORAGE_KEY, compactItems);
   notifyNewsUpdated();
   return compactItems;
 }
 
 function readPreviewNewsItem() {
   if (!canUseStorage()) {
-    return null;
+    return memoryPreviewItem;
   }
 
   const storedValue = window.localStorage.getItem(NEWS_PREVIEW_STORAGE_KEY);
+  const parsed = safeParseJson(storedValue, null);
 
-  if (!storedValue) {
-    return null;
-  }
-
-  return normalizeNewsItem(safeParseJson(storedValue, null) || {});
+  return parsed ? normalizeNewsItem(parsed) : null;
 }
 
 function writePreviewNewsItem(newsItem) {
   const normalizedPreviewItem = normalizeNewsItem({
     ...newsItem,
     id: "preview",
-    status: "پیش‌نویس",
-    source: "preview",
-    date: "پیش‌نمایش",
-    publishedAt: "پیش‌نمایش",
-    createdAtTimestamp: Date.now(),
+    status: NEWS_STATUS.DRAFT,
+    updatedAt: getCurrentPersianDateTime(),
     updatedAtTimestamp: Date.now(),
-    publishedAtTimestamp: Date.now(),
   });
 
-  if (canUseStorage()) {
-    try {
-      saveJsonToStorage(
-        NEWS_PREVIEW_STORAGE_KEY,
-        compactNewsItemForStorage(normalizedPreviewItem),
-      );
-    } catch (firstError) {
-      try {
-        saveJsonToStorage(
-          NEWS_PREVIEW_STORAGE_KEY,
-          compactNewsItemForStorage(normalizedPreviewItem, {
-            stripEmbeddedImages: true,
-          }),
-          "فضای ذخیره‌سازی مرورگر پر شده است. پیش‌نمایش بدون تصویر باز می‌شود؛ برای تصویر از فایل کوچک‌تر یا آدرس تصویر استفاده کنید.",
-        );
-      } catch (secondError) {
-        throw new Error(secondError?.message || firstError?.message);
-      }
-    }
+  if (!canUseStorage()) {
+    memoryPreviewItem = normalizedPreviewItem;
+    notifyNewsUpdated();
+    return normalizedPreviewItem;
   }
 
+  saveJsonToStorage(
+    NEWS_PREVIEW_STORAGE_KEY,
+    compactNewsItemForStorage(normalizedPreviewItem, { keepLargeImage: true }),
+  );
   notifyNewsUpdated();
   return normalizedPreviewItem;
-}
-
-function sortNewest(items = []) {
-  return [...items].sort((first, second) => {
-    const firstTimestamp = Number(
-      first.publishedAtTimestamp ||
-        first.updatedAtTimestamp ||
-        first.createdAtTimestamp ||
-        0,
-    );
-    const secondTimestamp = Number(
-      second.publishedAtTimestamp ||
-        second.updatedAtTimestamp ||
-        second.createdAtTimestamp ||
-        0,
-    );
-
-    if (firstTimestamp !== secondTimestamp) {
-      return secondTimestamp - firstTimestamp;
-    }
-
-    const firstKey = first.publishedAt || first.date || first.createdAt || "";
-    const secondKey =
-      second.publishedAt || second.date || second.createdAt || "";
-
-    return String(secondKey).localeCompare(String(firstKey));
-  });
 }
 
 function getStaticNewsItems() {
   return normalizeNewsItems(
     (staticNewsItems || []).map((item, index) => ({
       ...item,
-      status: "منتشر شده",
-      isImportant: normalizeBoolean(
-        item.isImportant || item.important || item.featured,
-      ),
+      id: item.id || `static-news-${index + 1}`,
       source: "static",
-      createdAtTimestamp: index + 1,
-      updatedAtTimestamp: index + 1,
-      publishedAtTimestamp: index + 1,
+      status: NEWS_STATUS.PUBLISHED,
+      createdAtTimestamp: item.createdAtTimestamp || 1,
+      updatedAtTimestamp: item.updatedAtTimestamp || 1,
+      publishedAtTimestamp: item.publishedAtTimestamp || 1,
     })),
   );
+}
+
+function mergeNewsItems(primaryItems = [], secondaryItems = []) {
+  const map = new Map();
+
+  [...primaryItems, ...secondaryItems].forEach((item) => {
+    const normalized = normalizeNewsItem(item);
+    map.set(String(normalized.id), normalized);
+  });
+
+  return sortNewest([...map.values()]);
+}
+
+function mapNewsRowToLocalItem(row = {}) {
+  const publishedTimestamp = toTimestamp(row.published_at);
+  const updatedTimestamp = toTimestamp(row.updated_at);
+  const createdTimestamp = toTimestamp(row.created_at);
+
+  return normalizeNewsItem({
+    id: row.id,
+    title: row.title,
+    summary: row.summary,
+    body: row.content_html,
+    contentHtml: row.content_html,
+    image: row.image,
+    category: row.category,
+    status: LOCAL_STATUS[row.status] || NEWS_STATUS.DRAFT,
+    isImportant: row.is_important,
+    views: row.views,
+    author: row.author,
+    source: row.source || "committee",
+    draftRevision: row.draft_revision,
+    metadata: row.metadata,
+    createdAt: row.created_at || "",
+    updatedAt: row.updated_at || "",
+    publishedAt: row.published_at || "",
+    date: row.published_at || "",
+    createdAtTimestamp: createdTimestamp || Date.now(),
+    updatedAtTimestamp: updatedTimestamp || createdTimestamp || Date.now(),
+    publishedAtTimestamp: publishedTimestamp,
+  });
+}
+
+function buildNewsRowPayload(newsItem = {}) {
+  const normalized = normalizeNewsItem(newsItem);
+  const dbStatus = normalizeDbStatus(normalized.status);
+
+  const payload = {
+    title: normalized.title,
+    summary: normalized.summary,
+    content_html:
+      normalized.contentHtml ||
+      (Array.isArray(normalized.body)
+        ? normalized.body.map((item) => `<p>${item}</p>`).join("")
+        : ""),
+    image: normalized.image || "",
+    category: normalized.category,
+    status: dbStatus,
+    is_important: normalized.isImportant,
+    views: Number(normalized.views || 0),
+    author: normalized.author,
+    source: normalized.source || "committee",
+    draft_revision: normalized.draftRevision || null,
+    metadata: normalized.metadata || {},
+    updated_at: new Date().toISOString(),
+  };
+
+  if (isUuid(normalized.id)) {
+    payload.id = normalized.id;
+  }
+
+  if (dbStatus === "published") {
+    payload.published_at = new Date().toISOString();
+  } else if (!normalized.publishedAt) {
+    payload.published_at = null;
+  }
+
+  return payload;
+}
+
+async function getActiveUserId() {
+  const { data } = await supabase.auth.getUser();
+  return data?.user?.id || null;
+}
+
+async function fetchSiteNewsRowsFromSupabase() {
+  const { data, error } = await supabase
+    .from("site_news")
+    .select("*")
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    console.warn("Supabase site_news fetch failed:", error.message);
+    return null;
+  }
+
+  return Array.isArray(data) ? data : [];
+}
+
+async function syncNewsItemToSupabase(newsItem = {}, action = "upsert") {
+  const normalized = normalizeNewsItem(newsItem);
+
+  if (!isUuid(normalized.id)) {
+    console.warn(
+      "News sync skipped because news id is not UUID:",
+      normalized.id,
+    );
+    return null;
+  }
+
+  const payload = buildNewsRowPayload(normalized);
+  const userId = await getActiveUserId();
+
+  if (userId) {
+    if (action === "create") payload.created_by = userId;
+    payload.updated_by = userId;
+
+    if (normalizeDbStatus(normalized.status) === "published") {
+      payload.published_by = userId;
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("site_news")
+    .upsert(payload, { onConflict: "id" })
+    .select("*")
+    .single();
+
+  if (error) {
+    console.warn("Supabase site_news sync failed:", error.message);
+    return null;
+  }
+
+  return data ? mapNewsRowToLocalItem(data) : normalized;
+}
+
+async function deleteNewsItemFromSupabase(newsItem = {}) {
+  const id = typeof newsItem === "string" ? newsItem : newsItem?.id;
+
+  if (!isUuid(id)) {
+    return false;
+  }
+
+  const { error } = await supabase.from("site_news").delete().eq("id", id);
+
+  if (error) {
+    console.warn("Supabase site_news delete failed:", error.message);
+    return false;
+  }
+
+  return true;
+}
+
+function syncNewsItemToSupabaseAsync(newsItem, action = "upsert") {
+  syncNewsItemToSupabase(newsItem, action).then((syncedItem) => {
+    if (!syncedItem) return;
+
+    const merged = mergeNewsItems([syncedItem], getCommitteeNewsItems());
+    writeStoredNewsItems(merged);
+  });
+}
+
+export async function hydrateNewsItemsFromSupabase(options = {}) {
+  if (hydratePromise && !options.force) {
+    return hydratePromise;
+  }
+
+  hydratePromise = (async () => {
+    const rows = await fetchSiteNewsRowsFromSupabase();
+
+    if (!rows) {
+      return getCommitteeNewsItems();
+    }
+
+    const items = rows.map(mapNewsRowToLocalItem);
+    writeStoredNewsItems(items);
+    return items;
+  })().finally(() => {
+    hydratePromise = null;
+  });
+
+  return hydratePromise;
 }
 
 export function getCommitteeNewsItems() {
@@ -608,14 +692,19 @@ export function getCommitteeNewsItems() {
 }
 
 export function getPublishedCommitteeNewsItems() {
-  return getCommitteeNewsItems().filter((item) => item.status === "منتشر شده");
+  return getCommitteeNewsItems().filter(
+    (item) => item.status === NEWS_STATUS.PUBLISHED,
+  );
 }
 
 export function getPublicNewsItems() {
-  return sortNewest([
-    ...getPublishedCommitteeNewsItems(),
-    ...getStaticNewsItems(),
-  ]);
+  const committeeItems = getPublishedCommitteeNewsItems();
+
+  if (committeeItems.length > 0) {
+    return committeeItems;
+  }
+
+  return getStaticNewsItems();
 }
 
 export function getLatestPublicNewsItems(limit = 6) {
@@ -644,7 +733,7 @@ export function getNewsItemById(newsId, options = {}) {
   }
 
   const items = options.includeDrafts
-    ? [...getCommitteeNewsItems(), ...getStaticNewsItems()]
+    ? mergeNewsItems(getCommitteeNewsItems(), getStaticNewsItems())
     : getPublicNewsItems();
 
   return items.find((item) => String(item.id) === normalizedNewsId) || null;
@@ -659,8 +748,10 @@ export function getNewsPreviewItem() {
 }
 
 export function createNewsItem(newsData = {}, options = {}) {
-  const status = options.publish ? "منتشر شده" : newsData.status;
   const nowTimestamp = Date.now();
+  const status = options.publish
+    ? NEWS_STATUS.PUBLISHED
+    : normalizeStatus(newsData.status);
 
   const newsItem = normalizeNewsItem({
     ...newsData,
@@ -671,20 +762,21 @@ export function createNewsItem(newsData = {}, options = {}) {
     createdAtTimestamp: newsData.createdAtTimestamp || nowTimestamp,
     updatedAtTimestamp: nowTimestamp,
     publishedAtTimestamp:
-      status === "منتشر شده"
+      status === NEWS_STATUS.PUBLISHED
         ? newsData.publishedAtTimestamp || nowTimestamp
         : newsData.publishedAtTimestamp || 0,
     date:
-      status === "منتشر شده"
+      status === NEWS_STATUS.PUBLISHED
         ? newsData.date || getCurrentPersianDate()
         : newsData.date || "",
     publishedAt:
-      status === "منتشر شده"
+      status === NEWS_STATUS.PUBLISHED
         ? newsData.publishedAt || getCurrentPersianDate()
         : newsData.publishedAt || "",
   });
 
   writeStoredNewsItems([newsItem, ...getCommitteeNewsItems()]);
+  syncNewsItemToSupabaseAsync(newsItem, "create");
 
   return newsItem;
 }
@@ -703,13 +795,17 @@ export function updateNewsItem(newsId, updates = {}) {
       ...updates,
       id: item.id,
       updatedAt: getCurrentPersianDateTime(),
-      updatedAtTimestamp: updates.updatedAtTimestamp || nowTimestamp,
+      updatedAtTimestamp: nowTimestamp,
     });
 
     return updatedNewsItem;
   });
 
   writeStoredNewsItems(updatedItems);
+
+  if (updatedNewsItem) {
+    syncNewsItemToSupabaseAsync(updatedNewsItem, "update");
+  }
 
   return updatedNewsItem;
 }
@@ -718,11 +814,11 @@ export function publishNewsItem(newsId) {
   const nowTimestamp = Date.now();
 
   return updateNewsItem(newsId, {
-    status: "منتشر شده",
-    date: getCurrentPersianDate(),
+    status: NEWS_STATUS.PUBLISHED,
     publishedAt: getCurrentPersianDate(),
+    date: getCurrentPersianDate(),
     publishedAtTimestamp: nowTimestamp,
-    updatedAtTimestamp: nowTimestamp,
+    draftRevision: null,
   });
 }
 
@@ -759,25 +855,30 @@ export function publishNewsRevision(newsId, revisionData = null) {
     return publishNewsItem(newsId);
   }
 
-  const nowTimestamp = Date.now();
-
   return updateNewsItem(newsId, {
     ...revisionPayload,
-    status: "منتشر شده",
-    date: getCurrentPersianDate(),
-    publishedAt: getCurrentPersianDate(),
-    publishedAtTimestamp: nowTimestamp,
-    updatedAtTimestamp: nowTimestamp,
+    status: NEWS_STATUS.PUBLISHED,
     draftRevision: null,
+    publishedAt: getCurrentPersianDate(),
+    date: getCurrentPersianDate(),
+    publishedAtTimestamp: Date.now(),
   });
 }
 
 export function deleteNewsItem(newsId) {
+  const targetNewsItem = getCommitteeNewsItems().find(
+    (item) => String(item.id) === String(newsId),
+  );
+
   const updatedItems = getCommitteeNewsItems().filter(
     (item) => String(item.id) !== String(newsId),
   );
 
   writeStoredNewsItems(updatedItems);
+
+  if (targetNewsItem) {
+    deleteNewsItemFromSupabase(targetNewsItem);
+  }
 
   return updatedItems;
 }
@@ -791,9 +892,11 @@ export function incrementNewsViews(newsId) {
     return getNewsItemById(newsId);
   }
 
-  return updateNewsItem(newsId, {
+  const updatedItem = updateNewsItem(newsId, {
     views: Number(targetNewsItem.views || 0) + 1,
   });
+
+  return updatedItem || getNewsItemById(newsId);
 }
 
 export function getNewsStats() {
@@ -801,15 +904,16 @@ export function getNewsStats() {
 
   return {
     total: items.length,
-    published: items.filter((item) => item.status === "منتشر شده").length,
-    drafts: items.filter((item) => item.status === "پیش‌نویس").length,
+    published: items.filter((item) => item.status === NEWS_STATUS.PUBLISHED)
+      .length,
+    draft: items.filter((item) => item.status !== NEWS_STATUS.PUBLISHED).length,
     important: items.filter((item) => item.isImportant).length,
   };
 }
 
-export function compactNewsStorage() {
+export function compactStoredNewsItems() {
   const compactItems = prepareNewsItemsForStorage(getCommitteeNewsItems(), {
-    stripEmbeddedImages: true,
+    keepLargeImage: false,
   });
 
   if (canUseStorage()) {
@@ -830,5 +934,25 @@ export function clearCommitteeNewsItems() {
 
   return writeStoredNewsItems([]);
 }
+
+function startAutoHydration() {
+  if (typeof window === "undefined") return;
+
+  const globalScope = typeof globalThis !== "undefined" ? globalThis : window;
+
+  if (globalScope[AUTO_HYDRATE_FLAG]) {
+    return;
+  }
+
+  globalScope[AUTO_HYDRATE_FLAG] = true;
+
+  window.setTimeout(() => {
+    hydrateNewsItemsFromSupabase({ force: true }).catch((error) => {
+      console.warn("Auto hydrate site_news failed:", error?.message || error);
+    });
+  }, 0);
+}
+
+startAutoHydration();
 
 export { NEWS_STORAGE_KEY, NEWS_PREVIEW_STORAGE_KEY, NEWS_UPDATED_EVENT };

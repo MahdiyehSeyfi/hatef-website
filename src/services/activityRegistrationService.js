@@ -1,5 +1,6 @@
 import { getCurrentUser } from "./authService";
 import { addNotificationOnce } from "./notificationService";
+import { syncActivityRegistrationToSupabase } from "./supabaseActivityRegistrationService";
 
 const ACTIVITY_REGISTRATIONS_STORAGE_KEY = "hatef_activity_registrations";
 const PENDING_ACTIVITY_REGISTRATION_STORAGE_KEY =
@@ -26,6 +27,20 @@ function safeParseJson(value, fallbackValue) {
     return JSON.parse(value);
   } catch {
     return fallbackValue;
+  }
+}
+
+function safeSetStorageItem(key, value) {
+  if (!canUseStorage()) {
+    return false;
+  }
+
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    console.warn(`Unable to write ${key} to localStorage:`, error);
+    return false;
   }
 }
 
@@ -166,7 +181,7 @@ function writeRegistrationsToStorage(registrations) {
     return normalizedRegistrations;
   }
 
-  window.localStorage.setItem(
+  safeSetStorageItem(
     ACTIVITY_REGISTRATIONS_STORAGE_KEY,
     JSON.stringify(normalizedRegistrations),
   );
@@ -244,7 +259,7 @@ function writePendingActivityRegistration(pendingRegistration) {
     return pendingRegistration;
   }
 
-  window.localStorage.setItem(
+  safeSetStorageItem(
     PENDING_ACTIVITY_REGISTRATION_STORAGE_KEY,
     JSON.stringify(pendingRegistration),
   );
@@ -443,6 +458,7 @@ export function addActivityRegistration(activity = {}, registrantData = {}) {
   const nextRegistrations = [registration, ...registrations];
   writeRegistrationsToStorage(nextRegistrations);
   notifyInstructorNewRegistration(activity, registration);
+  syncActivityRegistrationToSupabase(registration);
 
   return {
     success: true,

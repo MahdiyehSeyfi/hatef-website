@@ -3,7 +3,6 @@ import { getPlanById, getPlans } from "./planService";
 import { addNotificationOnce } from "./notificationService";
 
 const TASKS_STORAGE_KEY = "hatef_tasks";
-const LEGACY_TASK_STORAGE_KEYS = ["tasks", "accepted_project_tasks"];
 
 const STATUS = {
   WAITING:
@@ -157,7 +156,7 @@ function splitDeadline(deadline) {
   };
 }
 
-function normalizeTask(task) {
+function normalizeTask(task = {}) {
   const deadlineParts = splitDeadline(task.deadline);
   const status = mapPersianStatusToCentralStatus(
     task.status || task.participantStatus,
@@ -231,22 +230,7 @@ function readTasksFromStorage() {
     return memoryTasks;
   }
 
-  const mainTasks = readTasksFromStorageKey(TASKS_STORAGE_KEY);
-
-  if (mainTasks.length) {
-    return mainTasks;
-  }
-
-  for (const legacyKey of LEGACY_TASK_STORAGE_KEYS) {
-    const legacyTasks = readTasksFromStorageKey(legacyKey);
-
-    if (legacyTasks.length) {
-      writeTasksToStorage(legacyTasks);
-      return legacyTasks;
-    }
-  }
-
-  return [];
+  return readTasksFromStorageKey(TASKS_STORAGE_KEY);
 }
 
 function sortTasksByNewest(tasks) {
@@ -402,9 +386,12 @@ export function updateTask(taskId, updates = {}) {
         task.innovatorResponseText,
       innovatorFileUrl:
         updates.innovatorFileUrl ??
+        updates.fileUrl ??
+        updates.userFileUrl ??
+        task.innovatorFileUrl ??
         updates.userFileName ??
         updates.fileName ??
-        task.innovatorFileUrl,
+        "",
       innovatorFileName:
         updates.innovatorFileName ??
         updates.userFileName ??
@@ -449,15 +436,25 @@ export function submitTaskResponse(taskId, responseData = {}) {
     typeof responseData === "string"
       ? responseData
       : responseData.description || responseData.innovatorResponseText || "";
+  const fileReference =
+    typeof responseData === "string"
+      ? ""
+      : responseData.fileUrl ||
+        responseData.innovatorFileUrl ||
+        responseData.fileName ||
+        "";
   const fileName =
     typeof responseData === "string"
       ? ""
-      : responseData.fileName || responseData.innovatorFileUrl || "";
+      : responseData.fileName ||
+        responseData.innovatorFileName ||
+        responseData.userFileName ||
+        fileReference;
 
   return updateTask(taskId, {
     status: STATUS.ANSWERED,
     innovatorResponseText: description,
-    innovatorFileUrl: fileName,
+    innovatorFileUrl: fileReference,
     innovatorFileName: fileName,
   });
 }

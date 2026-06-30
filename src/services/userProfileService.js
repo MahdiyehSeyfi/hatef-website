@@ -1,5 +1,6 @@
 import {
   getCurrentUser,
+  setCurrentUser,
   updateCurrentUserPassword,
   updateCurrentUserProfile,
 } from "./authService";
@@ -46,7 +47,9 @@ function getRoleLabel(role, fallback = "کاربر سامانه") {
 }
 
 function getFullName(user = {}) {
-  const directFullName = normalizeValue(user.fullName || user.name);
+  const directFullName = normalizeValue(
+    user.fullName || user.full_name || user.name,
+  );
 
   if (directFullName) {
     return directFullName;
@@ -58,8 +61,8 @@ function getFullName(user = {}) {
 function getAvatarLetter(profile = {}, fallback = "ک") {
   return (
     profile.avatarLetter ||
-    profile.firstName?.[0] ||
     profile.fullName?.[0] ||
+    profile.firstName?.[0] ||
     fallback
   );
 }
@@ -69,52 +72,89 @@ function getCurrentPersianYear() {
     const parts = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
       year: "numeric",
     }).formatToParts(new Date());
+
     return parts.find((part) => part.type === "year")?.value || "۱۴۰۵";
   } catch {
     return "۱۴۰۵";
   }
 }
 
+function shouldUpdatePassword(passwordData = {}) {
+  return Boolean(
+    String(passwordData.currentPassword || "").trim() ||
+    String(passwordData.newPassword || "").trim() ||
+    String(
+      passwordData.confirmPassword || passwordData.repeatPassword || "",
+    ).trim(),
+  );
+}
+
+function warnProfileSyncError(error) {
+  console.warn(
+    "Dashboard profile sync failed:",
+    error?.message || error || "Unknown error",
+  );
+}
+
+function pickEditableValue(profileValue, currentValue = "") {
+  if (Object.prototype.hasOwnProperty.call(profileValue || {}, "__never__")) {
+    return "";
+  }
+
+  return normalizeValue(profileValue, currentValue);
+}
+
 export function buildDashboardProfile(user = {}, defaults = {}) {
   const fullName = getFullName(user) || getFullName(defaults);
   const splitName = splitFullName(fullName);
-  const firstName = normalizeValue(
-    user.firstName,
-    defaults.firstName || splitName.firstName,
-  );
-  const lastName = normalizeValue(
-    user.lastName,
-    defaults.lastName || splitName.lastName,
-  );
+
+  const firstName = normalizeValue(user.firstName, splitName.firstName);
+  const lastName = normalizeValue(user.lastName, splitName.lastName);
+
   const normalizedFullName = normalizeValue(
-    user.fullName,
-    defaults.fullName || `${firstName} ${lastName}`.trim(),
+    user.fullName || user.full_name || user.name,
+    fullName,
   );
-  const roleLabel = getRoleLabel(user.role, defaults.role || defaults.level);
+
+  const actualRole = normalizeValue(
+    user.role,
+    defaults.authRole || defaults.role,
+  );
+  const roleLabel = getRoleLabel(
+    actualRole,
+    defaults.userRole || defaults.level || defaults.role || "کاربر سامانه",
+  );
+
   const currentYear = getCurrentPersianYear();
+
+  const mobile = normalizeValue(user.mobile || user.phone);
+  const phone = normalizeValue(user.phone || user.mobile);
+  const email = normalizeValue(user.email);
 
   return {
     ...defaults,
     ...user,
+
     firstName,
     lastName,
     fullName: normalizedFullName,
+    full_name: normalizedFullName,
     name: normalizedFullName,
-    mobile: normalizeValue(
-      user.mobile || user.phone,
-      defaults.mobile || defaults.phone,
-    ),
-    phone: normalizeValue(
-      user.phone || user.mobile,
-      defaults.phone || defaults.mobile,
-    ),
-    email: normalizeValue(user.email, defaults.email),
-    role: normalizeValue(defaults.role, roleLabel),
-    level: normalizeValue(defaults.level, roleLabel),
+
+    mobile,
+    phone,
+    email,
+
+    role: actualRole,
+    authRole: actualRole,
+    roleLabel,
+    level: roleLabel,
     userRole: roleLabel,
-    organization: normalizeValue(user.organization, defaults.organization),
-    expertise: normalizeValue(user.expertise, defaults.expertise),
-    unit: normalizeValue(user.unit || user.organization, defaults.unit),
+
+    organization: normalizeValue(user.organization),
+    expertise: normalizeValue(user.expertise),
+    unit: normalizeValue(user.unit || user.organization),
+
     memberSince: normalizeValue(
       user.memberSince,
       defaults.memberSince || currentYear,
@@ -123,9 +163,19 @@ export function buildDashboardProfile(user = {}, defaults = {}) {
       user.membershipDuration,
       defaults.membershipDuration || "کمتر از ۱ سال",
     ),
-    avatarPreview: normalizeValue(user.avatarPreview, defaults.avatarPreview),
+
+    avatarPreview: normalizeValue(
+      user.avatarPreview || user.avatarUrl || user.avatar_url,
+    ),
+    avatarUrl: normalizeValue(user.avatarUrl || user.avatar_url),
+    avatar_url: normalizeValue(user.avatar_url || user.avatarUrl),
     avatarLetter: getAvatarLetter(
-      { ...defaults, ...user, firstName, fullName: normalizedFullName },
+      {
+        ...defaults,
+        ...user,
+        firstName,
+        fullName: normalizedFullName,
+      },
       defaults.avatarLetter || "ک",
     ),
   };
@@ -143,31 +193,89 @@ export function saveCurrentDashboardProfile(
 ) {
   const currentUser = getCurrentUser?.();
 
-  if (!currentUser?.id) {
-    return buildDashboardProfile(profile, defaults);
-  }
-
-  updateCurrentUserPassword({
-    currentPassword: passwordData.currentPassword,
-    newPassword: passwordData.newPassword,
-    confirmPassword:
-      passwordData.confirmPassword || passwordData.repeatPassword,
-  });
-
   const fullName = normalizeValue(
-    profile.fullName,
+    profile.fullName || profile.full_name || profile.name,
     `${profile.firstName || ""} ${profile.lastName || ""}`.trim(),
   );
 
-  const updatedUser = updateCurrentUserProfile({
-    ...profile,
-    fullName,
-    name: fullName,
-    phone: profile.phone || profile.mobile,
-    mobile: profile.mobile || profile.phone,
-    avatarLetter:
-      profile.avatarLetter || profile.firstName?.[0] || fullName?.[0] || "ک",
-  });
+  const nextMobile = Object.prototype.hasOwnProperty.call(profile, "mobile")
+    ? normalizeValue(profile.mobile)
+    : Object.prototype.hasOwnProperty.call(profile, "phone")
+      ? normalizeValue(profile.phone)
+      : normalizeValue(currentUser?.mobile || currentUser?.phone);
 
-  return buildDashboardProfile(updatedUser || profile, defaults);
+  const nextPhone = Object.prototype.hasOwnProperty.call(profile, "phone")
+    ? normalizeValue(profile.phone)
+    : nextMobile;
+
+  const nextOrganization = Object.prototype.hasOwnProperty.call(
+    profile,
+    "organization",
+  )
+    ? normalizeValue(profile.organization)
+    : normalizeValue(currentUser?.organization);
+
+  const nextExpertise = Object.prototype.hasOwnProperty.call(
+    profile,
+    "expertise",
+  )
+    ? normalizeValue(profile.expertise)
+    : normalizeValue(currentUser?.expertise);
+
+  const nextAvatarUrl = normalizeValue(
+    profile.avatarUrl ||
+      profile.avatar_url ||
+      profile.avatarPreview ||
+      currentUser?.avatarUrl ||
+      currentUser?.avatar_url,
+  );
+
+  const nextUser = {
+    ...(currentUser || {}),
+    ...profile,
+    id: currentUser?.id || profile.id,
+    email: currentUser?.email || profile.email || "",
+    role: currentUser?.role || profile.role || defaults.authRole || "",
+    fullName,
+    full_name: fullName,
+    name: fullName,
+    firstName: splitFullName(fullName).firstName,
+    lastName: splitFullName(fullName).lastName,
+    phone: nextPhone,
+    mobile: nextMobile,
+    organization: nextOrganization,
+    expertise: nextExpertise,
+    avatarUrl: nextAvatarUrl,
+    avatar_url: nextAvatarUrl,
+    avatarLetter: profile.avatarLetter || fullName?.[0] || "ک",
+  };
+
+  const nextDashboardProfile = buildDashboardProfile(nextUser, defaults);
+
+  if (currentUser?.id) {
+    setCurrentUser(nextUser);
+
+    updateCurrentUserProfile({
+      fullName,
+      full_name: fullName,
+      name: fullName,
+      phone: nextPhone,
+      mobile: nextMobile,
+      organization: nextOrganization,
+      expertise: nextExpertise,
+      avatarUrl: nextAvatarUrl,
+      avatar_url: nextAvatarUrl,
+    }).catch(warnProfileSyncError);
+
+    if (shouldUpdatePassword(passwordData)) {
+      updateCurrentUserPassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+        confirmPassword:
+          passwordData.confirmPassword || passwordData.repeatPassword,
+      }).catch(warnProfileSyncError);
+    }
+  }
+
+  return nextDashboardProfile;
 }

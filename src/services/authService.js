@@ -1,10 +1,12 @@
-import { MOCK_USERS } from "../data/mockUsers";
+import { supabase } from "../lib/supabaseClient";
 import { ROLE_DASHBOARD_PATHS } from "../constants/roles";
 
 const CURRENT_USER_STORAGE_KEY = "hatef-current-user-id";
+const CURRENT_USER_PROFILE_STORAGE_KEY = "hatef-current-user-profile";
 const REGISTERED_USERS_STORAGE_KEY = "hatef-registered-users";
 const USER_PROFILE_OVERRIDES_STORAGE_KEY = "hatef-user-profile-overrides";
 const USER_CREDENTIAL_OVERRIDES_STORAGE_KEY = "hatef-user-credential-overrides";
+const USER_PROFILES_STORAGE_KEY = "hatef_user_profiles";
 const PENDING_ACTIVITY_REGISTRATION_STORAGE_KEY =
   "hatef_pending_activity_registration";
 
@@ -18,21 +20,64 @@ const FALLBACK_DASHBOARD_PATHS = {
   instructor: "/dashboard/instructor",
   event_organizer: "/dashboard/instructor",
   organizer: "/dashboard/instructor",
+  support: "/dashboard/committee-secretariat",
+  admin: "/dashboard/committee-secretariat",
 };
 
-const BUILT_IN_TEST_USERS = [
+const TEST_USERS = [
   {
-    id: "user-instructor-1",
-    username: "instructor",
-    password: "123456",
-    firstName: "مدرس",
-    lastName: "هاتف",
-    fullName: "مدرس رویداد هاتف",
-    email: "instructor@hatef.ir",
-    mobile: "09120000005",
+    id: "test-innovator",
+    username: "innovator@hatef.test",
+    email: "innovator@hatef.test",
+    fullName: "فناور تست",
+    name: "فناور تست",
+    role: "innovator",
+    organization: "دانشگاه تهران",
+    expertise: "فناوری",
+    avatarLetter: "ف",
+  },
+  {
+    id: "test-reviewer",
+    username: "reviewer@hatef.test",
+    email: "reviewer@hatef.test",
+    fullName: "داور تست",
+    name: "داور تست",
+    role: "reviewer",
+    organization: "دانشگاه تهران",
+    expertise: "داوری تخصصی",
+    avatarLetter: "د",
+  },
+  {
+    id: "test-committee",
+    username: "committee@hatef.test",
+    email: "committee@hatef.test",
+    fullName: "کمیته تست",
+    name: "کمیته تست",
+    role: "committee",
+    organization: "دبیرخانه هاتف",
+    expertise: "مدیریت فرایندها",
+    avatarLetter: "ک",
+  },
+  {
+    id: "test-business",
+    username: "business@hatef.test",
+    email: "business@hatef.test",
+    fullName: "همکار تجاری تست",
+    name: "همکار تجاری تست",
+    role: "business_partner",
+    organization: "شرکت تست",
+    expertise: "همکاری تجاری",
+    avatarLetter: "ه",
+  },
+  {
+    id: "test-instructor",
+    username: "instructor@hatef.test",
+    email: "instructor@hatef.test",
+    fullName: "مدرس تست",
+    name: "مدرس تست",
     role: "instructor",
-    organization: "مرکز آموزش و رویداد هاتف",
-    expertise: "طراحی دوره، برگزاری کارگاه و مدیریت رویداد",
+    organization: "مرکز آموزش تست",
+    expertise: "آموزش و رویداد",
     avatarLetter: "م",
   },
 ];
@@ -73,7 +118,7 @@ function splitFullName(fullName = "") {
 }
 
 function getFullName(user = {}) {
-  const fullName = normalizeText(user.fullName || user.name);
+  const fullName = normalizeText(user.fullName || user.full_name || user.name);
 
   if (fullName) {
     return fullName;
@@ -98,21 +143,27 @@ function normalizeUserProfile(user = {}) {
   const firstName = normalizeText(user.firstName, splitName.firstName);
   const lastName = normalizeText(user.lastName, splitName.lastName);
   const normalizedFullName = normalizeText(
-    user.fullName,
+    user.fullName || user.full_name,
     `${firstName} ${lastName}`.trim(),
   );
 
   return {
     ...user,
+    id: user.id,
     firstName,
     lastName,
     fullName: normalizedFullName,
+    full_name: normalizedFullName,
     name: normalizedFullName,
+    username: normalizeText(user.username || user.email),
     mobile: normalizeText(user.mobile || user.phone),
     phone: normalizeText(user.phone || user.mobile),
     email: normalizeText(user.email),
+    role: normalizeText(user.role, "innovator"),
     organization: normalizeText(user.organization),
     expertise: normalizeText(user.expertise),
+    avatarUrl: normalizeText(user.avatarUrl || user.avatar_url),
+    avatar_url: normalizeText(user.avatar_url || user.avatarUrl),
     avatarLetter: getAvatarLetter({
       ...user,
       firstName,
@@ -121,164 +172,22 @@ function normalizeUserProfile(user = {}) {
   };
 }
 
-function readRegisteredUsers() {
-  if (!canUseStorage()) {
-    return [];
-  }
-
-  try {
-    const storedValue = window.localStorage.getItem(
-      REGISTERED_USERS_STORAGE_KEY,
-    );
-    const parsedValue = storedValue ? JSON.parse(storedValue) : [];
-
-    return Array.isArray(parsedValue)
-      ? parsedValue.map(normalizeUserProfile)
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeRegisteredUsers(users) {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.setItem(
-    REGISTERED_USERS_STORAGE_KEY,
-    JSON.stringify(users.map(normalizeUserProfile)),
-  );
-}
-
-function readProfileOverrides() {
-  if (!canUseStorage()) {
-    return {};
-  }
-
-  const storedValue = window.localStorage.getItem(
-    USER_PROFILE_OVERRIDES_STORAGE_KEY,
-  );
-
-  if (!storedValue) {
-    return {};
-  }
-
-  const parsedValue = safeParseJson(storedValue, {});
-  return parsedValue && typeof parsedValue === "object" ? parsedValue : {};
-}
-
-function writeProfileOverrides(overrides) {
-  if (!canUseStorage()) {
-    return overrides;
-  }
-
-  window.localStorage.setItem(
-    USER_PROFILE_OVERRIDES_STORAGE_KEY,
-    JSON.stringify(overrides || {}),
-  );
-
-  return overrides;
-}
-
-function readCredentialOverrides() {
-  if (!canUseStorage()) {
-    return {};
-  }
-
-  const storedValue = window.localStorage.getItem(
-    USER_CREDENTIAL_OVERRIDES_STORAGE_KEY,
-  );
-
-  if (!storedValue) {
-    return {};
-  }
-
-  const parsedValue = safeParseJson(storedValue, {});
-  return parsedValue && typeof parsedValue === "object" ? parsedValue : {};
-}
-
-function writeCredentialOverrides(overrides) {
-  if (!canUseStorage()) {
-    return overrides;
-  }
-
-  window.localStorage.setItem(
-    USER_CREDENTIAL_OVERRIDES_STORAGE_KEY,
-    JSON.stringify(overrides || {}),
-  );
-
-  return overrides;
-}
-
-function getStoredPasswordOverride(userId) {
-  if (!userId) {
-    return "";
-  }
-
-  const credentialOverrides = readCredentialOverrides();
-  const credentialPassword = credentialOverrides[userId]?.password;
-
-  if (credentialPassword) {
-    return String(credentialPassword);
-  }
-
-  const profileOverrides = readProfileOverrides();
-  const legacyProfilePassword = profileOverrides[userId]?.password;
-
-  return legacyProfilePassword ? String(legacyProfilePassword) : "";
-}
-
-function writeStoredPasswordOverride(userId, password) {
-  if (!userId || !password) {
-    return null;
-  }
-
-  const credentialOverrides = readCredentialOverrides();
-
-  return writeCredentialOverrides({
-    ...credentialOverrides,
-    [userId]: {
-      ...(credentialOverrides[userId] || {}),
-      password: String(password),
-      updatedAt: new Date().toISOString(),
-    },
-  });
-}
-
-function applyStoredUserData(user) {
-  if (!user?.id) {
-    return user;
-  }
-
-  const profileOverrides = readProfileOverrides();
-  const safeProfileOverride = removePasswordField(
-    profileOverrides[user.id] || {},
-  );
-  const passwordOverride = getStoredPasswordOverride(user.id);
-
+function mapSupabaseProfile(profile = {}) {
   return normalizeUserProfile({
-    ...user,
-    ...safeProfileOverride,
-    id: user.id,
-    role: user.role,
-    username: safeProfileOverride.username || user.username,
-    password: passwordOverride || user.password,
+    id: profile.id,
+    fullName: profile.full_name,
+    full_name: profile.full_name,
+    email: profile.email,
+    role: profile.role,
+    organization: profile.organization,
+    mobile: profile.mobile,
+    phone: profile.mobile,
+    expertise: profile.expertise,
+    avatarUrl: profile.avatar_url,
+    avatar_url: profile.avatar_url,
+    createdAt: profile.created_at,
+    updatedAt: profile.updated_at,
   });
-}
-
-function mergeUsers(...userGroups) {
-  const usersByKey = new Map();
-
-  userGroups.flat().forEach((user) => {
-    if (!user?.id) {
-      return;
-    }
-
-    usersByKey.set(normalizeValue(user.id), normalizeUserProfile(user));
-  });
-
-  return Array.from(usersByKey.values()).map(applyStoredUserData);
 }
 
 function getPendingActivityRegistrationPath() {
@@ -299,212 +208,312 @@ function getPendingActivityRegistrationPath() {
   return pendingRegistration?.targetPath || "";
 }
 
-function updateRegisteredUserPasswordIfNeeded(userId, password) {
-  const registeredUsers = readRegisteredUsers();
-  const registeredUserExists = registeredUsers.some(
-    (user) => String(user.id) === String(userId),
-  );
-
-  if (!registeredUserExists) {
-    return;
+function readUserProfilesFromStorage() {
+  if (!canUseStorage()) {
+    return [];
   }
 
-  writeRegisteredUsers(
-    registeredUsers.map((user) =>
-      String(user.id) === String(userId)
-        ? normalizeUserProfile({ ...user, password })
-        : user,
-    ),
-  );
+  const storedValue = window.localStorage.getItem(USER_PROFILES_STORAGE_KEY);
+
+  if (!storedValue) {
+    return [];
+  }
+
+  const parsedValue = safeParseJson(storedValue, []);
+
+  return Array.isArray(parsedValue)
+    ? parsedValue.filter(Boolean).map(normalizeUserProfile)
+    : [];
 }
 
-export function getUsers() {
-  return mergeUsers(MOCK_USERS, BUILT_IN_TEST_USERS, readRegisteredUsers());
+function getUserProfileKey(user = {}) {
+  return String(user.id || user.email || user.username || "").trim();
 }
 
-export function getUserById(userId) {
-  return getUsers().find((user) => user.id === userId) || null;
+function getUserEmailKey(user = {}) {
+  return String(user.email || user.username || "")
+    .trim()
+    .toLowerCase();
 }
 
-export function getCurrentUser() {
+function mergeUserProfiles(primaryUsers = [], fallbackUsers = []) {
+  const usersByKey = new Map();
+  const keyByEmail = new Map();
+
+  function addUser(user, shouldOverrideSameEmail = false) {
+    const normalizedUser = normalizeUserProfile(user);
+    const key = getUserProfileKey(normalizedUser);
+    const emailKey = getUserEmailKey(normalizedUser);
+
+    if (!key) {
+      return;
+    }
+
+    if (shouldOverrideSameEmail && emailKey && keyByEmail.has(emailKey)) {
+      usersByKey.delete(keyByEmail.get(emailKey));
+    }
+
+    usersByKey.set(key, normalizedUser);
+
+    if (emailKey) {
+      keyByEmail.set(emailKey, key);
+    }
+  }
+
+  fallbackUsers.filter(Boolean).forEach((user) => addUser(user, false));
+  primaryUsers.filter(Boolean).forEach((user) => addUser(user, true));
+
+  return Array.from(usersByKey.values());
+}
+
+function readCachedCurrentUser() {
   if (!canUseStorage()) {
     return null;
   }
 
-  const userId = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+  const storedValue = window.localStorage.getItem(
+    CURRENT_USER_PROFILE_STORAGE_KEY,
+  );
 
-  if (!userId) {
+  if (!storedValue) {
     return null;
   }
 
-  return getUserById(userId);
+  const parsedValue = safeParseJson(storedValue, null);
+
+  return parsedValue ? normalizeUserProfile(parsedValue) : null;
 }
 
-export function setCurrentUser(user) {
+function cacheCurrentUser(user) {
   if (!canUseStorage() || !user?.id) {
     return;
   }
 
-  window.localStorage.setItem(CURRENT_USER_STORAGE_KEY, user.id);
-}
+  const safeUser = removePasswordField(normalizeUserProfile(user));
 
-export function loginAsUser(userId) {
-  const user = getUserById(userId);
-
-  if (!user) {
-    return null;
-  }
-
-  setCurrentUser(user);
-
-  return user;
-}
-
-export function loginWithCredentials(identifier, password) {
-  const normalizedIdentifier = normalizeValue(identifier);
-  const normalizedPassword = String(password || "").trim();
-
-  if (!normalizedIdentifier || !normalizedPassword) {
-    return null;
-  }
-
-  const user = getUsers().find((item) => {
-    const identifiers = [
-      item.username,
-      item.email,
-      item.mobile,
-      item.phone,
-    ].map(normalizeValue);
-
-    return (
-      identifiers.includes(normalizedIdentifier) &&
-      String(item.password || "") === normalizedPassword
-    );
-  });
-
-  if (!user) {
-    return null;
-  }
-
-  setCurrentUser(user);
-
-  return user;
-}
-
-export function registerMockUser({ fullName, email, mobile, password, role }) {
-  const trimmedFullName = String(fullName || "").trim();
-  const trimmedEmail = String(email || "").trim();
-  const trimmedMobile = String(mobile || "").trim();
-  const trimmedPassword = String(password || "").trim();
-
-  if (!trimmedFullName || !trimmedEmail || !trimmedPassword || !role) {
-    return null;
-  }
-
-  const currentUsers = getUsers();
-  const normalizedEmail = normalizeValue(trimmedEmail);
-
-  const duplicateUser = currentUsers.find(
-    (user) => normalizeValue(user.email) === normalizedEmail,
+  window.localStorage.setItem(CURRENT_USER_STORAGE_KEY, safeUser.id);
+  window.localStorage.setItem(
+    CURRENT_USER_PROFILE_STORAGE_KEY,
+    JSON.stringify(safeUser),
   );
-
-  if (duplicateUser) {
-    return null;
-  }
-
-  const { firstName, lastName } = splitFullName(trimmedFullName);
-  const registeredUsers = readRegisteredUsers();
-
-  const newUser = normalizeUserProfile({
-    id: `user-${role}-${Date.now()}`,
-    username: normalizedEmail,
-    password: trimmedPassword,
-    firstName: firstName || trimmedFullName,
-    lastName,
-    fullName: trimmedFullName,
-    email: trimmedEmail,
-    mobile: trimmedMobile,
-    phone: trimmedMobile,
-    role,
-    organization:
-      role === "business_partner"
-        ? "همکار تجاری"
-        : role === "instructor"
-          ? "مرکز آموزش و رویداد هاتف"
-          : "تیم فناور",
-    expertise:
-      role === "business_partner"
-        ? "تجاری‌سازی و همکاری تجاری"
-        : role === "instructor"
-          ? "طراحی دوره و برگزاری رویداد"
-          : "فناوری و نوآوری",
-    avatarLetter: (firstName || trimmedFullName).charAt(0) || "ک",
-  });
-
-  writeRegisteredUsers([newUser, ...registeredUsers]);
-  setCurrentUser(newUser);
-
-  return newUser;
 }
 
-export function updateUserProfile(userId, updates = {}) {
+function clearCurrentUserCache() {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  window.localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+  window.localStorage.removeItem(CURRENT_USER_PROFILE_STORAGE_KEY);
+}
+
+async function fetchProfileByUserId(userId) {
   if (!userId) {
     return null;
   }
 
-  const currentUser = getUserById(userId);
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
 
-  if (!currentUser) {
+  if (error) {
+    throw new Error(error.message || "خطا در دریافت اطلاعات کاربر.");
+  }
+
+  return mapSupabaseProfile(data);
+}
+
+export function getUsers() {
+  const storedProfiles = readUserProfilesFromStorage();
+
+  if (storedProfiles.length) {
+    return mergeUserProfiles(storedProfiles, TEST_USERS);
+  }
+
+  return TEST_USERS.map(normalizeUserProfile);
+}
+
+export function getUserById(userId) {
+  const currentUser = getCurrentUser();
+
+  if (currentUser?.id === userId) {
+    return currentUser;
+  }
+
+  return getUsers().find((user) => user.id === userId) || null;
+}
+
+export function getCurrentUser() {
+  return readCachedCurrentUser();
+}
+
+export function setCurrentUser(user) {
+  cacheCurrentUser(user);
+}
+
+export async function refreshCurrentUser() {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user?.id) {
+    clearCurrentUserCache();
+    return null;
+  }
+
+  const profile = await fetchProfileByUserId(user.id);
+  cacheCurrentUser(profile);
+
+  return profile;
+}
+
+export async function loginAsUser(userId) {
+  const testUser = getUsers().find((user) => user.id === userId);
+
+  if (!testUser?.email) {
+    return null;
+  }
+
+  return loginWithCredentials(testUser.email, "Test123456");
+}
+
+export async function loginWithCredentials(identifier, password) {
+  const email = normalizeValue(identifier);
+  const normalizedPassword = String(password || "").trim();
+
+  if (!email || !normalizedPassword) {
+    return null;
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: normalizedPassword,
+  });
+
+  if (error) {
+    throw new Error("ایمیل یا رمز عبور صحیح نیست.");
+  }
+
+  if (!data?.user?.id) {
+    return null;
+  }
+
+  const profile = await fetchProfileByUserId(data.user.id);
+  cacheCurrentUser(profile);
+
+  return profile;
+}
+
+export async function registerMockUser({
+  fullName,
+  email,
+  mobile,
+  password,
+  role,
+}) {
+  const trimmedFullName = String(fullName || "").trim();
+  const trimmedEmail = String(email || "").trim();
+  const trimmedMobile = String(mobile || "").trim();
+  const trimmedPassword = String(password || "").trim();
+  const normalizedRole = String(role || "innovator").trim();
+
+  if (
+    !trimmedFullName ||
+    !trimmedEmail ||
+    !trimmedPassword ||
+    !normalizedRole
+  ) {
+    return null;
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email: trimmedEmail,
+    password: trimmedPassword,
+    options: {
+      data: {
+        full_name: trimmedFullName,
+        role: normalizedRole,
+        mobile: trimmedMobile,
+      },
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message || "ثبت‌نام با خطا مواجه شد.");
+  }
+
+  if (!data?.user?.id) {
+    return null;
+  }
+
+  const profile = await fetchProfileByUserId(data.user.id);
+  cacheCurrentUser(profile);
+
+  return profile;
+}
+
+export async function updateUserProfile(userId, updates = {}) {
+  if (!userId) {
     return null;
   }
 
   const updatesWithoutPassword = removePasswordField(updates);
-  const existingPassword =
-    getStoredPasswordOverride(userId) || currentUser.password;
+  const currentUser = getCurrentUser();
 
-  const nextUser = normalizeUserProfile({
-    ...currentUser,
-    ...updatesWithoutPassword,
-    id: currentUser.id,
-    role: currentUser.role,
-    username: updatesWithoutPassword.username || currentUser.username,
-    password: existingPassword,
-  });
-
-  const registeredUsers = readRegisteredUsers();
-  const registeredUserExists = registeredUsers.some(
-    (user) => String(user.id) === String(userId),
+  const nextFullName = normalizeText(
+    updatesWithoutPassword.fullName ||
+      updatesWithoutPassword.full_name ||
+      currentUser?.fullName,
   );
 
-  if (registeredUserExists) {
-    writeRegisteredUsers(
-      registeredUsers.map((user) =>
-        String(user.id) === String(userId) ? nextUser : user,
-      ),
-    );
+  const payload = {
+    full_name: nextFullName,
+    mobile: normalizeText(
+      updatesWithoutPassword.mobile ||
+        updatesWithoutPassword.phone ||
+        currentUser?.mobile,
+    ),
+    organization: normalizeText(
+      updatesWithoutPassword.organization || currentUser?.organization,
+    ),
+    expertise: normalizeText(
+      updatesWithoutPassword.expertise || currentUser?.expertise,
+    ),
+    avatar_url: normalizeText(
+      updatesWithoutPassword.avatarUrl ||
+        updatesWithoutPassword.avatar_url ||
+        currentUser?.avatarUrl,
+    ),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(payload)
+    .eq("id", userId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(error.message || "ویرایش اطلاعات کاربر با خطا مواجه شد.");
   }
 
-  const profileOverrides = readProfileOverrides();
-  writeProfileOverrides({
-    ...profileOverrides,
-    [userId]: {
-      ...(profileOverrides[userId] || {}),
-      ...removePasswordField(nextUser),
-      id: userId,
-      role: currentUser.role,
-      username: nextUser.username,
-    },
-  });
+  const updatedUser = mapSupabaseProfile(data);
+  cacheCurrentUser(updatedUser);
 
   if (Object.prototype.hasOwnProperty.call(updates, "password")) {
-    writeStoredPasswordOverride(userId, updates.password);
-    updateRegisteredUserPasswordIfNeeded(userId, updates.password);
+    await supabase.auth.updateUser({
+      password: String(updates.password || "").trim(),
+    });
   }
 
-  return getUserById(userId);
+  return updatedUser;
 }
 
-export function updateCurrentUserProfile(updates = {}) {
+export async function updateCurrentUserProfile(updates = {}) {
   const currentUser = getCurrentUser();
 
   if (!currentUser?.id) {
@@ -514,7 +523,7 @@ export function updateCurrentUserProfile(updates = {}) {
   return updateUserProfile(currentUser.id, updates);
 }
 
-export function updateCurrentUserPassword({
+export async function updateCurrentUserPassword({
   currentPassword = "",
   newPassword = "",
   confirmPassword = "",
@@ -523,21 +532,8 @@ export function updateCurrentUserPassword({
   const normalizedCurrentPassword = String(currentPassword || "").trim();
   const normalizedNewPassword = String(newPassword || "").trim();
   const normalizedConfirmPassword = String(confirmPassword || "").trim();
-  const hasPasswordIntent = Boolean(
-    normalizedCurrentPassword ||
-    normalizedNewPassword ||
-    normalizedConfirmPassword,
-  );
 
-  if (!hasPasswordIntent) {
-    return {
-      success: true,
-      reason: "unchanged",
-      user: currentUser,
-    };
-  }
-
-  if (!currentUser?.id) {
+  if (!currentUser?.id || !currentUser?.email) {
     throw new Error("برای تغییر رمز عبور ابتدا باید وارد حساب کاربری شوید.");
   }
 
@@ -553,34 +549,37 @@ export function updateCurrentUserPassword({
     throw new Error("رمز عبور جدید و تکرار آن یکسان نیست.");
   }
 
-  if (String(currentUser.password || "") !== normalizedCurrentPassword) {
-    throw new Error("رمز عبور فعلی صحیح نیست.");
-  }
-
   if (normalizedNewPassword === normalizedCurrentPassword) {
     throw new Error("رمز عبور جدید نباید با رمز فعلی یکسان باشد.");
   }
 
-  writeStoredPasswordOverride(currentUser.id, normalizedNewPassword);
-  updateRegisteredUserPasswordIfNeeded(currentUser.id, normalizedNewPassword);
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: currentUser.email,
+    password: normalizedCurrentPassword,
+  });
 
-  const updatedUser = updateUserProfile(currentUser.id, {
+  if (signInError) {
+    throw new Error("رمز عبور فعلی صحیح نیست.");
+  }
+
+  const { error: updateError } = await supabase.auth.updateUser({
     password: normalizedNewPassword,
   });
+
+  if (updateError) {
+    throw new Error(updateError.message || "تغییر رمز عبور با خطا مواجه شد.");
+  }
 
   return {
     success: true,
     reason: "updated",
-    user: updatedUser,
+    user: currentUser,
   };
 }
 
 export function logoutUser() {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+  clearCurrentUserCache();
+  supabase.auth.signOut();
 }
 
 export function getDashboardPathByRole(role) {

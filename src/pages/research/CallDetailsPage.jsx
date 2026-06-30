@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 
 import bannerImage from "../../assets/images/banner.png";
@@ -5,7 +6,12 @@ import ctaBannerImage from "../../assets/images/banner-2.png";
 
 import NewsSidebar from "../../components/news/NewsSidebar";
 
-import { getCallById, getCalls } from "../../services/callService";
+import {
+  CALLS_UPDATED_EVENT,
+  getCallById,
+  getCalls,
+  hydrateCallsFromSupabase,
+} from "../../services/callService";
 import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
 
 import "./CallDetailsPage.css";
@@ -121,6 +127,16 @@ function getCallStatusLabel(call) {
   return CALL_STATUS_LABELS[call.status] || "وضعیت نامشخص";
 }
 
+function getCallImage(call) {
+  return (
+    call.image ||
+    call.bannerPreview ||
+    call.bannerImage ||
+    call.coverImage ||
+    bannerImage
+  );
+}
+
 function mapCallDetails(call) {
   return {
     ...call,
@@ -129,6 +145,7 @@ function mapCallDetails(call) {
     deadline: getCallDeadline(call),
     status: getCallStatusLabel(call),
     submitStatus: getCallSubmitStatus(call),
+    image: getCallImage(call),
   };
 }
 
@@ -191,7 +208,7 @@ function CallHero({ call }) {
   return (
     <section className="call-details__hero">
       <div className="call-details__hero-image">
-        <img src={bannerImage} alt={call.title} />
+        <img src={call.image || bannerImage} alt={call.title} />
 
         <div className="call-details__hero-status">
           <CallBadge variant={isActive ? "active" : "default"}>
@@ -368,6 +385,33 @@ function CallNotFound() {
 
 function CallDetailsPage() {
   const { callId } = useParams();
+  const [, setCallsVersion] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const refreshCalls = () => {
+      if (!isMounted) {
+        return;
+      }
+
+      setCallsVersion((currentVersion) => currentVersion + 1);
+    };
+
+    hydrateCallsFromSupabase({ force: true })
+      .then(refreshCalls)
+      .catch((error) => {
+        console.warn("Call details hydration failed:", error?.message || error);
+      });
+
+    window.addEventListener(CALLS_UPDATED_EVENT, refreshCalls);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener(CALLS_UPDATED_EVENT, refreshCalls);
+    };
+  }, []);
+
   const selectedCall = getCallByRouteParam(callId);
 
   if (!selectedCall) {

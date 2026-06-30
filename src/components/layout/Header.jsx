@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 import searchIcon from "../../assets/icons/search.svg";
@@ -10,6 +10,8 @@ import {
 } from "../../services/authService";
 
 import "./Header.css";
+
+const HEADER_SCROLL_OFFSET = 118;
 
 const navigationItems = [
   {
@@ -84,12 +86,10 @@ const navigationItems = [
         label: "دستاوردها و پروژه‌های موفق",
         href: "/business/successful-projects",
       },
-
       {
         label: "نحوه همکاری",
         href: "/business/collaboration",
       },
-
       {
         label: "مزایای همکاری",
         href: "/business/collaboration#benefits",
@@ -104,7 +104,7 @@ const navigationItems = [
       },
       {
         label: "ارتباط جهت مشارکت",
-        href: "/#participation-contact",
+        href: "/business/collaboration#participation-contact",
       },
     ],
   },
@@ -199,11 +199,11 @@ const searchItems = [
   },
   {
     label: "فراخوان‌ها",
-    href: "/#calls",
+    href: "/research-support/calls",
   },
   {
     label: "محورهای سال جاری",
-    href: "/#current-fields",
+    href: "/research-support/current-fields",
   },
   {
     label: "راهنمای ثبت‌نام",
@@ -231,7 +231,31 @@ const searchItems = [
   },
   {
     label: "فرصت‌های همکاری",
-    href: "/#collaboration-opportunities",
+    href: "/business/opportunities",
+  },
+  {
+    label: "دستاوردها و پروژه‌های موفق",
+    href: "/business/successful-projects",
+  },
+  {
+    label: "نحوه همکاری",
+    href: "/business/collaboration",
+  },
+  {
+    label: "مزایای همکاری",
+    href: "/business/collaboration#benefits",
+  },
+  {
+    label: "همکاران تجاری ما",
+    href: "/business/collaboration#partners",
+  },
+  {
+    label: "چارچوب‌های همکاری",
+    href: "/business/collaboration#frameworks",
+  },
+  {
+    label: "ارتباط جهت مشارکت",
+    href: "/business/collaboration#participation-contact",
   },
   {
     label: "خدمات ما",
@@ -304,9 +328,19 @@ function scrollToHashTarget(hash) {
       const sectionId = decodeURIComponent(hash.replace("#", ""));
       const targetElement = document.getElementById(sectionId);
 
-      targetElement?.scrollIntoView({
+      if (!targetElement) {
+        return;
+      }
+
+      const targetTop =
+        targetElement.getBoundingClientRect().top +
+        window.scrollY -
+        HEADER_SCROLL_OFFSET;
+
+      window.scrollTo({
+        top: Math.max(targetTop, 0),
+        left: 0,
         behavior: "smooth",
-        block: "start",
       });
     });
   });
@@ -333,6 +367,10 @@ function SmartLink({ href, className, children, onClick, ...restProps }) {
     scrollIfSamePage(href);
 
     onClick?.(event);
+
+    if (event.currentTarget instanceof HTMLElement) {
+      event.currentTarget.blur();
+    }
   };
 
   if (isRouterLink) {
@@ -409,6 +447,7 @@ function getUserFullName(user = {}) {
 
 function getUserAvatarLetter(user = {}) {
   const fullName = getUserFullName(user);
+
   return user.avatarLetter || user.firstName?.[0] || fullName?.[0] || "ک";
 }
 
@@ -453,6 +492,8 @@ function AccountMenuLink({ currentUser, onNavigate }) {
 
 function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const hasMountedRef = useRef(false);
 
   const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -492,7 +533,34 @@ function Header() {
 
   const closeNavigationMenu = () => {
     setIsMenuLocked(true);
+
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
   };
+
+  const unlockNavigationMenu = () => {
+    setIsMenuLocked(false);
+  };
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+
+      if (location.hash) {
+        scrollToHashTarget(location.hash);
+      }
+
+      return;
+    }
+
+    closeSearch();
+    closeNavigationMenu();
+
+    if (location.hash) {
+      scrollToHashTarget(location.hash);
+    }
+  }, [location.pathname, location.hash]);
 
   const handleLogoClick = (event) => {
     event.preventDefault();
@@ -557,7 +625,9 @@ function Header() {
               isMenuLocked ? "site-header__navigation--locked" : ""
             }`}
             aria-label="منوی اصلی"
-            onMouseLeave={() => setIsMenuLocked(false)}
+            onPointerEnter={unlockNavigationMenu}
+            onPointerMove={unlockNavigationMenu}
+            onMouseLeave={unlockNavigationMenu}
           >
             <ul className="site-header__menu">
               {navigationItems.map((item) => (

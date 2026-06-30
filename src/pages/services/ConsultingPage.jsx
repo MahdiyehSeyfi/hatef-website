@@ -1,9 +1,19 @@
+import { useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router";
+
 import bannerImage from "../../assets/images/banner-2.png";
 import consultingImage from "../../assets/images/services/consulting-service.png";
 
 import ContactFormSection from "../../components/common/ContactFormSection";
 
+import {
+  getCurrentUser,
+  getCurrentUserDashboardPath,
+} from "../../services/authService";
+
 import "./TechnologyGuidancePage.css";
+
+const SERVICE_SCROLL_OFFSET = 118;
 
 const processSteps = [
   {
@@ -116,6 +126,50 @@ const faqs = [
   },
 ];
 
+function scrollToServiceSection(hash, event) {
+  event?.preventDefault();
+
+  const sectionId = hash.replace("#", "");
+  const targetElement = document.getElementById(sectionId);
+
+  if (!targetElement) {
+    return;
+  }
+
+  window.history.pushState(null, "", hash);
+
+  const targetTop =
+    targetElement.getBoundingClientRect().top +
+    window.scrollY -
+    SERVICE_SCROLL_OFFSET;
+
+  window.scrollTo({
+    top: Math.max(targetTop, 0),
+    left: 0,
+    behavior: "smooth",
+  });
+}
+
+function useServiceHashScroll() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!location.hash) {
+      return undefined;
+    }
+
+    const firstFrameId = window.requestAnimationFrame(() => {
+      const secondFrameId = window.requestAnimationFrame(() => {
+        scrollToServiceSection(location.hash);
+      });
+
+      return () => window.cancelAnimationFrame(secondFrameId);
+    });
+
+    return () => window.cancelAnimationFrame(firstFrameId);
+  }, [location.pathname, location.hash]);
+}
+
 function FeatureIcon() {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true">
@@ -155,6 +209,19 @@ function SectionTitle({ children }) {
 }
 
 function ConsultingPage() {
+  useServiceHashScroll();
+
+  const navigate = useNavigate();
+
+  const handleProtectedRequest = (event) => {
+    event.preventDefault();
+
+    const currentUser = getCurrentUser();
+    const targetPath = currentUser ? getCurrentUserDashboardPath() : "/auth";
+
+    navigate(targetPath || "/auth");
+  };
+
   return (
     <main className="service-page">
       <section className="service-hero">
@@ -176,7 +243,13 @@ function ConsultingPage() {
             راهکارهای عملی برای توسعه، اصلاح یا آماده‌سازی طرح ارائه می‌گردد.
           </p>
 
-          <a href="#service-request-form" className="service-hero__button">
+          <a
+            href="#consulting-request-form"
+            className="service-hero__button"
+            onClick={(event) =>
+              scrollToServiceSection("#consulting-request-form", event)
+            }
+          >
             درخواست مشاوره
           </a>
         </div>
@@ -236,7 +309,7 @@ function ConsultingPage() {
           </div>
         </section>
 
-        <section className="service-cta">
+        <section className="service-cta" id="consulting-action">
           <img src={bannerImage} alt="" aria-hidden="true" />
 
           <div className="service-cta__overlay" />
@@ -250,8 +323,13 @@ function ConsultingPage() {
             </p>
 
             <div className="service-cta__actions">
-              <a href="#service-request-form">ثبت درخواست</a>
-              <a href="#consultation">مشاوره با کارشناسان</a>
+              <a href="/auth" onClick={handleProtectedRequest}>
+                ثبت درخواست
+              </a>
+
+              <Link to="/services/technology-guidance">
+                دریافت خدمت منتورینگ
+              </Link>
             </div>
           </div>
         </section>

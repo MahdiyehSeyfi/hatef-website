@@ -1,17 +1,152 @@
-import { Link } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation } from "react-router";
 
 import bannerImage from "../../assets/images/banner.png";
 
+import ActivityCard from "../../components/activities/ActivityCard";
 import ActivitiesCarousel from "../../components/activities/ActivitiesCarousel";
 import ExpandableArticle from "../../components/activities/ExpandableArticle";
 
 import {
-  getPublicActivitiesByStatus,
   getPublicCourseItems,
   getPublicEventItems,
 } from "../../services/publicActivityService";
 
 import "./ActivitiesPage.css";
+
+const INITIAL_VISIBLE_COUNT = 24;
+const LOAD_MORE_COUNT = 24;
+const PREVIEW_ITEM_LIMIT = 12;
+
+const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+
+const PERSIAN_DIGITS_MAP = {
+  "۰": "0",
+  "۱": "1",
+  "۲": "2",
+  "۳": "3",
+  "۴": "4",
+  "۵": "5",
+  "۶": "6",
+  "۷": "7",
+  "۸": "8",
+  "۹": "9",
+};
+
+const STATUS_GROWTH_SCORE = {
+  registering: 4,
+  ongoing: 3,
+  "coming-soon": 2,
+  past: 1,
+};
+
+function toPersianNumber(value) {
+  return String(value).replace(/\d/g, (digit) => PERSIAN_DIGITS[Number(digit)]);
+}
+
+function normalizeDigits(value) {
+  return String(value || "").replace(/[۰-۹]/g, (digit) => {
+    return PERSIAN_DIGITS_MAP[digit] || digit;
+  });
+}
+
+function parseNumberValue(value) {
+  const normalizedValue = normalizeDigits(value);
+  const numberMatch = normalizedValue.match(/\d+/);
+
+  return numberMatch ? Number(numberMatch[0]) : 0;
+}
+
+function parseActivityDateValue(value) {
+  const normalizedValue = normalizeDigits(value).trim();
+
+  if (!normalizedValue) {
+    return 0;
+  }
+
+  const slashDateMatch = normalizedValue.match(
+    /(\d{4})[/-](\d{1,2})[/-](\d{1,2})/,
+  );
+
+  if (slashDateMatch) {
+    const [, year, month, day] = slashDateMatch;
+
+    return Number(year) * 10000 + Number(month) * 100 + Number(day);
+  }
+
+  const parsedTime = Date.parse(normalizedValue);
+
+  if (!Number.isNaN(parsedTime)) {
+    return parsedTime;
+  }
+
+  return 0;
+}
+
+function getActivityTimeValue(item = {}) {
+  const possibleDateValues = [
+    item.publishedAt,
+    item.updatedAt,
+    item.createdAt,
+    item.startDate,
+    item.eventDate,
+    item.date,
+    item.registrationDate,
+  ];
+
+  return Math.max(...possibleDateValues.map(parseActivityDateValue), 0);
+}
+
+function getActivityPopularityValue(item = {}) {
+  const possibleValues = [
+    item.popularity,
+    item.priority,
+    item.viewCount,
+    item.views,
+    item.registrationCount,
+    item.registeredCount,
+    item.participantsCount,
+    item.capacity,
+  ];
+
+  const parsedValues = possibleValues.map(parseNumberValue);
+
+  return Math.max(...parsedValues, 0);
+}
+
+function sortLatestActivities(items) {
+  return [...items].sort((firstItem, secondItem) => {
+    return getActivityTimeValue(secondItem) - getActivityTimeValue(firstItem);
+  });
+}
+
+function sortPopularActivities(items) {
+  return [...items].sort((firstItem, secondItem) => {
+    const popularityDifference =
+      getActivityPopularityValue(secondItem) -
+      getActivityPopularityValue(firstItem);
+
+    if (popularityDifference !== 0) {
+      return popularityDifference;
+    }
+
+    return getActivityTimeValue(secondItem) - getActivityTimeValue(firstItem);
+  });
+}
+
+function sortGrowingActivities(items) {
+  return [...items].sort((firstItem, secondItem) => {
+    const growthDifference =
+      (STATUS_GROWTH_SCORE[secondItem.status] || 0) -
+      (STATUS_GROWTH_SCORE[firstItem.status] || 0);
+
+    if (growthDifference !== 0) {
+      return growthDifference;
+    }
+
+    return getActivityTimeValue(secondItem) - getActivityTimeValue(firstItem);
+  });
+}
 
 function CalendarIcon() {
   return (
@@ -147,16 +282,56 @@ const pageNavigation = [
   },
 ];
 
+function getCategoryBasePath(mode) {
+  return mode === "courses" ? "/courses/all" : "/events/all";
+}
+
+function getCategoryDefinitions(mode, items) {
+  const typeLabel = mode === "courses" ? "دوره" : "رویداد";
+  const pluralLabel = mode === "courses" ? "دوره‌ها" : "رویدادها";
+  const basePath = getCategoryBasePath(mode);
+
+  return [
+    {
+      id: "latest",
+      title: `${pluralLabel}ی جدید`,
+      detailTitle: `همه ${pluralLabel}ی جدید`,
+      description: `آخرین ${typeLabel}هایی که در برنامه هاتف منتشر شده‌اند.`,
+      items: sortLatestActivities(items),
+      viewAllPath: `${basePath}?category=latest`,
+      emptyMessage: `هنوز ${typeLabel} جدیدی برای نمایش ثبت نشده است.`,
+    },
+    {
+      id: "popular",
+      title: `${pluralLabel}ی محبوب`,
+      detailTitle: `همه ${pluralLabel}ی محبوب`,
+      description: `${typeLabel}هایی که بیشترین ظرفیت، استقبال یا اولویت نمایشی را دارند.`,
+      items: sortPopularActivities(items),
+      viewAllPath: `${basePath}?category=popular`,
+      emptyMessage: `هنوز ${typeLabel} محبوبی برای نمایش ثبت نشده است.`,
+    },
+    {
+      id: "growing",
+      title: `${pluralLabel}ی رو به رشد`,
+      detailTitle: `همه ${pluralLabel}ی رو به رشد`,
+      description: `${typeLabel}هایی که در وضعیت ثبت‌نام فعال، اجرا یا رشد قرار دارند.`,
+      items: sortGrowingActivities(items),
+      viewAllPath: `${basePath}?category=growing`,
+      emptyMessage: `هنوز ${typeLabel} رو به رشدی برای نمایش ثبت نشده است.`,
+    },
+  ];
+}
+
 function getPageInformation(mode, courseItems, eventItems) {
   if (mode === "events") {
     return {
       eyebrow: "رویدادهای تخصصی هاتف",
-      title: "رویدادهای برتر و سازنده در هاتف",
+      title: "رویدادهای هاتف",
       subtitle:
         "فرصتی برای ارتباط پژوهشگران، فناوران، دانشگاه، صنعت و سرمایه‌گذاران",
       primaryStat: eventItems.length,
       primaryLabel: "رویداد ثبت‌شده",
-      secondaryStat: getPublicActivitiesByStatus(eventItems, "registering")
+      secondaryStat: eventItems.filter((item) => item.status === "registering")
         .length,
       secondaryLabel: "در حال ثبت‌نام",
     };
@@ -165,12 +340,12 @@ function getPageInformation(mode, courseItems, eventItems) {
   if (mode === "courses") {
     return {
       eyebrow: "آموزش و توانمندسازی",
-      title: "دوره‌های توانمندسازی و مهارت‌افزایی هاتف",
+      title: "دوره‌های توانمندسازی هاتف",
       subtitle:
         "آموزش مهارت‌های کاربردی برای توسعه فناوری، مدیریت پروژه و کسب‌وکار",
       primaryStat: courseItems.length,
       primaryLabel: "دوره آموزشی",
-      secondaryStat: getPublicActivitiesByStatus(courseItems, "registering")
+      secondaryStat: courseItems.filter((item) => item.status === "registering")
         .length,
       secondaryLabel: "ثبت‌نام فعال",
     };
@@ -183,89 +358,142 @@ function getPageInformation(mode, courseItems, eventItems) {
     primaryStat: courseItems.length + eventItems.length,
     primaryLabel: "برنامه تخصصی",
     secondaryStat:
-      getPublicActivitiesByStatus(courseItems, "registering").length +
-      getPublicActivitiesByStatus(eventItems, "registering").length,
+      courseItems.filter((item) => item.status === "registering").length +
+      eventItems.filter((item) => item.status === "registering").length,
     secondaryLabel: "فرصت ثبت‌نام",
   };
 }
 
+function useInfiniteVisibleCount(mode, categoryId, totalItems) {
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
+
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE_COUNT);
+  }, [mode, categoryId]);
+
+  useEffect(() => {
+    if (visibleCount >= totalItems) {
+      return undefined;
+    }
+
+    const handleScroll = () => {
+      const documentHeight = document.documentElement.scrollHeight;
+      const currentScrollBottom = window.innerHeight + window.scrollY;
+      const distanceToBottom = documentHeight - currentScrollBottom;
+
+      if (distanceToBottom > 520) {
+        return;
+      }
+
+      setVisibleCount((currentCount) => {
+        return Math.min(currentCount + LOAD_MORE_COUNT, totalItems);
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [visibleCount, totalItems]);
+
+  return visibleCount;
+}
+
+function EmptyActivitiesSection({ title, message }) {
+  return (
+    <section className="activities-page__section">
+      <header className="activities-page__section-heading">
+        <div>
+          <div className="activities-page__section-title">
+            <span />
+            <h2>{title}</h2>
+          </div>
+        </div>
+      </header>
+
+      <p className="activities-page__empty">{message}</p>
+    </section>
+  );
+}
+
+function ActivitiesListing({ category, items, visibleCount, backPath }) {
+  const visibleItems = items.slice(0, visibleCount);
+  const hasMore = visibleItems.length < items.length;
+
+  return (
+    <section className="activities-page__listing">
+      <div className="activities-page__back-row">
+        <Link to={backPath} className="activities-page__back-button">
+          <span aria-hidden="true">→</span>
+          بازگشت به دسته‌بندی‌ها
+        </Link>
+      </div>
+
+      <header className="activities-page__section-heading activities-page__section-heading--listing">
+        <div>
+          <div className="activities-page__section-title">
+            <span />
+            <h2>{category.detailTitle}</h2>
+          </div>
+
+          <p>{category.description}</p>
+        </div>
+      </header>
+
+      <div className="activities-page__listing-grid">
+        {visibleItems.map((item) => (
+          <ActivityCard
+            key={`${category.id}-${item.type}-${item.id || item.slug}`}
+            item={item}
+          />
+        ))}
+      </div>
+
+      {hasMore && (
+        <p className="activities-page__loading-hint">
+          برای نمایش موارد بیشتر، صفحه را به پایین اسکرول کنید.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function ActivitiesPage({ mode = "combined" }) {
-  const courseItems = getPublicCourseItems();
-  const eventItems = getPublicEventItems();
+  const location = useLocation();
+
+  const selectedCategoryId = new URLSearchParams(location.search).get(
+    "category",
+  );
+
+  const courseItems = useMemo(() => {
+    return sortLatestActivities(getPublicCourseItems());
+  }, []);
+
+  const eventItems = useMemo(() => {
+    return sortLatestActivities(getPublicEventItems());
+  }, []);
+
   const pageInformation = getPageInformation(mode, courseItems, eventItems);
 
-  const sections = [];
+  const previewEventItems = eventItems.slice(0, PREVIEW_ITEM_LIMIT);
+  const previewCourseItems = courseItems.slice(0, PREVIEW_ITEM_LIMIT);
 
-  if (mode === "combined") {
-    sections.push(
-      {
-        id: "events",
-        title: "رویدادهای هاتف",
-        items: eventItems,
-        viewAllPath: "/events/all",
-        viewAllLabel: "همه رویدادها",
-      },
-      {
-        id: "courses",
-        title: "دوره‌های توانمندسازی",
-        items: courseItems,
-        viewAllPath: "/courses/all",
-        viewAllLabel: "همه دوره‌ها",
-      },
-    );
-  }
+  const categorySourceItems = mode === "courses" ? courseItems : eventItems;
+  const categoryDefinitions = getCategoryDefinitions(mode, categorySourceItems);
+  const selectedCategory = categoryDefinitions.find((category) => {
+    return category.id === selectedCategoryId;
+  });
 
-  if (mode === "events") {
-    sections.push(
-      {
-        id: "event-registering",
-        title: "در حال ثبت‌نام",
-        items: getPublicActivitiesByStatus(eventItems, "registering"),
-        viewAllPath: "/events",
-        viewAllLabel: "همه برنامه‌ها",
-      },
-      {
-        id: "event-ongoing",
-        title: "در حال برگزاری",
-        items: getPublicActivitiesByStatus(eventItems, "ongoing"),
-        viewAllPath: "/events",
-        viewAllLabel: "همه برنامه‌ها",
-      },
-      {
-        id: "event-past",
-        title: "رویدادهای برگزارشده",
-        items: getPublicActivitiesByStatus(eventItems, "past"),
-        viewAllPath: "/events",
-        viewAllLabel: "همه برنامه‌ها",
-      },
-    );
-  }
+  const shouldShowCategoryDetail =
+    Boolean(selectedCategory) && (mode === "events" || mode === "courses");
 
-  if (mode === "courses") {
-    sections.push(
-      {
-        id: "course-registering",
-        title: "در حال ثبت‌نام",
-        items: getPublicActivitiesByStatus(courseItems, "registering"),
-        viewAllPath: "/events",
-        viewAllLabel: "همه برنامه‌ها",
-      },
-      {
-        id: "course-ongoing",
-        title: "در حال برگزاری",
-        items: getPublicActivitiesByStatus(courseItems, "ongoing"),
-        viewAllPath: "/events",
-        viewAllLabel: "همه برنامه‌ها",
-      },
-      {
-        id: "course-past",
-        title: "دوره‌های برگزارشده",
-        items: getPublicActivitiesByStatus(courseItems, "past"),
-        viewAllPath: "/events",
-        viewAllLabel: "همه برنامه‌ها",
-      },
-    );
-  }
+  const visibleCount = useInfiniteVisibleCount(
+    mode,
+    selectedCategory?.id,
+    selectedCategory?.items.length || 0,
+  );
 
   return (
     <div className="activities-page">
@@ -293,12 +521,16 @@ function ActivitiesPage({ mode = "combined" }) {
 
               <div className="activities-page__stats">
                 <div>
-                  <strong>{pageInformation.primaryStat}</strong>
+                  <strong>
+                    {toPersianNumber(pageInformation.primaryStat)}
+                  </strong>
                   <span>{pageInformation.primaryLabel}</span>
                 </div>
 
                 <div>
-                  <strong>{pageInformation.secondaryStat}</strong>
+                  <strong>
+                    {toPersianNumber(pageInformation.secondaryStat)}
+                  </strong>
                   <span>{pageInformation.secondaryLabel}</span>
                 </div>
               </div>
@@ -345,15 +577,66 @@ function ActivitiesPage({ mode = "combined" }) {
 
       <main className="activities-page__content">
         <div className="activities-page__container">
-          {sections.map((section) => (
-            <ActivitiesCarousel
-              key={`${mode}-${section.id}`}
-              title={section.title}
-              items={section.items}
-              viewAllPath={section.viewAllPath}
-              viewAllLabel={section.viewAllLabel}
+          {mode === "combined" && (
+            <>
+              {previewEventItems.length > 0 ? (
+                <ActivitiesCarousel
+                  title="رویدادهای هاتف"
+                  items={previewEventItems}
+                  viewAllPath="/events/all"
+                  viewAllLabel="مشاهده همه"
+                />
+              ) : (
+                <EmptyActivitiesSection
+                  title="رویدادهای هاتف"
+                  message="هنوز رویدادی برای نمایش ثبت نشده است."
+                />
+              )}
+
+              {previewCourseItems.length > 0 ? (
+                <ActivitiesCarousel
+                  title="دوره‌های توانمندسازی"
+                  items={previewCourseItems}
+                  viewAllPath="/courses/all"
+                  viewAllLabel="مشاهده همه"
+                />
+              ) : (
+                <EmptyActivitiesSection
+                  title="دوره‌های توانمندسازی"
+                  message="هنوز دوره‌ای برای نمایش ثبت نشده است."
+                />
+              )}
+            </>
+          )}
+
+          {(mode === "events" || mode === "courses") &&
+            !shouldShowCategoryDetail &&
+            categoryDefinitions.map((category) =>
+              category.items.length > 0 ? (
+                <ActivitiesCarousel
+                  key={`${mode}-${category.id}`}
+                  title={category.title}
+                  items={category.items.slice(0, PREVIEW_ITEM_LIMIT)}
+                  viewAllPath={category.viewAllPath}
+                  viewAllLabel="مشاهده همه"
+                />
+              ) : (
+                <EmptyActivitiesSection
+                  key={`${mode}-${category.id}`}
+                  title={category.title}
+                  message={category.emptyMessage}
+                />
+              ),
+            )}
+
+          {shouldShowCategoryDetail && (
+            <ActivitiesListing
+              category={selectedCategory}
+              items={selectedCategory.items}
+              visibleCount={visibleCount}
+              backPath={getCategoryBasePath(mode)}
             />
-          ))}
+          )}
         </div>
       </main>
 

@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import universityImage from "../../assets/images/about/university.png";
-import researchImage from "../../assets/images/about/research.png";
-import commercializationImage from "../../assets/images/about/commercialization.png";
-import investingImage from "../../assets/images/about/investing.png";
+import academicCostumeImage from "../../assets/images/about/academic-costum.png";
+import certificateImage from "../../assets/images/about/certificate.png";
+import microscopeImage from "../../assets/images/about/microscope.png";
+import aiImage from "../../assets/images/about/ai.png";
+import gearImage from "../../assets/images/about/gear.png";
+import satelliteImage from "../../assets/images/about/Satellite.png";
+import vrImage from "../../assets/images/about/VR.png";
+import coinImage from "../../assets/images/about/coin.png";
+import raiseImage from "../../assets/images/about/raise.png";
+import vaseImage from "../../assets/images/about/vase.png";
 
 import "./AboutIntroJourney.css";
 
@@ -12,12 +19,10 @@ const scenes = [
     id: "university",
     eyebrow: "هاتف در دانشگاه",
     title: "درباره هاتف",
-    subtitle: "هدایت اعتبارات توسعه فناوری به پژوهشگران برجسته",
-    image: universityImage,
-    imageAlt: "نمای ایزومتریک هاتف در دانشگاه",
+    subtitle: "پل ارتباطی دانشگاه با مسیر توسعه فناوری",
     paragraphs: [
-      "برنامه هاتف با هدف حمایت از پژوهشگران، توسعه طرح‌های فناورانه و تبدیل دستاوردهای دانشگاهی به راهکارهای کاربردی ایجاد شده است.",
-      "در این مسیر، پژوهشگران و صاحبان ایده از حمایت‌های تخصصی، مالی و اجرایی برای توسعه محصولات و خدمات فناورانه بهره‌مند می‌شوند.",
+      "هاتف از دل ظرفیت‌های دانشگاهی شکل گرفته تا مسیر حرکت ایده‌های پژوهشی به سمت فناوری، محصول و اثرگذاری واقعی را هموار کند.",
+      "در این مسیر، دانشگاه فقط محل تولید دانش نیست؛ بلکه نقطه آغاز ارتباط میان پژوهشگران، صنعت، سرمایه‌گذاران و نهادهای پشتیبان فناوری است.",
     ],
   },
   {
@@ -25,8 +30,6 @@ const scenes = [
     eyebrow: "هاتف در پژوهش",
     title: "پژوهش و توسعه فناوری",
     subtitle: "تقویت پژوهش‌های مسئله‌محور و توسعه ایده‌های نوآورانه",
-    image: researchImage,
-    imageAlt: "نمای ایزومتریک پژوهشگاه فناوری",
     paragraphs: [
       "هاتف بستری برای شناسایی و حمایت از پژوهش‌هایی فراهم می‌کند که توانایی پاسخ‌گویی به مسائل واقعی و نیازهای آینده را دارند.",
       "این حمایت، مسیر تبدیل دانش دانشگاهی به فناوری‌های قابل‌استفاده و راهکارهای مؤثر را کوتاه‌تر و منسجم‌تر می‌کند.",
@@ -37,8 +40,6 @@ const scenes = [
     eyebrow: "هاتف در صنعت",
     title: "پیوند دانشگاه و صنعت",
     subtitle: "تجاری‌سازی فناوری و تبدیل ایده به محصول",
-    image: commercializationImage,
-    imageAlt: "نمای ایزومتریک مرکز تجاری‌سازی فناوری",
     paragraphs: [
       "هاتف ارتباط میان ظرفیت‌های پژوهشی دانشگاه و نیازهای واقعی صنایع را تقویت می‌کند و زمینه شکل‌گیری همکاری‌های مشترک را فراهم می‌سازد.",
       "در این مرحله، طرح‌های پژوهشی به راهکارهای عملی، محصولات توسعه‌پذیر و فناوری‌های موردنیاز صنعت تبدیل می‌شوند.",
@@ -49,8 +50,6 @@ const scenes = [
     eyebrow: "سرمایه‌گذاران در هاتف",
     title: "فناوری در مسیر سرمایه‌گذاری",
     subtitle: "همکاری‌های تجاری در فرصت‌های سرمایه‌گذاری",
-    image: investingImage,
-    imageAlt: "نمای ایزومتریک صندوق سرمایه‌گذاری فناوری",
     paragraphs: [
       "طرح‌های آماده توسعه در هاتف به شبکه‌ای از سرمایه‌گذاران، شرکت‌ها و مجموعه‌های تجاری متصل می‌شوند.",
       "این ارتباط، مسیر تأمین سرمایه، توسعه بازار و تبدیل پروژه‌های دانشگاهی به کسب‌وکارهای پایدار را هموار می‌کند.",
@@ -65,7 +64,6 @@ const WHEEL_IDLE_DURATION = 170;
 
 function AnimatedTypewriterTitle({ text }) {
   const [displayedText, setDisplayedText] = useState("");
-
   const [phase, setPhase] = useState("typing");
 
   const displayedTextRef = useRef("");
@@ -174,6 +172,151 @@ function AnimatedTypewriterTitle({ text }) {
   );
 }
 
+function UniversityVisual({ activeSceneId }) {
+  const isUniversityActive = activeSceneId === "university";
+  const isResearchActive = activeSceneId === "research";
+  const isCommercializationActive = activeSceneId === "commercialization";
+  const isInvestingActive = activeSceneId === "investing";
+
+  return (
+    <div className="about-journey__university-scene">
+      <div className="about-journey__university-orbit about-journey__university-orbit--one" />
+      <div className="about-journey__university-orbit about-journey__university-orbit--two" />
+
+      <span className="about-journey__university-glass about-journey__university-glass--one" />
+      <span className="about-journey__university-glass about-journey__university-glass--two" />
+      <span className="about-journey__university-glass about-journey__university-glass--three" />
+
+      <span className="about-journey__university-node about-journey__university-node--one" />
+      <span className="about-journey__university-node about-journey__university-node--two" />
+
+      <span
+        className="about-journey__university-building-shadow"
+        aria-hidden="true"
+      />
+
+      <img
+        className="about-journey__university-building"
+        src={universityImage}
+        alt=""
+        aria-hidden="true"
+      />
+
+      <div
+        className={`about-journey__floating-set about-journey__floating-set--university ${
+          isUniversityActive ? "about-journey__floating-set--active" : ""
+        }`}
+        aria-hidden="true"
+      >
+        <span className="about-journey__university-shadow" />
+
+        <img
+          className="about-journey__university-cap"
+          src={academicCostumeImage}
+          alt=""
+        />
+
+        <span className="about-journey__university-certificate-shadow" />
+
+        <img
+          className="about-journey__university-certificate"
+          src={certificateImage}
+          alt=""
+        />
+      </div>
+
+      <div
+        className={`about-journey__floating-set about-journey__floating-set--research ${
+          isResearchActive ? "about-journey__floating-set--active" : ""
+        }`}
+        aria-hidden="true"
+      >
+        <span className="about-journey__microscope-shadow" />
+
+        <img
+          className="about-journey__university-microscope"
+          src={microscopeImage}
+          alt=""
+        />
+
+        <span className="about-journey__ai-shadow" />
+
+        <img className="about-journey__university-ai" src={aiImage} alt="" />
+      </div>
+
+      <div
+        className={`about-journey__floating-set about-journey__floating-set--commercialization ${
+          isCommercializationActive ? "about-journey__floating-set--active" : ""
+        }`}
+        aria-hidden="true"
+      >
+        <span className="about-journey__satellite-shadow" />
+
+        <img
+          className="about-journey__university-satellite"
+          src={satelliteImage}
+          alt=""
+        />
+
+        <span className="about-journey__gear-shadow" />
+
+        <img
+          className="about-journey__university-gear"
+          src={gearImage}
+          alt=""
+        />
+
+        <span className="about-journey__vr-shadow" />
+
+        <img className="about-journey__university-vr" src={vrImage} alt="" />
+      </div>
+
+      <div
+        className={`about-journey__floating-set about-journey__floating-set--investing ${
+          isInvestingActive ? "about-journey__floating-set--active" : ""
+        }`}
+        aria-hidden="true"
+      >
+        <span className="about-journey__coin-shadow" />
+
+        <img
+          className="about-journey__university-coin about-journey__university-coin--main"
+          src={coinImage}
+          alt=""
+        />
+
+        <img
+          className="about-journey__university-coin about-journey__university-coin--ghost-one"
+          src={coinImage}
+          alt=""
+        />
+
+        <img
+          className="about-journey__university-coin about-journey__university-coin--ghost-two"
+          src={coinImage}
+          alt=""
+        />
+
+        <span className="about-journey__raise-shadow" />
+
+        <img
+          className="about-journey__university-raise"
+          src={raiseImage}
+          alt=""
+        />
+
+        <span className="about-journey__vase-shadow" />
+
+        <img
+          className="about-journey__university-vase"
+          src={vaseImage}
+          alt=""
+        />
+      </div>
+    </div>
+  );
+}
+
 function AboutIntroJourney() {
   const sectionRef = useRef(null);
 
@@ -188,11 +331,8 @@ function AboutIntroJourney() {
   const transitionTimerRef = useRef(null);
 
   const [activeSceneIndex, setActiveSceneIndex] = useState(0);
-
   const [bodySceneIndex, setBodySceneIndex] = useState(0);
-
   const [isTransitioning, setIsTransitioning] = useState(false);
-
   const [isBodyLeaving, setIsBodyLeaving] = useState(false);
 
   const activeBodyScene = scenes[bodySceneIndex];
@@ -245,7 +385,6 @@ function AboutIntroJourney() {
 
     transitionTimerRef.current = window.setTimeout(() => {
       transitionLockedRef.current = false;
-
       setIsTransitioning(false);
     }, TRANSITION_DURATION);
   }, []);
@@ -269,42 +408,26 @@ function AboutIntroJourney() {
       }
 
       const wheelDirection = wheelDelta > 0 ? 1 : -1;
-
       const currentSceneIndex = activeSceneRef.current;
 
       const isFirstScene = currentSceneIndex === 0;
-
       const isLastScene = currentSceneIndex === scenes.length - 1;
 
       const wantsToLeaveFromTop = wheelDirection < 0 && isFirstScene;
-
       const wantsToLeaveFromBottom = wheelDirection > 0 && isLastScene;
 
-      /*
-       * هنگام اجرای موشن، صفحه ثابت می‌ماند.
-       */
       if (transitionLockedRef.current) {
         event.preventDefault();
         resetWheelGestureAfterIdle();
         return;
       }
 
-      /*
-       * در اولین و آخرین مرحله، اسکرول رو به
-       * بیرون مهار نمی‌شود و مرورگر می‌تواند
-       * صفحه را به‌صورت طبیعی جابه‌جا کند.
-       */
       if (wantsToLeaveFromTop || wantsToLeaveFromBottom) {
         wheelAccumulatorRef.current = 0;
         wheelGestureConsumedRef.current = false;
-
         return;
       }
 
-      /*
-       * بین مراحل، اسکرول صفحه متوقف می‌شود
-       * و فقط مرحله بعد یا قبل فعال می‌شود.
-       */
       event.preventDefault();
       resetWheelGestureAfterIdle();
 
@@ -330,7 +453,6 @@ function AboutIntroJourney() {
       const sceneDirection = wheelAccumulatorRef.current > 0 ? 1 : -1;
 
       wheelAccumulatorRef.current = 0;
-
       wheelGestureConsumedRef.current = true;
 
       transitionToScene(currentSceneIndex + sceneDirection);
@@ -365,13 +487,11 @@ function AboutIntroJourney() {
     const currentSceneIndex = activeSceneRef.current;
 
     const isNextKey = event.key === "ArrowDown" || event.key === "PageDown";
-
     const isPreviousKey = event.key === "ArrowUp" || event.key === "PageUp";
 
     if (isNextKey) {
       if (currentSceneIndex < scenes.length - 1) {
         event.preventDefault();
-
         transitionToScene(currentSceneIndex + 1);
       }
 
@@ -380,7 +500,6 @@ function AboutIntroJourney() {
 
     if (isPreviousKey && currentSceneIndex > 0) {
       event.preventDefault();
-
       transitionToScene(currentSceneIndex - 1);
     }
   };
@@ -405,27 +524,9 @@ function AboutIntroJourney() {
         <div className="about-journey__visual">
           <div className="about-journey__visual-glow" />
 
-          {scenes.map((scene, sceneIndex) => {
-            const isActive = sceneIndex === activeSceneIndex;
-
-            const isBefore = sceneIndex < activeSceneIndex;
-
-            return (
-              <figure
-                key={scene.id}
-                className={`about-journey__visual-item ${
-                  isActive ? "about-journey__visual-item--active" : ""
-                } ${
-                  isBefore
-                    ? "about-journey__visual-item--before"
-                    : "about-journey__visual-item--after"
-                }`}
-                aria-hidden={!isActive}
-              >
-                <img src={scene.image} alt={isActive ? scene.imageAlt : ""} />
-              </figure>
-            );
-          })}
+          <figure className="about-journey__visual-item about-journey__visual-item--university about-journey__visual-item--active">
+            <UniversityVisual activeSceneId={activeTitleScene.id} />
+          </figure>
         </div>
 
         <div className="about-journey__content">
@@ -463,9 +564,7 @@ function AboutIntroJourney() {
 
               <div className="about-journey__counter">
                 <span>۰{bodySceneIndex + 1}</span>
-
                 <i />
-
                 <span>۰{scenes.length}</span>
               </div>
             </div>
@@ -495,7 +594,6 @@ function AboutIntroJourney() {
               aria-current={isActive ? "step" : undefined}
             >
               <span />
-
               <small>{scene.eyebrow}</small>
             </button>
           );

@@ -183,9 +183,22 @@ function ContactPage() {
           <span>تماس با ما</span>
         </nav>
 
-        <div className="contact-page__banner">
-          <img src={bannerImage} alt="تصویر ارتباط با برنامه هاتف" />
-        </div>
+        <section className="contact-page__banner">
+          <img src={bannerImage} alt="" aria-hidden="true" />
+
+          <div className="contact-page__banner-shade" />
+
+          <div className="contact-page__banner-content">
+            <span className="contact-page__eyebrow">ارتباط با هاتف</span>
+
+            <h1>تماس با ما</h1>
+
+            <p>
+              برای ارسال پیام، پیگیری درخواست‌ها، دریافت راهنمایی و ارتباط با
+              دبیرخانه برنامه هاتف، از مسیرهای ارتباطی زیر استفاده کنید.
+            </p>
+          </div>
+        </section>
 
         <section className="contact-page__methods">
           <SectionHeading>راه‌های ارتباطی</SectionHeading>

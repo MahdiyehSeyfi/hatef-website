@@ -91,16 +91,32 @@
 }
 
 .activity-carousel__view-all {
-  width: 175px;
-  min-height: 46px;
+  width: 128px;
+  min-width: 128px;
+  max-width: 128px;
+  height: 34px;
+  min-height: 34px;
+  max-height: 34px;
+  box-sizing: border-box;
   display: inline-flex;
+  flex: 0 0 128px;
   align-items: center;
   justify-content: center;
-  gap: 13px;
+  gap: 8px;
+  margin: 0;
+  padding: 0 14px;
+  overflow: hidden;
   border: 1px solid #cbd1d8;
+  border-radius: 10px;
   color: var(--color-muted);
-  background-color: var(--color-white);
-  font-size: 14px;
+  background-color: #ffffff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
   direction: rtl;
   transition:
     color 200ms ease,
@@ -111,19 +127,21 @@
 }
 
 .activity-carousel__view-all:hover {
-  color: var(--color-white);
+  color: #ffffff;
   border-color: var(--color-primary);
   background-color: var(--color-primary);
-  box-shadow: 0 9px 22px rgba(26, 54, 93, 0.16);
-  transform: translateY(-3px);
+  box-shadow: 0 7px 16px rgba(26, 54, 93, 0.13);
+  transform: translateY(-2px);
 }
 
 .activity-carousel__view-all span {
+  flex: 0 0 auto;
+  line-height: 1;
   transition: transform 200ms ease;
 }
 
 .activity-carousel__view-all:hover span {
-  transform: translateX(-4px);
+  transform: translateX(-3px);
 }
 
 .activity-carousel__controls {
