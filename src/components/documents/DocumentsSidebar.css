@@ -86,13 +86,11 @@
 /* Hover */
 
 .documents-sidebar__list a:hover {
-  color: var(--color-accent);
-  transform: translateX(-3px);
+  color: var(--interaction-text-hover-color);
 }
-
 .documents-sidebar__list a:hover .documents-sidebar__item-dot {
-  background-color: var(--color-accent);
-  transform: scale(1.15);
+  background-color: var(--interaction-card-icon-hover-color);
+  transform: var(--interaction-dot-hover-transform);
 }
 
 /* Keyboard accessibility */

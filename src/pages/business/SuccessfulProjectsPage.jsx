@@ -5,6 +5,8 @@ import bannerImage from "../../assets/images/banner.png";
 import { allCollaborationProjects } from "../../data/collaborationProjectsData";
 import { getPublishedSuccessfulProjectItems } from "../../services/projectPublicationService";
 
+import Button from "../../components/ui/Button/Button";
+
 import "./SuccessfulProjectsPage.css";
 
 const successfulProjects = allCollaborationProjects
@@ -231,12 +233,15 @@ function ProjectCard({ project }) {
           <li>وضعیت: {project.level}</li>
         </ul>
 
-        <Link
+        <Button
           to={`/business/opportunities/${project.id}`}
+          variant="primary"
+          size="sm"
+          fullWidth
           className="successful-projects__card-button"
         >
           مشاهده جزئیات
-        </Link>
+        </Button>
       </div>
     </article>
   );
@@ -270,13 +275,15 @@ function ProjectsSection() {
 
         {hasMore && (
           <div className="successful-projects__more-wrap">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="md"
               className="successful-projects__more"
               onClick={handleShowMore}
             >
               مشاهده بیشتر
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -320,8 +327,10 @@ function PublishedIntroducedProjectsSection() {
 
         {hasMore && (
           <div className="successful-projects__more-wrap">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="md"
               className="successful-projects__more"
               onClick={() =>
                 setVisibleCount((current) =>
@@ -330,7 +339,7 @@ function PublishedIntroducedProjectsSection() {
               }
             >
               مشاهده بیشتر
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -361,15 +370,17 @@ function SuccessArticle() {
             ))}
           </div>
 
-          <button
+          <Button
             type="button"
-            onClick={() => setIsExpanded((current) => !current)}
+            variant="outline"
+            size="md"
             className="successful-projects__article-button"
+            onClick={() => setIsExpanded((current) => !current)}
             aria-expanded={isExpanded}
+            trailingIcon={isExpanded ? "↑" : "↓"}
           >
             {isExpanded ? "بستن مطلب" : "مطالعه بیشتر"}
-            <span aria-hidden="true">{isExpanded ? "↑" : "↓"}</span>
-          </button>
+          </Button>
         </div>
       </div>
     </section>
@@ -396,8 +407,8 @@ function SuccessfulProjectsPage() {
             </p>
 
             <div className="successful-projects__hero-actions">
-              <a href="#achievements">دستاوردهای کلیدی</a>
-              <a href="#successful-projects">پروژه‌های موفق</a>
+              <Button href="#achievements" variant="inverse" size="md" className="successful-projects__hero-action">دستاوردهای کلیدی</Button>
+              <Button href="#successful-projects" variant="inverse" size="md" className="successful-projects__hero-action">پروژه‌های موفق</Button>
             </div>
           </div>
 

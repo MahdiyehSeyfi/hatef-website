@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import NewsSidebar from "../../components/news/NewsSidebar";
+import Badge from "../../components/ui/Badge/Badge";
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
+import Pagination from "../../components/ui/Pagination/Pagination";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 import {
   getPublicNewsItems,
   NEWS_UPDATED_EVENT,
@@ -55,32 +59,35 @@ function NewsPage() {
   return (
     <div className="news-list-page">
       <div className="news-list-page__container">
-        <nav className="news-list-page__breadcrumb" aria-label="مسیر صفحه">
-          <Link to="/">صفحه اصلی</Link>
-          <span>/</span>
-          <span>اخبار و اطلاع‌رسانی</span>
-        </nav>
+        <Breadcrumb
+          className="news-list-page__breadcrumb"
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "اخبار و اطلاع‌رسانی" },
+          ]}
+        />
 
         <div className="news-list-page__layout">
           <NewsSidebar />
 
           <section className="news-list-page__main">
-            <header className="news-list-page__heading">
-              <div>
-                <span />
-                <h1>اخبار و اطلاع‌رسانی</h1>
-              </div>
-
-              <i />
-            </header>
+            <SectionHeader
+              as="h1"
+              title="اخبار و اطلاع‌رسانی"
+              className="news-list-page__heading"
+            />
 
             <div className="news-list-page__items">
               {visibleNews.map((newsItem) => (
                 <article className="news-list-page__item" key={newsItem.id}>
                   <div className="news-list-page__item-content">
                     <div className="news-list-page__labels">
-                      <span>{newsItem.category || "اخبار و اطلاع‌رسانی"}</span>
-                      {newsItem.isImportant && <strong>خبر مهم</strong>}
+                      <Badge tone="info">
+                        {newsItem.category || "اخبار و اطلاع‌رسانی"}
+                      </Badge>
+                      {newsItem.isImportant && (
+                        <Badge tone="warning">خبر مهم</Badge>
+                      )}
                     </div>
 
                     <Link
@@ -110,56 +117,17 @@ function NewsPage() {
             </div>
 
             {newsItems.length === 0 && (
-              <div className="news-details-page__not-found">
-                <h1>هنوز خبری منتشر نشده است</h1>
+              <div className="news-list-page__empty">
+                <h2>هنوز خبری منتشر نشده است</h2>
               </div>
             )}
 
             {newsItems.length > newsPerPage && (
-              <nav
-                className="news-list-page__pagination"
-                aria-label="صفحه‌بندی اخبار"
-              >
-                <button
-                  type="button"
-                  onClick={() => changePage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  صفحه قبل
-                </button>
-
-                <div>
-                  {Array.from({ length: pageCount }, (_, index) => {
-                    const pageNumber = index + 1;
-
-                    return (
-                      <button
-                        key={pageNumber}
-                        type="button"
-                        className={
-                          pageNumber === currentPage
-                            ? "news-list-page__page--active"
-                            : ""
-                        }
-                        onClick={() => changePage(pageNumber)}
-                        aria-current={
-                          pageNumber === currentPage ? "page" : undefined
-                        }
-                      >
-                        {pageNumber}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => changePage(currentPage + 1)}
-                  disabled={currentPage === pageCount}
-                >
-                  صفحه بعد
-                </button>
-              </nav>
+              <Pagination
+                currentPage={currentPage}
+                pageCount={pageCount}
+                onPageChange={changePage}
+              />
             )}
           </section>
         </div>

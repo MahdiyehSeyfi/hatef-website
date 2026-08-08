@@ -1,3 +1,5 @@
+import IconButton from "../ui/IconButton/IconButton";
+
 function SliderArrow({ direction }) {
   return (
     <svg
@@ -28,15 +30,17 @@ function CoursesSliderControls({
 }) {
   return (
     <div className="courses-section__controls">
-      <button
+      <IconButton
         type="button"
+        variant="outline"
+        size="md"
         className="courses-section__arrow"
         onClick={onPrevious}
         disabled={isMoving || pageCount <= 1}
         aria-label="اسلاید قبلی رویدادها و دوره‌ها"
       >
         <SliderArrow direction="previous" />
-      </button>
+      </IconButton>
 
       <div
         className="courses-section__dots"
@@ -61,15 +65,17 @@ function CoursesSliderControls({
         })}
       </div>
 
-      <button
+      <IconButton
         type="button"
+        variant="outline"
+        size="md"
         className="courses-section__arrow"
         onClick={onNext}
         disabled={isMoving || pageCount <= 1}
         aria-label="اسلاید بعدی رویدادها و دوره‌ها"
       >
         <SliderArrow direction="next" />
-      </button>
+      </IconButton>
     </div>
   );
 }

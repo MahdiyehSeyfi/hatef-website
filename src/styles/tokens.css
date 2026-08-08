@@ -1,0 +1,234 @@
+:root {
+  /* =========================================================
+     HATEF DESIGN SYSTEM — FOUNDATION TOKENS
+     Version: 1.0
+     ========================================================= */
+
+  /* Brand — Navy */
+  --color-brand-950: #07182b;
+  --color-brand-900: #0b2038;
+  --color-brand-800: #123052;
+  --color-brand-700: #1a365d;
+  --color-brand-600: #244c78;
+  --color-brand-100: #eaf0f6;
+  --color-brand-50: #f5f8fb;
+
+  /* Action — Cyan */
+  --color-action-700: #0b6f9c;
+  --color-action-600: #008fc8;
+  --color-action-500: #00adea;
+  --color-action-100: #def5fd;
+  --color-action-50: #f0faff;
+
+  /* Accent — Teal */
+  --color-accent-700: #087f84;
+  --color-accent-600: #009e99;
+  --color-accent-500: #01d2c9;
+  --color-accent-100: #dffaf8;
+  --color-accent-50: #f0fdfc;
+
+  /* Neutral */
+  --color-neutral-950: #0f172a;
+  --color-neutral-900: #111827;
+  --color-neutral-800: #1f2937;
+  --color-neutral-700: #374151;
+  --color-neutral-600: #4b5563;
+  --color-neutral-500: #6b7280;
+  --color-neutral-400: #9ca3af;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-50: #f8fafc;
+  --color-black: #000000;
+  --color-white: #ffffff;
+
+  /* Semantic */
+  --color-success: #15803d;
+  --color-success-bg: #f0fdf4;
+
+  --color-warning-700: #b7791f;
+  --color-warning-bg: #fffbeb;
+
+  --color-danger: #b42318;
+  --color-danger-bg: #fef2f2;
+
+  --color-info: #0b6f9c;
+  --color-info-bg: #f0f9ff;
+
+  /* Surfaces */
+  --surface-page: #ffffff;
+  --surface-subtle: #f8fafc;
+  --surface-muted: #f3f6f9;
+  --surface-dark: #0b2038;
+
+  /* Text */
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-disabled: #9ca3af;
+  --text-inverse: #ffffff;
+
+  /* Border */
+  --border-subtle: #e5e7eb;
+  --border-default: #d1d5db;
+  --border-strong: #9ca3af;
+
+  /* Typography */
+  --font-primary: "IRANSans", Tahoma, Arial, sans-serif;
+
+  --text-display: 42px;
+  --text-h1: 36px;
+  --text-h2: 30px;
+  --text-h3: 24px;
+  --text-h4: 20px;
+  --text-body-lg: 16px;
+  --text-body: 14px;
+  --text-body-sm: 13px;
+  --text-caption: 12px;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-black: 900;
+
+  --line-display: 1.45;
+  --line-heading: 1.55;
+  --line-body: 1.9;
+  --line-compact: 1.6;
+
+  /* Spacing — 4px base unit */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+
+  /* Shadow */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 12px 28px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 24px 56px rgba(15, 23, 42, 0.12);
+
+  /* Focus */
+  --focus-ring: 0 0 0 3px rgba(0, 173, 234, 0.14);
+
+  /* Motion */
+  --duration-fast: 160ms;
+  --duration-normal: 220ms;
+  --duration-slow: 320ms;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Interaction — semantic state tokens */
+  --interaction-text-hover-color: var(--color-action-700);
+  --interaction-text-inverse-hover-color: var(--color-accent-500);
+
+  --interaction-surface-hover-color: var(--color-brand-700);
+  --interaction-surface-hover-bg: var(--color-brand-50);
+  --interaction-surface-hover-border: var(--color-action-100);
+
+  --interaction-card-hover-border: var(--color-action-100);
+  --interaction-card-hover-bg: var(--surface-page);
+  --interaction-card-hover-shadow: var(--shadow-md);
+  --interaction-card-hover-transform: translateY(-4px);
+
+  --interaction-card-icon-hover-color: var(--color-action-600);
+  --interaction-icon-hover-transform: translateY(-2px);
+  --interaction-arrow-hover-transform: translateX(-3px);
+
+  --interaction-media-hover-filter: brightness(0.82);
+  --interaction-media-hover-transform: scale(1.025);
+
+  --interaction-overlay-media-hover-filter: brightness(0.56) saturate(1.04);
+  --interaction-overlay-media-hover-transform: scale(1.035);
+
+  --interaction-dot-hover-bg: var(--color-neutral-400);
+  --interaction-dot-hover-transform: scale(1.15);
+  --interaction-dot-selected-bg: var(--color-accent-500);
+  --interaction-dot-selected-transform: scale(1.25);
+
+  --interaction-reveal-hidden-transform: translateY(15px);
+  --interaction-reveal-visible-transform: translateY(0);
+
+  --interaction-control-hover-color: var(--color-brand-700);
+  --interaction-control-hover-bg: var(--color-action-50);
+  --interaction-control-hover-border: var(--color-action-100);
+  --interaction-control-hover-shadow: var(--shadow-xs);
+
+  /* Filled Button hover — intentionally more visible than generic controls. */
+  --interaction-button-hover-transform: translateY(-2px);
+  --interaction-button-primary-hover-shadow:
+    0 10px 24px rgba(26, 54, 93, 0.26),
+    0 0 0 3px rgba(26, 54, 93, 0.1);
+  --interaction-button-secondary-hover-shadow:
+    0 10px 24px rgba(0, 143, 200, 0.27),
+    0 0 0 3px rgba(0, 173, 234, 0.14);
+
+  --interaction-control-selected-color: var(--color-brand-700);
+  --interaction-control-selected-bg: var(--color-action-50);
+  --interaction-control-selected-border: var(--color-action-500);
+  --interaction-selected-ring: 0 0 0 2px rgba(1, 210, 201, 0.22);
+
+  --interaction-field-hover-border: var(--border-strong);
+
+  --interaction-inverse-hover-color: var(--color-accent-500);
+  --interaction-inverse-hover-bg: rgba(255, 255, 255, 0.1);
+  --interaction-inverse-hover-border: rgba(1, 210, 201, 0.48);
+  --interaction-inverse-control-hover-bg: var(--color-accent-500);
+
+  --interaction-transition-color:
+    color var(--duration-fast) var(--ease-standard);
+  --interaction-transition-control:
+    color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+  --interaction-transition-card:
+    border-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-standard);
+  --interaction-transition-media:
+    filter var(--duration-slow) var(--ease-standard),
+    transform var(--duration-slow) var(--ease-standard);
+
+  /* Layout — target design-system values */
+  --layout-wide: 1440px;
+  --layout-content: 1240px;
+
+  --gutter-desktop: 28px;
+  --gutter-tablet: 24px;
+  --gutter-mobile: 16px;
+
+  --header-height: 96px;
+  --scroll-offset: 115px;
+
+  /* Legacy shell width.
+     Kept in Phase 01 to avoid changing the current site layout.
+     Pages will migrate to --layout-content / --layout-wide gradually. */
+  --layout-legacy-container: 1480px;
+
+  /* Z-index */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 500;
+  --z-modal: 600;
+  --z-toast: 700;
+}

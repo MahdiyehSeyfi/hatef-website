@@ -1,4 +1,5 @@
 import bannerImage from "../../assets/images/banner.png";
+import SectionHeader from "../ui/SectionHeader/SectionHeader";
 
 import "./AboutOrganizationSection.css";
 
@@ -38,13 +39,9 @@ const quickLinks = [
 function AboutOrganizationSection() {
   return (
     <section className="about-organization" id="organization">
-      <header className="about-organization__heading">
-        <span />
-
-        <h2>نمودار سازمانی</h2>
-
-        <span />
-      </header>
+      <div className="about-organization__heading">
+        <SectionHeader title="نمودار سازمانی" />
+      </div>
 
       <div className="about-organization__container">
         <div className="about-organization__layout">

@@ -1,5 +1,5 @@
 .about-page {
   width: 100%;
   overflow-x: hidden;
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 }

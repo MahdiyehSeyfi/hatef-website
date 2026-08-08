@@ -4,6 +4,8 @@ import { useLocation } from "react-router";
 import heroImage from "../../assets/images/banner.png";
 import ctaImage from "../../assets/images/banner-2.png";
 
+import Button from "../../components/ui/Button/Button";
+
 import "./ResearchSupportPages.css";
 
 const reviewSteps = [
@@ -155,8 +157,8 @@ function ResearchHero() {
         <p>طراحی مسیر تبدیل دستاوردهای پژوهشی و فناورانه به محصول و بازار</p>
 
         <div className="research-hero__actions">
-          <a href="#review-system">نظام داوری</a>
-          <a href="#evaluation-criteria">معیارهای ارزیابی</a>
+          <Button href="#review-system" variant="inverse" size="md" className="research-hero__action">نظام داوری</Button>
+          <Button href="#evaluation-criteria" variant="inverse" size="md" className="research-hero__action">معیارهای ارزیابی</Button>
         </div>
       </div>
     </section>
@@ -333,7 +335,7 @@ function ReviewEvaluationPage() {
               ارزیابی طرح شما مشخص شود.
             </p>
 
-            <a href="/services/consulting">مشاوره با کارشناسان</a>
+            <Button href="/services/consulting" variant="secondary" size="md" className="research-cta__action">مشاوره با کارشناسان</Button>
           </div>
         </section>
       </div>

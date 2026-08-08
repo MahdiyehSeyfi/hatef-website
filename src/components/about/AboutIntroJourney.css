@@ -1,5 +1,5 @@
 .about-journey {
-  --about-header-height: 92px;
+  --about-header-height: var(--header-height);
   --scene-duration: 720ms;
 
   position: relative;
@@ -18,13 +18,14 @@
       rgba(1, 210, 201, 0.075),
       transparent 36%
     ),
-    linear-gradient(135deg, #fbfcfd 0%, #f4f8fb 100%);
+    linear-gradient(135deg, var(--surface-page) 0%, var(--surface-subtle) 100%);
   overscroll-behavior-y: auto;
   isolation: isolate;
 }
 
 .about-journey:focus-visible {
   outline: none;
+  box-shadow: inset var(--focus-ring);
 }
 
 .about-journey--transitioning {
@@ -754,8 +755,8 @@
   padding: 4px 14px;
   border: 1px solid rgba(1, 210, 201, 0.24);
   border-radius: 20px;
-  color: #078c86;
-  background-color: rgba(1, 210, 201, 0.08);
+  color: var(--color-accent-700);
+  background-color: var(--color-accent-50);
   font-size: 12px;
   font-weight: 700;
 }
@@ -765,10 +766,10 @@
   display: flex;
   align-items: center;
   margin: 0 0 12px;
-  color: var(--color-black);
+  color: var(--text-primary);
   font-size: clamp(37px, 3vw, 57px);
-  font-weight: 900;
-  line-height: 1.45;
+  font-weight: var(--weight-black);
+  line-height: var(--line-display);
   direction: rtl;
 }
 
@@ -783,16 +784,16 @@
   flex: 0 0 auto;
   margin-right: 5px;
   border-radius: 2px;
-  background-color: var(--color-secondary);
+  background-color: var(--color-action-500);
   animation: about-cursor-blink 650ms step-end infinite;
 }
 
 .about-journey__typing-cursor--deleting {
-  background-color: var(--color-accent);
+  background-color: var(--color-accent-500);
 }
 
 .about-journey__typing-cursor--typing {
-  background-color: var(--color-secondary);
+  background-color: var(--color-action-500);
 }
 
 .about-journey__typing-cursor--complete {
@@ -803,10 +804,10 @@
   position: relative;
   margin: 0 0 22px;
   padding-right: 22px;
-  color: var(--color-primary);
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 2;
+  color: var(--color-brand-700);
+  font-size: var(--text-body-lg);
+  font-weight: var(--weight-bold);
+  line-height: var(--line-body);
 }
 
 .about-journey__subtitle::before {
@@ -817,7 +818,7 @@
   height: 8px;
   content: "";
   border-radius: 50%;
-  background-color: var(--color-accent);
+  background-color: var(--color-accent-500);
   box-shadow: 0 0 0 6px rgba(1, 210, 201, 0.1);
 }
 
@@ -827,9 +828,9 @@
 
 .about-journey__paragraphs p {
   margin: 0 0 12px;
-  color: #4b555f;
-  font-size: 14px;
-  line-height: 2.3;
+  color: var(--text-secondary);
+  font-size: var(--text-body);
+  line-height: var(--line-body);
   text-align: justify;
 }
 
@@ -840,7 +841,7 @@
   gap: 10px;
   margin-top: 27px;
   direction: ltr;
-  color: #959da6;
+  color: var(--text-disabled);
   font-family: Arial, sans-serif;
   font-size: 11px;
 }
@@ -848,7 +849,7 @@
 .about-journey__counter i {
   height: 1px;
   flex: 1;
-  background-color: #cfd5da;
+  background-color: var(--color-neutral-300);
 }
 
 .about-journey__navigation {
@@ -870,7 +871,7 @@
   display: block;
   padding: 0;
   border: 0;
-  color: #929ca6;
+  color: var(--color-neutral-400);
   background-color: transparent;
   font-family: inherit;
   cursor: pointer;
@@ -909,7 +910,7 @@
   overflow: hidden;
   opacity: 0;
   visibility: hidden;
-  color: #7d8791;
+  color: var(--text-muted);
   direction: rtl;
   text-align: left;
   white-space: normal;
@@ -930,12 +931,12 @@
 .about-journey__navigation-item--active small {
   opacity: 1;
   visibility: visible;
-  color: var(--color-primary);
+  color: var(--color-brand-700);
   transform: translate3d(0, -50%, 0);
 }
 
 .about-journey__navigation-item:hover > span {
-  background-color: var(--color-secondary);
+  background-color: var(--color-action-500);
   box-shadow:
     0 0 0 1px var(--color-secondary),
     0 0 0 5px rgba(0, 173, 234, 0.08);
@@ -945,7 +946,7 @@
 .about-journey__navigation-item--active > span {
   width: 15px;
   height: 15px;
-  background-color: var(--color-accent);
+  background-color: var(--color-accent-500);
   box-shadow:
     0 0 0 1px var(--color-accent),
     0 0 0 7px rgba(1, 210, 201, 0.11);
@@ -960,7 +961,7 @@
   display: flex;
   align-items: center;
   gap: 11px;
-  color: #8f979f;
+  color: var(--text-muted);
   font-size: 10px;
   transform: translateX(50%);
 }
@@ -969,7 +970,7 @@
   position: relative;
   width: 22px;
   height: 35px;
-  border: 1px solid #bfc6cc;
+  border: 1px solid var(--border-default);
   border-radius: 13px;
 }
 
@@ -981,7 +982,7 @@
   height: 6px;
   content: "";
   border-radius: 3px;
-  background-color: var(--color-accent);
+  background-color: var(--color-accent-500);
   transform: translateX(-50%);
   animation: about-scroll-wheel 1.7s ease-in-out infinite;
 }

@@ -4,6 +4,9 @@ import { Link, Navigate, useParams } from "react-router";
 import DocumentsSidebar from "../../components/documents/DocumentsSidebar";
 import { getDocumentCategory } from "../../data/documentsData";
 
+import Button from "../../components/ui/Button/Button";
+import IconButton from "../../components/ui/IconButton/IconButton";
+
 import "./DocumentsPage.css";
 
 const documentAccessItems = [
@@ -202,13 +205,16 @@ function DocumentsPage() {
               <p className="documents-page__notice" role="status">
                 {downloadNotice}
 
-                <button
+                <IconButton
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="documents-page__notice-close"
                   onClick={() => setDownloadNotice("")}
                   aria-label="بستن پیام"
                 >
                   ×
-                </button>
+                </IconButton>
               </p>
             )}
 
@@ -222,15 +228,17 @@ function DocumentsPage() {
                 <div className="document-group__items">
                   {group.items.map((documentItem) => (
                     <article className="document-row" key={documentItem.id}>
-                      <a
+                      <Button
                         className="document-row__download"
                         href={documentItem.fileUrl || "#download"}
+                        variant="outline"
+                        size="sm"
+                        leadingIcon={<DownloadIcon />}
                         download={Boolean(documentItem.fileUrl)}
                         onClick={(event) => handleDownload(event, documentItem)}
                       >
-                        <DownloadIcon />
-                        <span>بارگیری</span>
-                      </a>
+                        بارگیری
+                      </Button>
 
                       <div className="document-row__title">
                         <span />

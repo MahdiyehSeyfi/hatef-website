@@ -14,6 +14,8 @@ import {
 } from "../../services/callService";
 import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
 
+import Button from "../../components/ui/Button/Button";
+
 import "./CallDetailsPage.css";
 
 const quickLinks = [
@@ -181,23 +183,24 @@ function QuickActions({ call }) {
   return (
     <aside className="call-details__quick-actions">
       {links.map((item) => (
-        <a
+        <Button
           key={item.id}
           href={item.href}
-          className={`call-details__quick-link ${
-            item.download ? "call-details__quick-link--download" : ""
-          }`}
+          variant={item.download ? "ghost" : "outline"}
+          size="sm"
+          fullWidth
+          leadingIcon={item.download ? "↓" : null}
+          className="call-details__quick-link"
           target={item.download && call.pdfFileUrl ? "_blank" : undefined}
           rel={item.download && call.pdfFileUrl ? "noreferrer" : undefined}
         >
-          {item.download && <span aria-hidden="true">↓</span>}
           {item.label}
-        </a>
+        </Button>
       ))}
 
-      <a href="#submit-call" className="call-details__submit-button">
+      <Button href="#submit-call" variant="primary" size="sm" fullWidth className="call-details__submit-button">
         ارسال طرح
-      </a>
+      </Button>
     </aside>
   );
 }
@@ -331,8 +334,8 @@ function CallCta() {
         </p>
 
         <div className="call-details__cta-actions">
-          <Link to="/auth">ورود به سامانه</Link>
-          <Link to="/research-support/guide-eligibility">راهنمای شرکت</Link>
+          <Button to="/auth" variant="secondary" size="md" className="call-details__cta-action">ورود به سامانه</Button>
+          <Button to="/research-support/guide-eligibility" variant="inverse" size="md" className="call-details__cta-action">راهنمای شرکت</Button>
         </div>
       </div>
     </section>
@@ -373,9 +376,9 @@ function CallNotFound() {
           </p>
 
           <div className="call-details__back-wrap">
-            <Link to="/research-support/calls" className="call-details__back">
+            <Button to="/research-support/calls" variant="outline" size="md" width="wide" className="call-details__back">
               بازگشت به فهرست فراخوان‌ها
-            </Link>
+            </Button>
           </div>
         </section>
       </div>
@@ -440,9 +443,9 @@ function CallDetailsPage() {
         <CallFaq />
 
         <div className="call-details__back-wrap">
-          <Link to="/research-support/calls" className="call-details__back">
+          <Button to="/research-support/calls" variant="outline" size="md" width="wide" className="call-details__back">
             بازگشت به فهرست فراخوان‌ها
-          </Link>
+          </Button>
 
           <span className="call-details__page-id">
             شناسه فراخوان: {call.id}

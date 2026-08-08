@@ -5,6 +5,8 @@ import bannerImage from "../../assets/images/banner.png";
 import { getCalls, getPublishedCalls } from "../../services/callService";
 import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
 
+import Button from "../../components/ui/Button/Button";
+
 import "./CurrentFieldsPage.css";
 
 const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
@@ -270,8 +272,12 @@ function CurrentFieldsPage() {
             </p>
 
             <div className="current-fields-page__hero-actions">
-              <a href="#current-year-axis">مشاهده محور سال جاری</a>
-              <a href="#previous-year-axis">محورهای سال‌های گذشته</a>
+              <Button href="#current-year-axis" variant="inverse" size="md" className="current-fields-page__hero-action">
+                مشاهده محور سال جاری
+              </Button>
+              <Button href="#previous-year-axis" variant="inverse" size="md" className="current-fields-page__hero-action">
+                محورهای سال‌های گذشته
+              </Button>
             </div>
           </div>
 
@@ -358,12 +364,14 @@ function CurrentFieldsPage() {
               </p>
             </div>
 
-            <Link
+            <Button
               to="/research-support/calls"
+              variant="outline"
+              size="md"
               className="current-fields-page__article-button"
             >
               مشاهده همه فراخوان‌ها
-            </Link>
+            </Button>
           </div>
         </div>
       </section>

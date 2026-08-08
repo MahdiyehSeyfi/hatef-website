@@ -4,6 +4,7 @@ import AchievementsSection from "../home/AchievementsSection";
 import AboutStatisticsSection from "./AboutStatisticsSection";
 import AboutOrganizationSection from "./AboutOrganizationSection";
 import AboutGovernanceSection from "./AboutGovernanceSection";
+import SectionHeader from "../ui/SectionHeader/SectionHeader";
 
 import "./AboutContentSections.css";
 
@@ -102,9 +103,10 @@ function AboutContentSections() {
 
       <section className="about-section about-growth" id="history">
         <div className="about-content-container">
-          <header className="about-main-heading">
-            <h2>مسیر رشد هاتف</h2>
-          </header>
+          <SectionHeader
+            title="مسیر رشد هاتف"
+            className="about-growth__heading"
+          />
 
           <div
             className="about-growth__timeline"

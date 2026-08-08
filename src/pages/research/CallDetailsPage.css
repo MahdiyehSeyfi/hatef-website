@@ -73,56 +73,6 @@
   direction: rtl;
 }
 
-.call-details__quick-link,
-.call-details__submit-button {
-  min-height: 38px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  border: 1px solid #cbd1d8;
-
-  color: #29323b;
-  background-color: #ffffff;
-
-  font-size: 12px;
-  font-weight: 700;
-
-  transition:
-    color 180ms ease,
-    border-color 180ms ease,
-    background-color 180ms ease,
-    transform 180ms ease;
-}
-
-.call-details__quick-link:hover {
-  color: var(--color-primary);
-  border-color: var(--color-accent);
-
-  transform: translateY(-2px);
-}
-
-.call-details__quick-link--download {
-  color: #111111;
-  background-color: #f8f8f8;
-}
-
-.call-details__submit-button {
-  border-color: var(--color-secondary);
-
-  color: #ffffff;
-  background-color: var(--color-secondary);
-}
-
-.call-details__submit-button:hover {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-
-  transform: translateY(-2px);
-}
-
 .call-details__hero-info {
   direction: rtl;
   text-align: right;
@@ -346,44 +296,6 @@
   justify-content: center;
   gap: 24px;
 }
-
-.call-details__cta-actions a {
-  width: 170px;
-  min-height: 44px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 1px solid rgba(255, 255, 255, 0.75);
-
-  color: #ffffff;
-
-  font-size: 13px;
-  font-weight: 800;
-
-  transition:
-    border-color 180ms ease,
-    background-color 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
-}
-
-.call-details__cta-actions a:first-child {
-  border-color: var(--color-secondary);
-
-  background-color: var(--color-secondary);
-}
-
-.call-details__cta-actions a:hover {
-  border-color: #ffffff;
-
-  color: var(--color-primary);
-  background-color: #ffffff;
-
-  transform: translateY(-3px);
-}
-
 /* FAQ */
 
 .call-details__faq {
@@ -467,38 +379,6 @@
 
   direction: rtl;
 }
-
-.call-details__back {
-  min-width: 190px;
-  min-height: 44px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 1px solid #cbd1d8;
-
-  color: #27313a;
-  background-color: #ffffff;
-
-  font-size: 13px;
-  font-weight: 800;
-
-  transition:
-    color 180ms ease,
-    border-color 180ms ease,
-    background-color 180ms ease,
-    transform 180ms ease;
-}
-
-.call-details__back:hover {
-  color: #ffffff;
-  border-color: var(--color-primary);
-  background-color: var(--color-primary);
-
-  transform: translateY(-2px);
-}
-
 .call-details__page-id {
   color: #8a9299;
 

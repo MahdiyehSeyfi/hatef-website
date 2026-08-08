@@ -107,35 +107,6 @@
   gap: 22px;
   flex-wrap: wrap;
 }
-
-.research-hero__actions a {
-  min-width: 172px;
-  min-height: 44px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 1px solid rgba(255, 255, 255, 0.72);
-
-  color: #ffffff;
-
-  font-size: 13px;
-  font-weight: 700;
-
-  transition:
-    background-color 180ms ease,
-    border-color 180ms ease,
-    transform 180ms ease;
-}
-
-.research-hero__actions a:hover {
-  border-color: var(--color-secondary);
-  background-color: var(--color-secondary);
-
-  transform: translateY(-3px);
-}
-
 /* Section title */
 
 .research-section-title {
@@ -349,11 +320,11 @@
 }
 
 .research-feature-card:hover {
-  border-color: rgba(1, 210, 201, 0.3);
+  border-color: var(--interaction-card-hover-border);
 
-  box-shadow: 0 16px 34px rgba(20, 44, 74, 0.08);
+  box-shadow: var(--interaction-card-hover-shadow);
 
-  transform: translateY(-6px);
+  transform: var(--interaction-card-hover-transform);
 }
 
 .research-feature-card__icon {
@@ -371,7 +342,7 @@
 }
 
 .research-feature-card:hover .research-feature-card__icon {
-  color: var(--color-secondary);
+  color: var(--interaction-card-icon-hover-color);
 }
 
 .research-feature-card__icon svg {
@@ -541,37 +512,6 @@
   font-size: 14px;
   line-height: 2;
 }
-
-.research-cta__content a {
-  min-width: 172px;
-  min-height: 44px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 1px solid rgba(255, 255, 255, 0.78);
-
-  color: #ffffff;
-
-  font-size: 13px;
-  font-weight: 800;
-
-  transition:
-    background-color 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
-}
-
-.research-cta__content a:hover {
-  border-color: #ffffff;
-  background-color: #ffffff;
-  color: var(--color-primary);
-
-  transform: translateY(-3px);
-}
-
 /* Files */
 
 .research-files {
@@ -613,28 +553,4 @@
 .research-file-row div {
   display: flex;
   gap: 12px;
-}
-
-.research-file-row a {
-  min-width: 86px;
-  min-height: 34px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  color: #8d959c;
-  background-color: #fafafa;
-
-  font-size: 11px;
-  font-weight: 700;
-
-  transition:
-    color 180ms ease,
-    background-color 180ms ease;
-}
-
-.research-file-row a:hover {
-  color: #ffffff;
-  background-color: var(--color-secondary);
 }

@@ -6,6 +6,13 @@ import { addSupportTicket } from "../../services/supportService";
 
 import contactIllustration from "../../assets/vectors/support.svg";
 
+import Button from "../ui/Button/Button";
+import FormField from "../ui/FormField/FormField";
+import FormMessage from "../ui/FormMessage/FormMessage";
+import Input from "../ui/Input/Input";
+import SectionHeader from "../ui/SectionHeader/SectionHeader";
+import Textarea from "../ui/Textarea/Textarea";
+
 import "./ContactFormSection.css";
 
 function getCurrentPageTitle(fallback = "فرم تماس سایت") {
@@ -173,99 +180,107 @@ function ContactFormSection({
       )}
 
       <div className="contact-form-wrapper">
-        <div className="contact-page__section-heading">
-          <h2>{title}</h2>
-          <span />
-        </div>
+        <SectionHeader title={title} />
 
         <form className="contact-form" onSubmit={handleSubmit} noValidate>
-          <div className="contact-form__field">
-            <input
+          <FormField
+            label="نام و نام خانوادگی"
+            htmlFor={`${id}-full-name`}
+            required
+          >
+            <Input
               id={`${id}-full-name`}
               name="fullName"
               type="text"
               autoComplete="name"
               placeholder="نام و نام خانوادگی"
-              aria-label="نام و نام خانوادگی"
               value={formValues.fullName}
               onChange={handleChange}
               required
             />
-          </div>
+          </FormField>
 
-          <div className="contact-form__field">
-            <input
+          <FormField label="ایمیل" htmlFor={`${id}-email`} required>
+            <Input
               id={`${id}-email`}
               name="email"
               type="email"
               autoComplete="email"
-              placeholder="ایمیل"
-              aria-label="ایمیل"
+              placeholder="example@email.com"
               value={formValues.email}
               onChange={handleChange}
               required
             />
-          </div>
+          </FormField>
 
-          <div className="contact-form__field">
-            <input
+          <FormField label="شماره تماس" htmlFor={`${id}-phone`} required>
+            <Input
               id={`${id}-phone`}
               name="phone"
               type="tel"
               autoComplete="tel"
               placeholder="شماره تماس"
-              aria-label="شماره تماس"
               value={formValues.phone}
               onChange={handleChange}
               required
             />
-          </div>
+          </FormField>
 
-          <div className="contact-form__field">
-            <input
+          <FormField label="موضوع" htmlFor={`${id}-subject`} required>
+            <Input
               id={`${id}-subject`}
               name="subject"
               type="text"
-              placeholder="موضوع"
-              aria-label="موضوع"
+              placeholder="موضوع پیام"
               value={formValues.subject}
               onChange={handleChange}
               required
             />
-          </div>
+          </FormField>
 
-          <div className="contact-form__field contact-form__field--message">
-            <textarea
+          <FormField label="متن پیام" htmlFor={`${id}-message`} required>
+            <Textarea
               id={`${id}-message`}
               name="message"
               rows="8"
               placeholder="متن پیام"
-              aria-label="متن پیام"
               value={formValues.message}
               onChange={handleChange}
               required
             />
-          </div>
+          </FormField>
 
           {submitStatus && (
-            <p className="contact-form__status" role="status">
+            <FormMessage
+              tone="success"
+              className="contact-form__status"
+              role="status"
+            >
               {submitStatus}
-            </p>
+            </FormMessage>
           )}
 
           {submitError && (
-            <p
-              className="contact-form__status contact-form__status--error"
+            <FormMessage
+              tone="danger"
+              className="contact-form__status"
               role="alert"
             >
               {submitError}
-            </p>
+            </FormMessage>
           )}
 
           <div className="contact-form__actions">
-            <button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              mobileFullWidth
+              className="contact-form__submit"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? "در حال ارسال..." : submitLabel}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

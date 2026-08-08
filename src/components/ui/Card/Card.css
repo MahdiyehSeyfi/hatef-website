@@ -1,0 +1,32 @@
+.ui-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface-page);
+  box-shadow: var(--shadow-xs);
+}
+.ui-card--interactive {
+  transition: var(--interaction-transition-card);
+}
+.ui-card--interactive:hover {
+  border-color: var(--interaction-card-hover-border);
+  box-shadow: var(--interaction-card-hover-shadow);
+  transform: var(--interaction-card-hover-transform);
+}
+
+.ui-card--padding-none {
+  padding: 0;
+}
+
+.ui-card--padding-sm {
+  padding: var(--space-4);
+}
+
+.ui-card--padding-md {
+  padding: var(--space-6);
+}
+
+.ui-card--padding-lg {
+  padding: var(--space-8);
+}

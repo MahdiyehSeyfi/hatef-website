@@ -1,0 +1,40 @@
+.ui-select {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding-inline: var(--space-4) 40px;
+
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  outline: none;
+
+  color: var(--text-primary);
+  background-color: var(--surface-page);
+
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+
+  transition:
+    border-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard);
+}
+.ui-select:hover:not(:disabled):not(:focus) {
+  border-color: var(--interaction-field-hover-border);
+}
+
+.ui-select:focus {
+  border-color: var(--color-action-600);
+  box-shadow: var(--focus-ring);
+}
+
+.ui-select--invalid,
+.ui-select[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+.ui-select:disabled {
+  color: var(--text-disabled);
+  background-color: var(--color-neutral-100);
+  cursor: not-allowed;
+}

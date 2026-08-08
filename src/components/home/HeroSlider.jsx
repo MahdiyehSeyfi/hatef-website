@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 
 import {
   getCurrentUser,
@@ -10,6 +10,9 @@ import slide1 from "../../assets/images/slide-1.png";
 import slide2 from "../../assets/images/slide-2.png";
 import slide3 from "../../assets/images/slide-3.png";
 import slide4 from "../../assets/images/slide-4.png";
+
+import Button from "../ui/Button/Button";
+import IconButton from "../ui/IconButton/IconButton";
 
 import "./HeroSlider.css";
 
@@ -156,41 +159,51 @@ function HeroSlider() {
           </div>
 
           <div className="hero-slider__buttons">
-            <button
+            <Button
               type="button"
-              className="hero-slider__button hero-slider__button--primary"
+              variant="secondary"
+              size="md"
+              width="wide"
+              className="hero-slider__button"
               onClick={handleSupportButtonClick}
             >
               دریافت حمایت
-            </button>
+            </Button>
 
-            <Link
+            <Button
               to="/research-support/calls"
-              className="hero-slider__button hero-slider__button--outline"
+              variant="inverse"
+              size="md"
+              width="wide"
+              className="hero-slider__button"
             >
               فراخوان‌ها
-            </Link>
+            </Button>
           </div>
         </div>
       </div>
 
-      <button
+      <IconButton
         type="button"
+        variant="inverse"
+        size="md"
         className="hero-slider__navigation hero-slider__navigation--previous"
         onClick={showPreviousSlide}
         aria-label="اسلاید قبلی"
       >
         <ArrowIcon direction="previous" />
-      </button>
+      </IconButton>
 
-      <button
+      <IconButton
         type="button"
+        variant="inverse"
+        size="md"
         className="hero-slider__navigation hero-slider__navigation--next"
         onClick={showNextSlide}
         aria-label="اسلاید بعدی"
       >
         <ArrowIcon direction="next" />
-      </button>
+      </IconButton>
 
       <div className="hero-slider__dots" aria-label="انتخاب اسلاید">
         {slides.map((slide, index) => {

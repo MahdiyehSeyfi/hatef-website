@@ -111,42 +111,6 @@
   flex-wrap: wrap;
   gap: 14px;
 }
-
-.calls-page__hero-actions a {
-  min-width: 158px;
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.66);
-  border-radius: 12px;
-  color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.035);
-  font-size: 12px;
-  font-weight: 900;
-  backdrop-filter: blur(8px);
-  transition:
-    color 180ms ease,
-    border-color 180ms ease,
-    background-color 180ms ease,
-    transform 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.calls-page__hero-actions a:first-child {
-  border-color: var(--color-secondary);
-  background: linear-gradient(135deg, var(--color-secondary), #008fc8);
-  box-shadow: 0 14px 28px rgba(0, 173, 234, 0.18);
-}
-
-.calls-page__hero-actions a:hover {
-  color: var(--color-primary);
-  border-color: #ffffff;
-  background-color: #ffffff;
-  box-shadow: 0 14px 28px rgba(255, 255, 255, 0.12);
-  transform: translateY(-3px);
-}
-
 .calls-page__hero-stats {
   display: grid;
   gap: 13px;
@@ -293,9 +257,9 @@
 }
 
 #previous-calls .calls-page__call:hover {
-  border-color: rgba(1, 210, 201, 0.24);
-  box-shadow: 0 20px 45px rgba(20, 44, 74, 0.1);
-  transform: translateY(-5px);
+  border-color: var(--interaction-card-hover-border);
+  box-shadow: var(--interaction-card-hover-shadow);
+  transform: var(--interaction-card-hover-transform);
 }
 
 .calls-page__call-info {
@@ -366,8 +330,7 @@
 }
 
 .calls-page__call-title a:hover {
-  color: var(--color-accent);
-  transform: translateX(-4px);
+  color: var(--interaction-text-hover-color);
 }
 
 .calls-page__call-category {
@@ -505,16 +468,14 @@
     background-color 180ms ease,
     transform 180ms ease;
 }
-
 .calls-page__call-overlay span:hover {
-  color: var(--color-primary);
-  background-color: #ffffff;
-  transform: translateY(-2px);
+  color: var(--color-brand-950);
+  background-color: var(--color-white);
 }
 
 .calls-page__call-media:hover img {
-  filter: brightness(0.5) saturate(1.04);
-  transform: scale(1.04);
+  filter: var(--interaction-overlay-media-hover-filter);
+  transform: var(--interaction-overlay-media-hover-transform);
 }
 
 .calls-page__call-media:hover .calls-page__call-overlay {
@@ -608,43 +569,6 @@
   margin-top: 32px;
   direction: ltr;
 }
-
-.calls-page__more {
-  width: 128px;
-  min-width: 128px;
-  max-width: 128px;
-  height: 34px;
-  min-height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 14px;
-  border: 1px solid #cbd1d8;
-  border-radius: 10px;
-  color: var(--color-muted);
-  background-color: #ffffff;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    color 180ms ease,
-    border-color 180ms ease,
-    background-color 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms ease;
-}
-
-.calls-page__more:hover {
-  color: #ffffff;
-  border-color: var(--color-primary);
-  background-color: var(--color-primary);
-  box-shadow: 0 7px 16px rgba(26, 54, 93, 0.13);
-  transform: translateY(-2px);
-}
-
 /* Article */
 
 .calls-page__article {
@@ -755,40 +679,11 @@
   filter: blur(0);
   opacity: 1;
 }
-
 .calls-page__article-button {
   position: relative;
   z-index: 1;
-  min-width: 178px;
-  min-height: 43px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 24px;
-  padding: 8px 20px;
-  border: 1px solid var(--color-primary);
-  border-radius: 12px;
-  color: var(--color-primary);
-  background-color: transparent;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 900;
-  cursor: pointer;
-  transition:
-    color 200ms ease,
-    background-color 200ms ease,
-    transform 200ms ease,
-    box-shadow 200ms ease;
+margin-top: 24px;
 }
-
-.calls-page__article-button:hover {
-  color: var(--color-white);
-  background-color: var(--color-primary);
-  box-shadow: 0 12px 26px rgba(26, 54, 93, 0.12);
-  transform: translateY(-2px);
-}
-
 .calls-page__article-arrow {
   font-family: Arial, sans-serif;
   transition: transform 300ms ease;
@@ -912,9 +807,9 @@
 }
 
 #previous-calls .calls-page__call:hover {
-  border-color: rgba(1, 210, 201, 0.24);
-  box-shadow: 0 20px 45px rgba(20, 44, 74, 0.1);
-  transform: translateY(-5px);
+  border-color: var(--interaction-card-hover-border);
+  box-shadow: var(--interaction-card-hover-shadow);
+  transform: var(--interaction-card-hover-transform);
 }
 
 #previous-calls .calls-page__call-media {

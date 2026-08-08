@@ -1,0 +1,25 @@
+.ui-form-message {
+  margin: 0;
+  font-size: var(--text-caption);
+  line-height: var(--line-body);
+}
+
+.ui-form-message--neutral {
+  color: var(--text-muted);
+}
+
+.ui-form-message--info {
+  color: var(--color-info);
+}
+
+.ui-form-message--success {
+  color: var(--color-success);
+}
+
+.ui-form-message--warning {
+  color: var(--color-warning-700);
+}
+
+.ui-form-message--danger {
+  color: var(--color-danger);
+}

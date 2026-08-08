@@ -11,6 +11,11 @@ import {
   registerMockUser,
 } from "../../services/authService";
 
+import Button from "../../components/ui/Button/Button";
+import Checkbox from "../../components/ui/Checkbox/Checkbox";
+import FormField from "../../components/ui/FormField/FormField";
+import Input from "../../components/ui/Input/Input";
+
 import "./AuthPage.css";
 
 function BackIcon() {
@@ -153,10 +158,15 @@ function AuthPage() {
           </section>
 
           <section className="auth-page__form-side">
-            <Link to="/" className="auth-page__back-link">
-              <BackIcon />
-              <span>بازگشت</span>
-            </Link>
+            <Button
+              to="/"
+              variant="ghost"
+              size="sm"
+              className="auth-page__back-link"
+              leadingIcon={<BackIcon />}
+            >
+              بازگشت
+            </Button>
 
             <div
               className={`auth-card ${
@@ -200,11 +210,12 @@ function AuthPage() {
                   </div>
 
                   <form className="auth-form" onSubmit={handleLogin}>
-                    <div className="auth-form__group">
-                      <label htmlFor="login-identifier">
-                        ایمیل یا نام کاربری
-                      </label>
-                      <input
+                    <FormField
+                      label="ایمیل یا نام کاربری"
+                      htmlFor="login-identifier"
+                      required
+                    >
+                      <Input
                         id="login-identifier"
                         name="identifier"
                         type="text"
@@ -212,11 +223,14 @@ function AuthPage() {
                         autoComplete="username"
                         required
                       />
-                    </div>
+                    </FormField>
 
-                    <div className="auth-form__group">
-                      <label htmlFor="login-password">رمز عبور</label>
-                      <input
+                    <FormField
+                      label="رمز عبور"
+                      htmlFor="login-password"
+                      required
+                    >
+                      <Input
                         id="login-password"
                         name="password"
                         type="password"
@@ -224,34 +238,37 @@ function AuthPage() {
                         autoComplete="current-password"
                         required
                       />
-                    </div>
+                    </FormField>
 
                     <div className="auth-form__row auth-form__row--between">
-                      <label className="auth-checkbox">
-                        <input type="checkbox" />
-                        <span>مرا به خاطر بسپار</span>
-                      </label>
+                      <Checkbox label="مرا به خاطر بسپار" />
 
-                      <button
+                      <Button
                         type="button"
-                        className="auth-form__text-btn"
+                        variant="link"
+                        size="sm"
                         onClick={openForgotPassword}
                       >
                         فراموشی رمز عبور؟
-                      </button>
+                      </Button>
                     </div>
 
-                    <button type="submit" className="auth-form__submit">
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      fullWidth
+                      className="auth-form__submit"
+                    >
                       ورود
-                    </button>
+                    </Button>
                   </form>
 
                   <div className="auth-card__switch">
                     <span>حساب کاربری ندارید؟</span>
 
-                    <button type="button" onClick={openRegister}>
+                    <Button type="button" variant="link" size="sm" onClick={openRegister}>
                       ثبت‌نام کنید
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -265,41 +282,49 @@ function AuthPage() {
                   </div>
 
                   <form className="auth-form" onSubmit={handleRegister}>
-                    <div className="auth-form__group">
-                      <label htmlFor="register-name">نام و نام خانوادگی</label>
-                      <input
+                    <FormField
+                      label="نام و نام خانوادگی"
+                      htmlFor="register-name"
+                      required
+                    >
+                      <Input
                         id="register-name"
                         name="fullName"
                         type="text"
                         placeholder="نام و نام خانوادگی"
                         required
                       />
-                    </div>
+                    </FormField>
 
-                    <div className="auth-form__group">
-                      <label htmlFor="register-email">ایمیل</label>
-                      <input
+                    <FormField
+                      label="ایمیل"
+                      htmlFor="register-email"
+                      required
+                    >
+                      <Input
                         id="register-email"
                         name="email"
                         type="email"
                         placeholder="example@email.com"
                         required
                       />
-                    </div>
+                    </FormField>
 
-                    <div className="auth-form__group">
-                      <label htmlFor="register-phone">شماره تماس</label>
-                      <input
+                    <FormField label="شماره تماس" htmlFor="register-phone">
+                      <Input
                         id="register-phone"
                         name="mobile"
                         type="tel"
                         placeholder="۰۹۱۲xxxxxxx"
                       />
-                    </div>
+                    </FormField>
 
-                    <div className="auth-form__group">
-                      <label htmlFor="register-password">رمز عبور</label>
-                      <input
+                    <FormField
+                      label="رمز عبور"
+                      htmlFor="register-password"
+                      required
+                    >
+                      <Input
                         id="register-password"
                         name="password"
                         type="password"
@@ -307,11 +332,9 @@ function AuthPage() {
                         autoComplete="new-password"
                         required
                       />
-                    </div>
+                    </FormField>
 
-                    <div className="auth-form__group">
-                      <label>نوع کاربر</label>
-
+                    <FormField label="نوع کاربر">
                       <div className="auth-user-types">
                         <label className="auth-user-types__item">
                           <input
@@ -336,19 +359,24 @@ function AuthPage() {
                           </span>
                         </label>
                       </div>
-                    </div>
+                    </FormField>
 
-                    <button type="submit" className="auth-form__submit">
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      fullWidth
+                      className="auth-form__submit"
+                    >
                       ثبت‌نام
-                    </button>
+                    </Button>
                   </form>
 
                   <div className="auth-card__switch">
                     <span>قبلاً ثبت‌نام کرده‌اید؟</span>
 
-                    <button type="button" onClick={openLogin}>
+                    <Button type="button" variant="link" size="sm" onClick={openLogin}>
                       وارد شوید
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -398,44 +426,45 @@ function AuthPage() {
 
                     {forgotStep === "identify" && (
                       <form className="auth-form" onSubmit={handleSubmit}>
-                        <div className="auth-form__group">
-                          <label htmlFor="forgot-email">
-                            ایمیل یا شماره تماس
-                          </label>
-                          <input
+                        <FormField
+                          label="ایمیل یا شماره تماس"
+                          htmlFor="forgot-email"
+                        >
+                          <Input
                             id="forgot-email"
                             type="text"
                             placeholder="ایمیل یا شماره تماس خود را وارد کنید"
                           />
-                        </div>
+                        </FormField>
 
                         <p className="forgot-flow__hint">
                           کد تأیید برای ایمیل یا شماره تماس ثبت‌شده شما ارسال
                           می‌شود.
                         </p>
 
-                        <button
+                        <Button
                           type="button"
+                          variant="primary"
+                          fullWidth
                           className="auth-form__submit"
                           onClick={() => setForgotStep("verify")}
                         >
                           ارسال کد تأیید
-                        </button>
+                        </Button>
                       </form>
                     )}
 
                     {forgotStep === "verify" && (
                       <form className="auth-form" onSubmit={handleSubmit}>
-                        <div className="auth-form__group">
-                          <label htmlFor="forgot-code">کد تأیید</label>
-                          <input
+                        <FormField label="کد تأیید" htmlFor="forgot-code">
+                          <Input
                             id="forgot-code"
                             type="text"
                             inputMode="numeric"
                             maxLength="6"
                             placeholder="کد ۶ رقمی"
                           />
-                        </div>
+                        </FormField>
 
                         <p className="forgot-flow__hint">
                           کد ارسال‌شده را وارد کنید. اگر کد را دریافت نکردید،
@@ -443,53 +472,59 @@ function AuthPage() {
                         </p>
 
                         <div className="forgot-flow__actions">
-                          <button
+                          <Button
                             type="button"
+                            variant="primary"
                             className="auth-form__submit"
                             onClick={() => setForgotStep("reset")}
                           >
                             تأیید کد
-                          </button>
+                          </Button>
 
-                          <button
+                          <Button
                             type="button"
-                            className="forgot-flow__secondary"
+                            variant="outline"
+                            size="sm"
                           >
                             ارسال مجدد کد
-                          </button>
+                          </Button>
                         </div>
                       </form>
                     )}
 
                     {forgotStep === "reset" && (
                       <form className="auth-form" onSubmit={handleSubmit}>
-                        <div className="auth-form__group">
-                          <label htmlFor="new-password">رمز عبور جدید</label>
-                          <input
+                        <FormField
+                          label="رمز عبور جدید"
+                          htmlFor="new-password"
+                        >
+                          <Input
                             id="new-password"
                             type="password"
                             placeholder="رمز عبور جدید"
                           />
-                        </div>
+                        </FormField>
 
-                        <div className="auth-form__group">
-                          <label htmlFor="confirm-password">
-                            تکرار رمز عبور
-                          </label>
-                          <input
+                        <FormField
+                          label="تکرار رمز عبور"
+                          htmlFor="confirm-password"
+                        >
+                          <Input
                             id="confirm-password"
                             type="password"
                             placeholder="تکرار رمز عبور جدید"
                           />
-                        </div>
+                        </FormField>
 
-                        <button
+                        <Button
                           type="button"
+                          variant="primary"
+                          fullWidth
                           className="auth-form__submit"
                           onClick={() => setForgotStep("success")}
                         >
                           ثبت رمز جدید
-                        </button>
+                        </Button>
                       </form>
                     )}
 
@@ -505,13 +540,15 @@ function AuthPage() {
                           اکنون می‌توانید با رمز جدید وارد حساب کاربری خود شوید.
                         </p>
 
-                        <button
+                        <Button
                           type="button"
+                          variant="primary"
+                          fullWidth
                           className="auth-form__submit"
                           onClick={openLogin}
                         >
                           بازگشت به ورود
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -519,9 +556,9 @@ function AuthPage() {
                   <div className="auth-card__switch auth-card__switch--forgot">
                     <span>رمز عبور را به خاطر آوردید؟</span>
 
-                    <button type="button" onClick={openLogin}>
+                    <Button type="button" variant="link" size="sm" onClick={openLogin}>
                       ورود به حساب
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

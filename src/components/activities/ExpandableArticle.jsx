@@ -1,4 +1,6 @@
 import { useState } from "react";
+import Button from "../ui/Button/Button";
+import SectionHeader from "../ui/SectionHeader/SectionHeader";
 import "./ExpandableArticle.css";
 
 function ExpandableArticle({ title, paragraphs }) {
@@ -7,7 +9,7 @@ function ExpandableArticle({ title, paragraphs }) {
   return (
     <section className="expandable-article">
       <div className="expandable-article__container">
-        <h2>{title}</h2>
+        <SectionHeader title={title} className="expandable-article__heading" />
 
         <div
           className={`expandable-article__content ${
@@ -21,25 +23,28 @@ function ExpandableArticle({ title, paragraphs }) {
           ))}
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="md"
+          width="wide"
           className="expandable-article__button"
           onClick={() => setIsExpanded((current) => !current)}
           aria-expanded={isExpanded}
+          trailingIcon={
+            <span
+              className={
+                isExpanded
+                  ? "expandable-article__arrow expandable-article__arrow--open"
+                  : "expandable-article__arrow"
+              }
+            >
+              ↓
+            </span>
+          }
         >
           {isExpanded ? "بستن مطلب" : "مطالعه کامل مطلب"}
-
-          <span
-            className={
-              isExpanded
-                ? "expandable-article__arrow expandable-article__arrow--open"
-                : "expandable-article__arrow"
-            }
-            aria-hidden="true"
-          >
-            ↓
-          </span>
-        </button>
+        </Button>
       </div>
     </section>
   );

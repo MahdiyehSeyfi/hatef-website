@@ -1,20 +1,29 @@
 :root {
-  --color-primary: #1a365d;
-  --color-secondary: #00adea;
-  --color-accent: #01d2c9;
+  /* =========================================================
+     LEGACY COMPATIBILITY LAYER
+     Do not add new design decisions here.
+     New UI must use tokens from tokens.css directly.
+     ========================================================= */
+
+  /* Existing brand aliases */
+  --color-primary: var(--color-brand-700);
+  --color-secondary: var(--color-action-500);
+  --color-accent: var(--color-accent-500);
+
+  /* Existing warning value intentionally preserved in Phase 01
+     to prevent visual changes in current components. */
   --color-warning: #f9bd31;
 
-  --color-black: #000000;
-  --color-white: #ffffff;
+  /* Existing neutral aliases */
   --color-background: #fafafa;
-  --color-border: #e5e7eb;
-  --color-text: #111827;
-  --color-muted: #6b7280;
+  --color-border: var(--border-subtle);
+  --color-text: var(--text-primary);
+  --color-muted: var(--text-muted);
 
-  --font-primary: "IRANSans", Tahoma, Arial, sans-serif;
+  /* Existing layout aliases intentionally preserve current dimensions. */
+  --container-width: var(--layout-legacy-container);
+  --container-padding: var(--gutter-desktop);
 
-  --container-width: 1480px;
-  --container-padding: 28px;
-
+  /* Existing transition intentionally preserved until components migrate. */
   --transition-normal: 300ms ease;
 }

@@ -11,6 +11,8 @@ import {
 } from "../../services/callService";
 import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
 
+import Button from "../../components/ui/Button/Button";
+
 import "./CallsPage.css";
 
 const articleParagraphs = [
@@ -165,23 +167,17 @@ function CallsArticle() {
             ))}
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="md"
             className="calls-page__article-button"
             onClick={() => setIsExpanded((current) => !current)}
             aria-expanded={isExpanded}
+            trailingIcon={isExpanded ? "↑" : "↓"}
           >
             {isExpanded ? "بستن مطلب" : "مطالعه کامل مطلب"}
-
-            <span
-              className={`calls-page__article-arrow ${
-                isExpanded ? "calls-page__article-arrow--open" : ""
-              }`}
-              aria-hidden="true"
-            >
-              ↓
-            </span>
-          </button>
+          </Button>
         </div>
       </div>
     </section>
@@ -255,8 +251,12 @@ function CallsPage() {
             </p>
 
             <div className="calls-page__hero-actions">
-              <a href="#active-calls">فراخوان‌های فعال</a>
-              <a href="#previous-calls">دوره‌های پیشین</a>
+              <Button href="#active-calls" variant="inverse" size="md" className="calls-page__hero-action">
+                فراخوان‌های فعال
+              </Button>
+              <Button href="#previous-calls" variant="inverse" size="md" className="calls-page__hero-action">
+                دوره‌های پیشین
+              </Button>
             </div>
           </div>
 
@@ -313,13 +313,15 @@ function CallsPage() {
 
           {hasMorePreviousCalls && (
             <div className="calls-page__footer">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 className="calls-page__more"
                 onClick={handleShowMore}
               >
                 بیشتر
-              </button>
+              </Button>
             </div>
           )}
         </section>

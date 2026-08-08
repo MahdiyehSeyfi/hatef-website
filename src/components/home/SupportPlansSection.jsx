@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 
 import bannerImage from "../../assets/images/banner.png";
 import ViewAllButton from "../common/ViewAllButton";
+import SectionHeader from "../ui/SectionHeader/SectionHeader";
 
 import {
   getCurrentUser,
@@ -16,6 +17,8 @@ import {
   hydrateCallsFromSupabase,
 } from "../../services/callService";
 import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
+
+import Button from "../ui/Button/Button";
 
 import "./SupportPlansSection.css";
 
@@ -175,10 +178,10 @@ function EmptySupportPlans() {
   return (
     <section className="support-plans" id="calls">
       <div className="container">
-        <header className="support-plans__header">
-          <h2>طرح حمایتی هاتف</h2>
-          <span className="support-plans__header-accent" />
-        </header>
+        <SectionHeader
+          title="طرح حمایتی هاتف"
+          className="support-plans__main-heading"
+        />
 
         <SectionSubheading title="محورهای سال جاری" />
 
@@ -260,10 +263,10 @@ function SupportPlansSection() {
   return (
     <section className="support-plans" id="calls">
       <div className="container">
-        <header className="support-plans__header">
-          <h2>طرح حمایتی هاتف</h2>
-          <span className="support-plans__header-accent" />
-        </header>
+        <SectionHeader
+          title="طرح حمایتی هاتف"
+          className="support-plans__main-heading"
+        />
 
         <SectionSubheading title="محورهای سال جاری" />
 
@@ -282,22 +285,35 @@ function SupportPlansSection() {
                 <p>{getCallDescription(mainCall)}</p>
 
                 <div className="current-plan__overlay-actions">
-                  <a
+                  <Button
                     href={mainCallPath}
+                    variant="secondary"
+                    size="lg"
+                    fullWidth
                     className="current-plan__overlay-primary"
                     onClick={handleSupportRequestClick}
                   >
                     شرکت در هاتف
-                  </a>
+                  </Button>
 
                   <div className="current-plan__overlay-secondary-actions">
-                    <Link to="/research-support/guide-eligibility#registration-guide">
+                    <Button
+                      to="/research-support/guide-eligibility#registration-guide"
+                      variant="inverse"
+                      size="md"
+                      fullWidth
+                    >
                       راهنمای ثبت‌نام
-                    </Link>
+                    </Button>
 
-                    <Link to="/research-support/guide-eligibility#eligibility">
+                    <Button
+                      to="/research-support/guide-eligibility#eligibility"
+                      variant="inverse"
+                      size="md"
+                      fullWidth
+                    >
                       شرایط احراز
-                    </Link>
+                    </Button>
                   </div>
                 </div>
               </div>

@@ -11,6 +11,8 @@ import {
   getCurrentUserDashboardPath,
 } from "../../services/authService";
 
+import Button from "../../components/ui/Button/Button";
+
 import "./TechnologyGuidancePage.css";
 
 const SERVICE_SCROLL_OFFSET = 118;
@@ -243,15 +245,17 @@ function ConsultingPage() {
             راهکارهای عملی برای توسعه، اصلاح یا آماده‌سازی طرح ارائه می‌گردد.
           </p>
 
-          <a
+          <Button
             href="#consulting-request-form"
+            variant="primary"
+            size="md"
             className="service-hero__button"
             onClick={(event) =>
               scrollToServiceSection("#consulting-request-form", event)
             }
           >
             درخواست مشاوره
-          </a>
+          </Button>
         </div>
       </section>
 
@@ -323,13 +327,19 @@ function ConsultingPage() {
             </p>
 
             <div className="service-cta__actions">
-              <a href="/auth" onClick={handleProtectedRequest}>
+              <Button
+                href="/auth"
+                variant="secondary"
+                size="md"
+                className="service-cta__action"
+                onClick={handleProtectedRequest}
+              >
                 ثبت درخواست
-              </a>
+              </Button>
 
-              <Link to="/services/technology-guidance">
+              <Button to="/services/technology-guidance" variant="inverse" size="md" className="service-cta__action">
                 دریافت خدمت منتورینگ
-              </Link>
+              </Button>
             </div>
           </div>
         </section>

@@ -81,37 +81,8 @@
   font-weight: 400;
   line-height: 2.2;
 }
-
-.service-hero__button {
-  width: 190px;
-  min-height: 50px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  margin-top: 22px;
-
-  color: var(--color-white);
-  background-color: var(--color-primary);
-
-  font-size: 14px;
-  font-weight: 800;
-
-  transition:
-    background-color 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms ease;
+.service-hero__button {margin-top: 22px;
 }
-
-.service-hero__button:hover {
-  background-color: var(--color-secondary);
-
-  box-shadow: 0 12px 28px rgba(0, 173, 234, 0.2);
-
-  transform: translateY(-3px);
-}
-
 /* Shared title */
 
 .service-page__section-title {
@@ -239,13 +210,13 @@
 }
 
 .service-reason-card:hover {
-  border-color: rgba(1, 210, 201, 0.32);
+  border-color: var(--interaction-card-hover-border);
 
-  background-color: #ffffff;
+  background-color: var(--interaction-card-hover-bg);
 
-  box-shadow: 0 16px 36px rgba(20, 44, 74, 0.08);
+  box-shadow: var(--interaction-card-hover-shadow);
 
-  transform: translateY(-6px);
+  transform: var(--interaction-card-hover-transform);
 }
 
 .service-reason-card__icon,
@@ -272,9 +243,9 @@
 }
 
 .service-reason-card:hover .service-reason-card__icon {
-  color: var(--color-secondary);
+  color: var(--interaction-card-icon-hover-color);
 
-  transform: translateY(-3px);
+  transform: var(--interaction-icon-hover-transform);
 }
 
 .service-reason-card h3 {
@@ -336,11 +307,11 @@
 }
 
 .service-benefit-card:hover {
-  background-color: #ffffff;
+  background-color: var(--interaction-card-hover-bg);
 
-  box-shadow: 0 13px 30px rgba(20, 44, 74, 0.07);
+  box-shadow: var(--interaction-card-hover-shadow);
 
-  transform: translateY(-4px);
+  transform: var(--interaction-card-hover-transform);
 }
 
 .service-benefit-card__icon {
@@ -355,7 +326,7 @@
 }
 
 .service-benefit-card:hover .service-benefit-card__icon {
-  color: var(--color-secondary);
+  color: var(--interaction-card-icon-hover-color);
 }
 
 .service-benefit-card h3 {
@@ -457,44 +428,6 @@
   justify-content: center;
   gap: 24px;
 }
-
-.service-cta__actions a {
-  width: 170px;
-  min-height: 44px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 1px solid rgba(255, 255, 255, 0.75);
-
-  color: var(--color-white);
-
-  font-size: 13px;
-  font-weight: 700;
-
-  transition:
-    border-color 180ms ease,
-    background-color 180ms ease,
-    transform 180ms ease;
-}
-
-.service-cta__actions a:first-child {
-  border-color: var(--color-secondary);
-
-  background-color: var(--color-secondary);
-}
-
-.service-cta__actions a:hover {
-  border-color: var(--color-white);
-
-  background-color: var(--color-white);
-
-  color: var(--color-primary);
-
-  transform: translateY(-3px);
-}
-
 /* Contact form inside service */
 
 .service-page .contact-page__form-section {
@@ -614,12 +547,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .service-hero__button,
   .service-reason-card,
   .service-reason-card__icon,
   .service-benefit-card,
   .service-benefit-card__icon,
-  .service-cta__actions a,
   .service-faq__item summary i {
     transition: none;
   }

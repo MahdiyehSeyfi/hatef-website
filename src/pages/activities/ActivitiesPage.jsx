@@ -6,6 +6,9 @@ import bannerImage from "../../assets/images/banner.png";
 import ActivityCard from "../../components/activities/ActivityCard";
 import ActivitiesCarousel from "../../components/activities/ActivitiesCarousel";
 import ExpandableArticle from "../../components/activities/ExpandableArticle";
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
+import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import {
   getPublicCourseItems,
@@ -404,14 +407,7 @@ function useInfiniteVisibleCount(mode, categoryId, totalItems) {
 function EmptyActivitiesSection({ title, message }) {
   return (
     <section className="activities-page__section">
-      <header className="activities-page__section-heading">
-        <div>
-          <div className="activities-page__section-title">
-            <span />
-            <h2>{title}</h2>
-          </div>
-        </div>
-      </header>
+      <SectionHeader title={title} />
 
       <p className="activities-page__empty">{message}</p>
     </section>
@@ -425,22 +421,23 @@ function ActivitiesListing({ category, items, visibleCount, backPath }) {
   return (
     <section className="activities-page__listing">
       <div className="activities-page__back-row">
-        <Link to={backPath} className="activities-page__back-button">
-          <span aria-hidden="true">→</span>
+        <Button
+          to={backPath}
+          variant="outline"
+          size="sm"
+          width="wide"
+          trailingIcon="→"
+          className="activities-page__back-button"
+        >
           بازگشت به دسته‌بندی‌ها
-        </Link>
+        </Button>
       </div>
 
-      <header className="activities-page__section-heading activities-page__section-heading--listing">
-        <div>
-          <div className="activities-page__section-title">
-            <span />
-            <h2>{category.detailTitle}</h2>
-          </div>
-
-          <p>{category.description}</p>
-        </div>
-      </header>
+      <SectionHeader
+        title={category.detailTitle}
+        description={category.description}
+        className="activities-page__listing-heading"
+      />
 
       <div className="activities-page__listing-grid">
         {visibleItems.map((item) => (
@@ -499,11 +496,13 @@ function ActivitiesPage({ mode = "combined" }) {
     <div className="activities-page">
       <section className="activities-page__intro">
         <div className="activities-page__container">
-          <nav className="activities-page__breadcrumb" aria-label="مسیر صفحه">
-            <Link to="/">صفحه اصلی</Link>
-            <span>/</span>
-            <span>{pageInformation.title}</span>
-          </nav>
+          <Breadcrumb
+            className="activities-page__breadcrumb"
+            items={[
+              { label: "صفحه اصلی", to: "/" },
+              { label: pageInformation.title },
+            ]}
+          />
 
           <div className="activities-page__hero">
             <img src={bannerImage} alt={pageInformation.title} />

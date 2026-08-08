@@ -97,9 +97,8 @@
 
 .documents-quick-access__card:hover {
   color: var(--color-white);
-  filter: saturate(1.08);
-  box-shadow: 0 20px 38px var(--quick-shadow);
-  transform: translateY(-7px);
+box-shadow: var(--interaction-card-hover-shadow);
+  transform: var(--interaction-card-hover-transform);
 }
 
 .documents-quick-access__card:hover::before {
@@ -171,5 +170,5 @@
 }
 
 .documents-quick-access__card:hover .documents-quick-access__arrow {
-  transform: translateX(-6px);
+  transform: var(--interaction-arrow-hover-transform);
 }

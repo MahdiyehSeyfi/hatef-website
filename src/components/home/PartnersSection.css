@@ -95,7 +95,7 @@
 }
 
 .partner-statistic:hover .partner-statistic__label {
-  color: var(--color-secondary);
+  color: var(--interaction-card-icon-hover-color);
   transform: translateY(-14px);
 }
 
@@ -106,8 +106,8 @@
 }
 
 .partner-statistic:hover .partner-statistic__number {
-  color: var(--color-secondary);
-  transform: translateY(-3px);
+  color: var(--interaction-card-icon-hover-color);
+  transform: var(--interaction-icon-hover-transform);
 }
 
 .partner-statistic:hover .partner-statistic__icon {
@@ -126,39 +126,6 @@
   justify-content: center;
   gap: 34px;
   margin-top: 58px;
-}
-
-.partners-section__button {
-  width: 220px;
-  min-height: 50px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 20px;
-  border: 0;
-  color: var(--color-white);
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    transform var(--transition-normal),
-    opacity var(--transition-normal),
-    box-shadow var(--transition-normal);
-}
-
-.partners-section__button:hover {
-  transform: translateY(-2px);
-  opacity: 0.92;
-  box-shadow: 0 12px 28px rgba(20, 44, 74, 0.12);
-}
-
-.partners-section__button--primary {
-  background-color: var(--color-secondary);
-}
-
-.partners-section__button--secondary {
-  background-color: var(--color-primary);
 }
 
 .partners-section__logos {
@@ -208,12 +175,6 @@
     gap: 22px;
     margin-top: 48px;
   }
-
-  .partners-section__button {
-    width: 200px;
-    min-height: 46px;
-    font-size: 14px;
-  }
 }
 
 @media (max-width: 760px) {
@@ -234,10 +195,6 @@
     flex-direction: column;
     gap: 16px;
     margin-top: 46px;
-  }
-
-  .partners-section__button {
-    width: 100%;
   }
 
   .partners-section__logos {

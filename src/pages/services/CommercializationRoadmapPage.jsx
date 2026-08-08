@@ -11,6 +11,8 @@ import {
   getCurrentUserDashboardPath,
 } from "../../services/authService";
 
+import Button from "../../components/ui/Button/Button";
+
 import "./TechnologyGuidancePage.css";
 
 const SERVICE_SCROLL_OFFSET = 118;
@@ -244,8 +246,10 @@ function CommercializationRoadmapPage() {
             روشن‌تر شود.
           </p>
 
-          <a
+          <Button
             href="#commercialization-roadmap-request-form"
+            variant="primary"
+            size="md"
             className="service-hero__button"
             onClick={(event) =>
               scrollToServiceSection(
@@ -255,7 +259,7 @@ function CommercializationRoadmapPage() {
             }
           >
             تدوین نقشه راه
-          </a>
+          </Button>
         </div>
       </section>
 
@@ -327,11 +331,19 @@ function CommercializationRoadmapPage() {
             </p>
 
             <div className="service-cta__actions">
-              <a href="/auth" onClick={handleProtectedRequest}>
+              <Button
+                href="/auth"
+                variant="secondary"
+                size="md"
+                className="service-cta__action"
+                onClick={handleProtectedRequest}
+              >
                 ثبت درخواست
-              </a>
+              </Button>
 
-              <Link to="/services/consulting">مشاوره با کارشناسان</Link>
+              <Button to="/services/consulting" variant="inverse" size="md" className="service-cta__action">
+                مشاوره با کارشناسان
+              </Button>
             </div>
           </div>
         </section>

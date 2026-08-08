@@ -33,8 +33,8 @@
 /* Main section */
 
 .achievements-section__body {
-  padding: 44px 0 50px;
-  background-color: #fafafa;
+  padding: var(--space-12) 0;
+  background-color: var(--surface-subtle);
 }
 
 .achievements-section__content {
@@ -97,8 +97,7 @@
 }
 
 .achievement-information__title:hover {
-  color: var(--color-accent);
-  transform: translateX(-4px);
+  color: var(--interaction-text-hover-color);
 }
 
 .achievement-information__description {
@@ -138,7 +137,7 @@
   height: 345px;
   display: block;
   overflow: hidden;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background-color: var(--color-primary);
 }
 
@@ -165,28 +164,16 @@
     visibility 300ms ease;
 }
 
-.achievement-visual__view-button {
-  width: 210px;
-  min-height: 46px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.86);
-  color: var(--color-white);
-  background-color: rgba(255, 255, 255, 0.04);
-  font-size: 14px;
+.achievement-visual__view-reveal {
   opacity: 0;
-  transform: translateY(15px);
+  transform: var(--interaction-reveal-hidden-transform);
   transition:
-    color 200ms ease,
-    background-color 200ms ease,
-    opacity 300ms ease 60ms,
-    transform 300ms ease 60ms;
+    opacity var(--duration-normal) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-standard);
 }
-
 .achievement-visual__media:hover .achievement-visual__image {
-  filter: brightness(0.6);
-  transform: scale(1.035);
+  filter: var(--interaction-overlay-media-hover-filter);
+  transform: var(--interaction-overlay-media-hover-transform);
 }
 
 .achievement-visual__media:hover .achievement-visual__overlay {
@@ -194,15 +181,11 @@
   opacity: 1;
 }
 
-.achievement-visual__media:hover .achievement-visual__view-button {
+.achievement-visual__media:hover .achievement-visual__view-reveal {
   opacity: 1;
-  transform: translateY(0);
+  transform: var(--interaction-reveal-visible-transform);
 }
 
-.achievement-visual__view-button:hover {
-  color: var(--color-primary);
-  background-color: var(--color-white);
-}
 
 /* Dots */
 
@@ -221,15 +204,14 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background-color: #d5d5d5;
+  background-color: var(--color-neutral-300);
   transition:
     background-color 200ms ease,
     transform 200ms ease;
 }
-
 .achievement-visual__dot:hover {
-  background-color: #aeb5bc;
-  transform: scale(1.2);
+  background-color: var(--interaction-dot-hover-bg);
+  transform: var(--interaction-dot-hover-transform);
 }
 
 .achievement-visual__dot--active {
@@ -238,72 +220,6 @@
   background-color: var(--color-accent);
 }
 
-/* Shared View All Button - Final Override */
-
-.view-all-button,
-.support-plans__view-all,
-.news-section__view-all,
-.achievement-information__button {
-  width: 128px !important;
-  min-width: 128px !important;
-  max-width: 128px !important;
-  min-height: 34px !important;
-  height: 34px !important;
-
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-
-  padding: 0 14px !important;
-
-  border: 1px solid #cbd1d8 !important;
-  border-radius: 10px !important;
-
-  color: var(--color-muted) !important;
-  background-color: #ffffff !important;
-
-  font-family: inherit !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  line-height: 1 !important;
-
-  direction: rtl !important;
-  box-sizing: border-box !important;
-
-  transition:
-    color 200ms ease,
-    border-color 200ms ease,
-    background-color 200ms ease,
-    transform 200ms ease,
-    box-shadow 200ms ease !important;
-}
-
-.view-all-button:hover,
-.support-plans__view-all:hover,
-.news-section__view-all:hover,
-.achievement-information__button:hover {
-  color: #ffffff !important;
-  border-color: var(--color-primary) !important;
-  background-color: var(--color-primary) !important;
-  box-shadow: 0 7px 16px rgba(26, 54, 93, 0.13) !important;
-  transform: translateY(-2px) !important;
-}
-
-.view-all-button span,
-.support-plans__view-all span,
-.news-section__view-all span,
-.achievement-information__button span {
-  line-height: 1 !important;
-  transition: transform 200ms ease !important;
-}
-
-.view-all-button:hover span,
-.support-plans__view-all:hover span,
-.news-section__view-all:hover span,
-.achievement-information__button:hover span {
-  transform: translateX(-3px) !important;
-}
 
 /* Animations */
 
@@ -327,6 +243,21 @@
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: var(--interaction-reveal-visible-transform);
   }
 }
+
+
+/* Phase 04R1 — shared Home heading alignment */
+.achievements-section__heading-wrap {
+  width: min(100%, var(--achievements-content-width));
+  margin-inline: auto;
+  padding-top: var(--space-8);
+}
+
+.achievements-section__main-heading {
+  margin-bottom: var(--space-8);
+}
+
+/* Keep the gray achievement band tall enough to fully contain its media
+   and preserve a token-based 48px breathing space above and below. */

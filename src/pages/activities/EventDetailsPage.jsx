@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Link,
   Navigate,
   useNavigate,
   useParams,
@@ -8,6 +7,10 @@ import {
 } from "react-router";
 
 import ActivitiesCarousel from "../../components/activities/ActivitiesCarousel";
+import Badge from "../../components/ui/Badge/Badge";
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
+import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 import ExpandableArticle from "../../components/activities/ExpandableArticle";
 
 import {
@@ -491,28 +494,31 @@ function EventDetailsPage() {
     <div className="event-details-page">
       <section className="event-details-hero">
         <div className="event-details-page__container">
-          <nav className="event-details__breadcrumb" aria-label="مسیر صفحه">
-            <Link to="/">صفحه اصلی</Link>
-            <span>/</span>
-            <Link to="/events/all">رویدادهای هاتف</Link>
-            <span>/</span>
-            <span>{eventItem.title}</span>
-          </nav>
+          <Breadcrumb
+            className="event-details__breadcrumb"
+            items={[
+              { label: "صفحه اصلی", to: "/" },
+              { label: "رویدادهای هاتف", to: "/events/all" },
+              { label: eventItem.title },
+            ]}
+          />
 
           <div className="event-details-hero__grid">
             <div className="event-details-hero__media">
               <img src={eventItem.image} alt={eventItem.title} />
 
               <div className="event-details-hero__badges">
-                <span>{statusLabel}</span>
-                <span>{eventItem.eventDate || eventItem.startDate}</span>
+                <Badge tone="success">{statusLabel}</Badge>
+                <Badge tone="brand">
+                  {eventItem.eventDate || eventItem.startDate}
+                </Badge>
               </div>
             </div>
 
             <div className="event-details-hero__content">
-              <span className="event-details-hero__eyebrow">
+              <Badge tone="info" className="event-details-hero__eyebrow">
                 رویداد تخصصی هاتف
-              </span>
+              </Badge>
 
               <h1>{eventItem.title}</h1>
 
@@ -520,12 +526,15 @@ function EventDetailsPage() {
                 <p key={paragraph}>{paragraph}</p>
               ))}
 
-              <a
+              <Button
                 href="#event-registration"
+                variant="primary"
+                size="md"
+                width="wide"
                 className="event-details-hero__button"
               >
                 {actionLabel}
-              </a>
+              </Button>
             </div>
           </div>
 
@@ -551,8 +560,8 @@ function EventDetailsPage() {
             <aside className="event-details-sidebar">
               <div className="event-registration-card" id="event-registration">
                 <div className="event-registration-card__header">
-                  <span>{statusLabel}</span>
-                  <span>ظرفیت محدود</span>
+                  <Badge tone="success">{statusLabel}</Badge>
+                  <Badge tone="warning">ظرفیت محدود</Badge>
                 </div>
 
                 <h2>{eventItem.title}</h2>
@@ -597,53 +606,39 @@ function EventDetailsPage() {
                 </div>
 
                 {registrationNotice && (
-                  <p
-                    style={{
-                      margin: "16px 0 0",
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      background: "#f0fdf4",
-                      color: "#166534",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      lineHeight: 1.9,
-                    }}
-                  >
+                  <p className="event-registration-card__notice" role="status">
                     {registrationNotice}
                   </p>
                 )}
 
                 {eventItem.status === "registering" && !isPreviewMode ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
+                    size="md"
+                    fullWidth
                     className="event-registration-card__button"
                     onClick={handleEventRegistration}
                     disabled={!canRegister || alreadyRegistered}
-                    style={{
-                      border: 0,
-                      width: "100%",
-                      opacity: !canRegister || alreadyRegistered ? 0.55 : 1,
-                      cursor:
-                        !canRegister || alreadyRegistered
-                          ? "not-allowed"
-                          : "pointer",
-                    }}
                   >
                     {registrationStats.isFull
                       ? "ظرفیت تکمیل شده"
                       : alreadyRegistered
                         ? "قبلاً ثبت‌نام کرده‌اید"
                         : actionLabel}
-                  </button>
+                  </Button>
                 ) : (
-                  <a
+                  <Button
                     href="#event-registration"
+                    variant="outline"
+                    size="md"
+                    fullWidth
                     className="event-registration-card__button"
                   >
                     {isPreviewMode
                       ? "پیش‌نمایش ثبت‌نام غیرفعال است"
                       : actionLabel}
-                  </a>
+                  </Button>
                 )}
               </div>
 
@@ -665,20 +660,24 @@ function EventDetailsPage() {
 
             <main className="event-details-article">
               <section className="event-content-section">
-                <span className="event-content-section__eyebrow">
-                  معرفی رویداد
-                </span>
-                <h2>{eventItem.introTitle || "محورهای پژوهشی سال جاری"}</h2>
+                <SectionHeader
+                  eyebrow="معرفی رویداد"
+                  title={eventItem.introTitle || "محورهای پژوهشی سال جاری"}
+                  variant="subsection"
+                  className="event-content-section__heading"
+                />
                 {introParagraphs.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
               </section>
 
               <section className="event-content-section">
-                <span className="event-content-section__eyebrow">
-                  مزایای حضور
-                </span>
-                <h2>چرا در این رویداد شرکت کنیم؟</h2>
+                <SectionHeader
+                  eyebrow="مزایای حضور"
+                  title="چرا در این رویداد شرکت کنیم؟"
+                  variant="subsection"
+                  className="event-content-section__heading"
+                />
                 <div className="event-highlights">
                   {eventHighlights.map((highlight, index) => (
                     <article
@@ -698,10 +697,12 @@ function EventDetailsPage() {
               </section>
 
               <section className="event-content-section">
-                <span className="event-content-section__eyebrow">
-                  برنامه رویداد
-                </span>
-                <h2>جدول زمان‌بندی برنامه‌ها</h2>
+                <SectionHeader
+                  eyebrow="برنامه رویداد"
+                  title="جدول زمان‌بندی برنامه‌ها"
+                  variant="subsection"
+                  className="event-content-section__heading"
+                />
                 <div className="event-agenda">
                   {eventAgenda.map((agenda, index) => (
                     <article
@@ -720,10 +721,12 @@ function EventDetailsPage() {
               </section>
 
               <section className="event-content-section">
-                <span className="event-content-section__eyebrow">
-                  تیم علمی رویداد
-                </span>
-                <h2>سخنرانان و اعضای پنل</h2>
+                <SectionHeader
+                  eyebrow="تیم علمی رویداد"
+                  title="سخنرانان و اعضای پنل"
+                  variant="subsection"
+                  className="event-content-section__heading"
+                />
                 <div className="event-speakers">
                   {eventSpeakers.map((speaker, index) => (
                     <article
@@ -747,10 +750,12 @@ function EventDetailsPage() {
               </section>
 
               <section className="event-content-section">
-                <span className="event-content-section__eyebrow">
-                  راهنمای حضور
-                </span>
-                <h2>پرسش‌های متداول رویداد</h2>
+                <SectionHeader
+                  eyebrow="راهنمای حضور"
+                  title="پرسش‌های متداول رویداد"
+                  variant="subsection"
+                  className="event-content-section__heading"
+                />
                 <div className="event-faq">
                   {eventQuestions.map((question, index) => {
                     const isOpen = openQuestion === index;

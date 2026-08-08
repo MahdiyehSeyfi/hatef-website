@@ -3,6 +3,7 @@ import { Link } from "react-router";
 
 import bannerImage from "../../assets/images/banner.png";
 import ViewAllButton from "../common/ViewAllButton";
+import SectionHeader from "../ui/SectionHeader/SectionHeader";
 
 import {
   getLatestPublicNewsItems,
@@ -63,14 +64,10 @@ function NewsSection() {
   return (
     <section className="news-section" id="news">
       <div className="container">
-        <div className="news-section__heading">
-          <div className="news-section__heading-label">
-            <span className="news-section__dot" />
-            <h2>آخرین اخبار و رویدادها</h2>
-          </div>
-
-          <span className="news-section__heading-line" />
-        </div>
+        <SectionHeader
+          title="آخرین اخبار و رویدادها"
+          className="news-section__heading"
+        />
 
         <div className="news-section__content">
           <article className="featured-news">

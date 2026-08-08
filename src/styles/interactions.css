@@ -1,0 +1,64 @@
+/* =========================================================
+   HATEF GLOBAL INTERACTION UTILITIES
+   Reusable semantic interaction families.
+   ========================================================= */
+
+.ui-interaction-text {
+  transition: var(--interaction-transition-color);
+}
+
+.ui-interaction-text:hover,
+.ui-interaction-text:focus-visible {
+  color: var(--interaction-text-hover-color);
+}
+
+.ui-interaction-text--inverse:hover,
+.ui-interaction-text--inverse:focus-visible {
+  color: var(--interaction-text-inverse-hover-color);
+}
+
+.ui-interaction-card {
+  transition: var(--interaction-transition-card);
+}
+
+.ui-interaction-card:hover {
+  border-color: var(--interaction-card-hover-border);
+  box-shadow: var(--interaction-card-hover-shadow);
+  transform: var(--interaction-card-hover-transform);
+}
+
+.ui-interaction-media img {
+  transition: var(--interaction-transition-media);
+}
+
+.ui-interaction-media:hover img {
+  filter: var(--interaction-media-hover-filter);
+  transform: var(--interaction-media-hover-transform);
+}
+
+.ui-interaction-media--overlay:hover img {
+  filter: var(--interaction-overlay-media-hover-filter);
+  transform: var(--interaction-overlay-media-hover-transform);
+}
+
+.ui-interaction-control {
+  transition: var(--interaction-transition-control);
+}
+
+.ui-interaction-control:hover {
+  color: var(--interaction-control-hover-color);
+  border-color: var(--interaction-control-hover-border);
+  background-color: var(--interaction-control-hover-bg);
+  box-shadow: var(--interaction-control-hover-shadow);
+}
+
+.ui-interaction-dot {
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.ui-interaction-dot:hover {
+  background-color: var(--interaction-dot-hover-bg);
+  transform: var(--interaction-dot-hover-transform);
+}

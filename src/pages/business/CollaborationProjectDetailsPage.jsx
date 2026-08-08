@@ -11,6 +11,9 @@ import {
   getSitePublicationPreviewProject,
 } from "../../services/projectPublicationService";
 
+import Button from "../../components/ui/Button/Button";
+import IconButton from "../../components/ui/IconButton/IconButton";
+
 import "./CollaborationProjectDetailsPage.css";
 
 function SectionTitle({ children }) {
@@ -83,16 +86,18 @@ function ReportsTabs({ reports }) {
         )}
 
         {activeReport.fileUrl ? (
-          <a
+          <Button
             href={activeReport.fileUrl}
+            variant="outline"
+            size="sm"
+            className="collab-project-details__report-download"
             download={activeReport.fileName || activeReport.title}
             target="_blank"
             rel="noreferrer"
-            className="collab-project-details__report-download"
           >
             دانلود فایل گزارش
             {activeReport.fileName ? ` (${activeReport.fileName})` : ""}
-          </a>
+          </Button>
         ) : (
           <div className="collab-project-details__text-report-note">
             برای این گزارش فایل جداگانه‌ای بارگذاری نشده و اطلاعات به‌صورت متنی
@@ -129,11 +134,11 @@ function CollaborationProjectDetailsPage() {
           <img src={project.image} alt={project.title} />
         </div>
 
-        <button
+        <IconButton
           type="button"
-          className={`collab-project-details__favorite ${
-            isFavorite ? "collab-project-details__favorite--active" : ""
-          }`}
+          variant={isFavorite ? "danger" : "outline"}
+          size="md"
+          className="collab-project-details__favorite"
           onClick={() => setIsFavorite((current) => !current)}
           aria-label={
             isFavorite
@@ -145,7 +150,7 @@ function CollaborationProjectDetailsPage() {
           }
         >
           <FavoriteIcon isFavorite={isFavorite} />
-        </button>
+        </IconButton>
 
         <div className="collab-project-details__hero-content">
           <span className="collab-project-details__eyebrow">
@@ -157,8 +162,8 @@ function CollaborationProjectDetailsPage() {
           <p>{project.summary}</p>
 
           <div className="collab-project-details__hero-actions">
-            <a href="#cooperation-request">درخواست همکاری</a>
-            <a href="#consultation-request">درخواست مشاوره</a>
+            <Button href="#cooperation-request" variant="secondary" size="md" className="collab-project-details__hero-action">درخواست همکاری</Button>
+            <Button href="#consultation-request" variant="inverse" size="md" className="collab-project-details__hero-action">درخواست مشاوره</Button>
           </div>
         </div>
       </section>
@@ -211,12 +216,15 @@ function CollaborationProjectDetailsPage() {
                 </div>
               </dl>
 
-              <a
+              <Button
                 href={project.proposalFile}
+                variant="primary"
+                size="md"
+                fullWidth
                 className="collab-project-details__download"
               >
                 دانلود پروپوزال طرح
-              </a>
+              </Button>
             </div>
 
             <div className="collab-project-details__info-card">
@@ -279,10 +287,12 @@ function CollaborationProjectDetailsPage() {
           </div>
 
           <div className="collab-project-details__cta-actions">
-            <a href="#project-contact-form">ثبت درخواست همکاری</a>
-            <a href="#project-contact-form" id="consultation-request">
+            <Button href="#project-contact-form" variant="secondary" size="md" fullWidth>
+              ثبت درخواست همکاری
+            </Button>
+            <Button href="#project-contact-form" id="consultation-request" variant="inverse" size="md" fullWidth>
               درخواست مشاوره
-            </a>
+            </Button>
           </div>
         </section>
 
@@ -322,12 +332,15 @@ function CollaborationProjectDetailsPage() {
         )}
 
         <div className="collab-project-details__back-wrap">
-          <Link
+          <Button
             to="/business/opportunities"
+            variant="outline"
+            size="md"
+            width="wide"
             className="collab-project-details__back"
           >
             بازگشت به فرصت‌های همکاری
-          </Link>
+          </Button>
         </div>
       </div>
     </main>

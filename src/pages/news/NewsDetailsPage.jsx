@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useParams } from "react-router";
+import { useLocation, useParams } from "react-router";
 import NewsSidebar from "../../components/news/NewsSidebar";
+import Badge from "../../components/ui/Badge/Badge";
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
+import Button from "../../components/ui/Button/Button";
 import {
   getNewsItemById,
   getNewsPreviewItem,
@@ -92,7 +95,9 @@ function NewsDetailsPage() {
       <div className="news-details-page">
         <div className="news-details-page__not-found">
           <h1>خبر موردنظر پیدا نشد</h1>
-          <Link to="/news">بازگشت به اخبار</Link>
+          <Button to="/news" variant="outline">
+            بازگشت به اخبار
+          </Button>
         </div>
       </div>
     );
@@ -101,22 +106,27 @@ function NewsDetailsPage() {
   return (
     <div className="news-details-page">
       <div className="news-details-page__container">
-        <nav className="news-details-page__breadcrumb" aria-label="مسیر صفحه">
-          <Link to="/">صفحه اصلی</Link>
-          <span>/</span>
-          <Link to="/news">اخبار و اطلاع‌رسانی</Link>
-          <span>/</span>
-          <span>{newsItem.title}</span>
-        </nav>
+        <Breadcrumb
+          className="news-details-page__breadcrumb"
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "اخبار و اطلاع‌رسانی", to: "/news" },
+            { label: newsItem.title },
+          ]}
+        />
 
         <div className="news-details-page__layout">
           <NewsSidebar />
 
           <article className="news-article">
             <div className="news-article__title-row">
-              <div>
-                <span>{newsItem.category || "اخبار و اطلاع‌رسانی"}</span>
-                {newsItem.isImportant && <strong>خبر مهم</strong>}
+              <div className="news-article__labels">
+                <Badge tone="info">
+                  {newsItem.category || "اخبار و اطلاع‌رسانی"}
+                </Badge>
+                {newsItem.isImportant && (
+                  <Badge tone="warning">خبر مهم</Badge>
+                )}
               </div>
               <h1>{newsItem.title}</h1>
             </div>
@@ -135,9 +145,14 @@ function NewsDetailsPage() {
                 <span>بازدید: {newsItem.views}</span>
               </div>
 
-              <button type="button" onClick={copyNewsLink}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={copyNewsLink}
+              >
                 کپی لینک خبر
-              </button>
+              </Button>
             </div>
 
             {copyStatus && (

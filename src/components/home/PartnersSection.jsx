@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 
 import shoppingBagIcon from "../../assets/icons/shopping-bag.svg";
 import behsazanLogo from "../../assets/logos/behsazan-mellat-logo.jpg";
@@ -9,6 +9,8 @@ import {
   getCurrentUser,
   getCurrentUserDashboardPath,
 } from "../../services/authService";
+
+import Button from "../ui/Button/Button";
 
 import "./PartnersSection.css";
 
@@ -104,20 +106,26 @@ function PartnersSection() {
         </div>
 
         <div className="partners-section__actions">
-          <Link
+          <Button
             to="/business/opportunities"
-            className="partners-section__button partners-section__button--primary"
+            variant="secondary"
+            size="lg"
+            mobileFullWidth
+            className="partners-section__action"
           >
             فرصت‌های همکاری
-          </Link>
+          </Button>
 
-          <button
+          <Button
             type="button"
-            className="partners-section__button partners-section__button--secondary"
+            variant="primary"
+            size="lg"
+            mobileFullWidth
+            className="partners-section__action"
             onClick={handleCollaborationClick}
           >
             ارتباط جهت همکاری
-          </button>
+          </Button>
         </div>
 
         <div className="partners-section__logos">

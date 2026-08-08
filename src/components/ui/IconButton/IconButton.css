@@ -1,0 +1,83 @@
+.ui-icon-button.ui-icon-button {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  color: var(--color-brand-700);
+  background-color: transparent;
+  cursor: pointer;
+  transition: var(--interaction-transition-control);
+}
+
+.ui-icon-button.ui-icon-button--sm { width: 36px; height: 36px; }
+.ui-icon-button.ui-icon-button--md { width: 44px; height: 44px; }
+.ui-icon-button.ui-icon-button--lg { width: 52px; height: 52px; }
+
+.ui-icon-button.ui-icon-button--circle { border-radius: var(--radius-full); }
+.ui-icon-button.ui-icon-button--rounded { border-radius: var(--radius-md); }
+
+.ui-icon-button.ui-icon-button--outline {
+  border-color: var(--border-default);
+  background-color: var(--surface-page);
+}
+
+.ui-icon-button.ui-icon-button--outline:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: var(--text-inverse);
+  border-color: var(--color-brand-700);
+  background-color: var(--color-brand-700);
+  box-shadow: var(--interaction-control-hover-shadow);
+}
+
+.ui-icon-button.ui-icon-button--ghost:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: var(--interaction-control-hover-color);
+  background-color: var(--interaction-control-hover-bg);
+}
+
+.ui-icon-button.ui-icon-button--inverse {
+  color: var(--text-inverse);
+  border-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.ui-icon-button.ui-icon-button--inverse:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: var(--color-brand-950);
+  border-color: var(--color-white);
+  background-color: var(--color-white);
+  box-shadow: var(--interaction-control-hover-shadow);
+}
+
+.ui-icon-button.ui-icon-button--danger {
+  color: var(--color-danger);
+  border-color: transparent;
+  background-color: transparent;
+}
+
+.ui-icon-button.ui-icon-button--danger:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: var(--text-inverse);
+  background-color: var(--color-danger);
+}
+
+.ui-icon-button[aria-expanded="true"],
+.ui-icon-button[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px rgba(1, 210, 201, 0.22);
+}
+
+.ui-icon-button.ui-icon-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.ui-icon-button:disabled,
+.ui-icon-button[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+.ui-icon-button svg,
+.ui-icon-button img {
+  width: 18px;
+  height: 18px;
+}

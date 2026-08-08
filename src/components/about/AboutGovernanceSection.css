@@ -1,53 +1,29 @@
 .about-governance {
-  --governance-primary: var(--color-primary, #1a365d);
-
-  --governance-secondary: var(--color-secondary, #00adea);
-
-  --governance-accent: var(--color-accent, #01d2c9);
+  --governance-primary: var(--color-brand-700);
+  --governance-secondary: var(--color-action-500);
+  --governance-accent: var(--color-accent-500);
 
   width: 100%;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 }
 
 .about-governance__main-heading {
-  min-height: 128px;
-
-  display: grid;
-  grid-template-columns:
-    minmax(80px, 1fr)
-    auto
-    minmax(80px, 1fr);
-
-  align-items: center;
-  gap: 38px;
-
-  padding-inline: 4%;
-}
-
-.about-governance__main-heading h2 {
-  margin: 0;
-
-  color: #111111;
-
-  font-size: 34px;
-  font-weight: 900;
-  line-height: 1.5;
-
-  white-space: nowrap;
-}
-
-.about-governance__main-heading > span {
-  width: 100%;
-  height: 1px;
-
-  background-color: #edf0f2;
+  width: min(
+    calc(100% - (var(--gutter-desktop) * 2)),
+    var(--layout-content)
+  );
+  margin-inline: auto;
+  padding-top: var(--space-16);
 }
 
 .about-governance__container,
 .about-roadmap__container,
 .about-reports__container {
-  width: min(calc(100% - 120px), 1440px);
+  width: min(
+    calc(100% - (var(--gutter-desktop) * 2)),
+    var(--layout-content)
+  );
 
   margin-inline: auto;
 }
@@ -55,7 +31,7 @@
 /* بخش‌های افراد */
 
 .about-governance__group {
-  padding: 30px 0 58px;
+  padding: var(--space-8) 0 var(--space-16);
 
   scroll-margin-top: 120px;
 }
@@ -63,9 +39,9 @@
 .about-governance__subheading {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
 
-  margin-bottom: 34px;
+  margin-bottom: var(--space-8);
 }
 
 .about-governance__subheading > span {
@@ -82,10 +58,10 @@
 .about-governance__subheading h3 {
   margin: 0;
 
-  color: #151b20;
+  color: var(--text-primary);
 
-  font-size: 18px;
-  font-weight: 850;
+  font-size: var(--text-h4);
+  font-weight: var(--weight-bold);
   line-height: 1.7;
 }
 
@@ -118,7 +94,7 @@
   color: #13191e;
 
   font-size: 17px;
-  font-weight: 850;
+  font-weight: var(--weight-bold);
 }
 
 .about-executive__content strong,
@@ -127,7 +103,7 @@
 
   margin-bottom: 10px;
 
-  color: #202830;
+  color: var(--text-primary);
 
   font-size: 14px;
   font-weight: 800;
@@ -140,7 +116,7 @@
 
   font-size: 14px;
   font-weight: 400;
-  line-height: 2.15;
+  line-height: var(--line-body);
 
   text-align: justify;
 }
@@ -159,7 +135,7 @@
 
 .about-executive__content a:hover,
 .about-person__content a:hover {
-  color: var(--governance-secondary);
+  color: var(--interaction-text-hover-color);
 }
 
 /* آواتار */
@@ -177,7 +153,7 @@
 
   color: #ffffff;
 
-  font-size: 18px;
+  font-size: var(--text-h4);
   font-weight: 900;
 
   background: linear-gradient(145deg, #6489a9, #173c61);
@@ -221,11 +197,11 @@
 
   margin: 0 0 40px;
 
-  color: #414b53;
+  color: var(--text-secondary);
 
   font-size: 14px;
   font-weight: 400;
-  line-height: 2.15;
+  line-height: var(--line-body);
 
   text-align: justify;
 }
@@ -257,19 +233,19 @@
 /* سند راهبردی */
 
 .about-roadmap {
-  padding: 22px 0 75px;
+  padding: 0 0 var(--space-16);
 
   scroll-margin-top: 120px;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 }
 
 .about-roadmap__accordion {
-  border-top: 1px solid #e5e9ec;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .about-roadmap__item {
-  border-bottom: 1px solid #e5e9ec;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .about-roadmap__item > button {
@@ -285,7 +261,7 @@
 
   border: 0;
 
-  color: #161d22;
+  color: var(--text-primary);
   background-color: transparent;
 
   font-family: inherit;
@@ -310,9 +286,9 @@
 }
 
 .about-roadmap__item > button:hover i {
-  color: var(--governance-accent);
+  color: var(--interaction-card-icon-hover-color);
 
-  transform: rotate(90deg);
+  transform: none;
 }
 
 .about-roadmap__answer {
@@ -328,7 +304,7 @@
 
   margin: 0;
 
-  color: #59636b;
+  color: var(--text-secondary);
 
   font-size: 13px;
   line-height: 2.1;
@@ -343,15 +319,15 @@
 }
 
 .about-roadmap__downloads {
-  margin-top: 58px;
+  margin-top: var(--space-12);
 
   text-align: center;
 }
 
 .about-roadmap__downloads h3 {
-  margin: 0 0 28px;
+  margin: 0 0 var(--space-6);
 
-  color: #202830;
+  color: var(--text-primary);
 
   font-size: 15px;
   font-weight: 800;
@@ -363,58 +339,16 @@
   gap: 22px;
 }
 
-.about-roadmap__downloads button,
-.about-report__actions button {
-  min-height: 46px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-
-  padding: 8px 32px;
-
-  border: 1px solid #d4d9dd;
-
-  color: #303a42;
-  background-color: #ffffff;
-
-  font-family: inherit;
-  font-size: 13px;
-
-  cursor: pointer;
-
-  transition:
-    color 220ms ease,
-    border-color 220ms ease,
-    background-color 220ms ease;
-}
-
-.about-roadmap__downloads button svg,
-.about-report__actions button svg {
-  width: 18px;
-  height: 18px;
-}
-
-.about-roadmap__downloads button:hover,
-.about-report__actions button:hover {
-  border-color: var(--governance-accent);
-
-  color: #ffffff;
-
-  background-color: var(--governance-accent);
-}
-
 /* گزارش سالانه */
 
 .about-reports {
-  padding: 15px 0 90px;
+  padding: var(--space-4) 0 var(--space-20);
 
   scroll-margin-top: 120px;
 }
 
 .about-reports__list {
-  border-top: 1px solid #e7eaed;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .about-report {
@@ -425,7 +359,7 @@
   justify-content: space-between;
   gap: 35px;
 
-  border-bottom: 1px solid #e7eaed;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .about-report__title {
@@ -450,7 +384,7 @@
 .about-report__title p {
   margin: 0;
 
-  color: #20282f;
+  color: var(--text-primary);
 
   font-size: 14px;
   font-weight: 600;
@@ -459,67 +393,25 @@
 
 .about-report__actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
 
   flex: 0 0 auto;
 }
 
-.about-report__actions button {
-  min-height: 36px;
-
-  padding: 5px 15px;
-
-  color: #838c93;
-
-  font-size: 11px;
-}
 
 @media (max-width: 1450px) {
   .about-governance__container,
   .about-roadmap__container,
-  .about-reports__container {
-    width: min(calc(100% - 90px), 1320px);
+  .about-reports__container,
+  .about-governance__main-heading {
+    width: min(
+      calc(100% - (var(--gutter-tablet) * 2)),
+      var(--layout-content)
+    );
   }
 
   .about-governance__people-grid {
     gap: 38px 48px;
-  }
-}
-
-/* محدودکردن عرض بخش افراد و مدیران */
-
-.about-governance__container {
-  width: min(calc(100% - 200px), 1280px);
-}
-
-/*
- * آیتم مدیران دیگر داخل کانتینر
- * به سمت چپ هل داده نمی‌شود.
- */
-.about-executive {
-  width: 100%;
-  max-width: none;
-
-  margin-right: 0;
-  margin-left: 0;
-}
-
-/* فاصله بیشتر گروه‌ها از لبه‌ها */
-
-.about-governance__group {
-  width: 100%;
-}
-
-/* گزارش سالانه با عرض محدودتر */
-
-.about-reports__container {
-  width: min(calc(100% - 200px), 1280px);
-}
-
-@media (max-width: 1450px) {
-  .about-governance__container,
-  .about-reports__container {
-    width: min(calc(100% - 140px), 1180px);
   }
 }
 
@@ -531,4 +423,40 @@
 #strategic-document,
 #annual-reports {
   scroll-margin-top: 115px;
+}
+
+
+@media (max-width: 768px) {
+  .about-governance__container,
+  .about-roadmap__container,
+  .about-reports__container,
+  .about-governance__main-heading {
+    width: min(
+      calc(100% - (var(--gutter-mobile) * 2)),
+      var(--layout-content)
+    );
+  }
+
+  .about-governance__people-grid,
+  .about-governance__people-grid--small {
+    grid-template-columns: 1fr;
+  }
+
+  .about-report {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-block: var(--space-4);
+  }
+
+  .about-report__actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+
+.about-roadmap__item > button:focus-visible {
+  outline: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--focus-ring);
 }

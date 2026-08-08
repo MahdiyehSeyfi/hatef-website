@@ -128,42 +128,6 @@
   justify-content: center;
   gap: 14px;
 }
-
-.business-collab__hero-actions a {
-  min-width: 138px;
-  min-height: 43px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 1px solid rgba(255, 255, 255, 0.72);
-
-  color: #ffffff;
-
-  font-size: 13px;
-  font-weight: 800;
-
-  transition:
-    color 180ms ease,
-    border-color 180ms ease,
-    background-color 180ms ease,
-    transform 180ms ease;
-}
-
-.business-collab__hero-actions a:first-child {
-  border-color: var(--color-secondary);
-  background-color: var(--color-secondary);
-}
-
-.business-collab__hero-actions a:hover {
-  color: var(--color-primary);
-  border-color: #ffffff;
-  background-color: #ffffff;
-
-  transform: translateY(-3px);
-}
-
 /* Shared */
 
 .business-collab__section,
@@ -261,10 +225,10 @@
 }
 
 .business-collab__process-item:hover {
-  border-color: rgba(1, 210, 201, 0.42);
-  box-shadow: 0 24px 56px rgba(20, 44, 74, 0.1);
+  border-color: var(--interaction-card-hover-border);
+  box-shadow: var(--interaction-card-hover-shadow);
 
-  transform: translateY(-5px);
+  transform: var(--interaction-card-hover-transform);
 }
 
 .business-collab__process-item strong {
@@ -335,10 +299,10 @@
 }
 
 .business-collab__benefit-card:hover {
-  border-color: rgba(1, 210, 201, 0.42);
-  box-shadow: 0 24px 56px rgba(20, 44, 74, 0.1);
+  border-color: var(--interaction-card-hover-border);
+  box-shadow: var(--interaction-card-hover-shadow);
 
-  transform: translateY(-5px);
+  transform: var(--interaction-card-hover-transform);
 }
 
 .business-collab__benefit-icon {
@@ -363,9 +327,9 @@
 }
 
 .business-collab__benefit-card:hover .business-collab__benefit-icon {
-  color: var(--color-secondary);
+  color: var(--interaction-card-icon-hover-color);
 
-  transform: translateY(-3px);
+  transform: var(--interaction-icon-hover-transform);
 }
 
 .business-collab__benefit-card h3 {
@@ -418,10 +382,10 @@
 }
 
 .business-collab__partner-stat:hover {
-  border-color: rgba(1, 210, 201, 0.42);
-  box-shadow: 0 24px 56px rgba(20, 44, 74, 0.1);
+  border-color: var(--interaction-card-hover-border);
+  box-shadow: var(--interaction-card-hover-shadow);
 
-  transform: translateY(-5px);
+  transform: var(--interaction-card-hover-transform);
 }
 
 .business-collab__partner-stat img {
@@ -512,41 +476,6 @@
 
   margin-top: 42px;
 }
-
-.business-collab__partner-actions a {
-  width: 220px;
-  min-height: 50px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 1px solid var(--color-primary);
-
-  color: var(--color-primary);
-  background-color: #ffffff;
-
-  font-size: 14px;
-  font-weight: 800;
-
-  transition:
-    color 180ms ease,
-    background-color 180ms ease,
-    transform 180ms ease;
-}
-
-.business-collab__partner-actions a:first-child {
-  color: #ffffff;
-  background-color: var(--color-primary);
-}
-
-.business-collab__partner-actions a:hover {
-  color: #ffffff;
-  background-color: var(--color-secondary);
-
-  transform: translateY(-3px);
-}
-
 /* Framework tabs */
 
 .business-collab__framework-tabs {
@@ -589,14 +518,12 @@
     box-shadow 180ms ease,
     transform 180ms ease;
 }
-
 .business-collab__framework-button:hover,
 .business-collab__framework-button--active {
-  border-color: rgba(1, 210, 201, 0.42);
-  background-color: #f5fffe;
-  box-shadow: 0 14px 34px rgba(20, 44, 74, 0.07);
-
-  transform: translateY(-2px);
+  border-color: var(--interaction-control-hover-border);
+  background-color: var(--interaction-control-hover-bg);
+  box-shadow: var(--interaction-control-hover-shadow);
+  transform: none;
 }
 
 .business-collab__framework-panel {

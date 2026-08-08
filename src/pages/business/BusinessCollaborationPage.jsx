@@ -9,6 +9,8 @@ import behsazanLogo from "../../assets/logos/behsazan-mellat-logo.jpg";
 import mellatBankLogo from "../../assets/logos/mellat-bank-logo.jpg";
 import mellatVenturesLogo from "../../assets/logos/mellat-ventures-logo.png";
 
+import Button from "../../components/ui/Button/Button";
+
 import "./BusinessCollaborationPage.css";
 
 const BUSINESS_SCROLL_OFFSET = 118;
@@ -374,9 +376,25 @@ function PartnersSection() {
         </div>
 
         <div className="business-collab__partner-actions">
-          <Link to="/business/opportunities">مشاهده فرصت‌های همکاری</Link>
+          <Button
+            to="/business/opportunities"
+            variant="primary"
+            size="md"
+            width="wide"
+            className="business-collab__partner-action"
+          >
+            مشاهده فرصت‌های همکاری
+          </Button>
 
-          <a href="#participation-contact">ارتباط جهت مشارکت</a>
+          <Button
+            href="#participation-contact"
+            variant="outline"
+            size="md"
+            width="wide"
+            className="business-collab__partner-action"
+          >
+            ارتباط جهت مشارکت
+          </Button>
         </div>
       </div>
     </section>
@@ -498,11 +516,11 @@ function BusinessCollaborationPage() {
           </p>
 
           <div className="business-collab__hero-actions">
-            <a href="#process">نحوه همکاری</a>
-            <a href="#benefits">مزایای همکاری</a>
-            <a href="#partners">همکاران تجاری</a>
-            <a href="#frameworks">چارچوب‌ها</a>
-            <a href="#participation-contact">ارتباط جهت مشارکت</a>
+            <Button href="#process" variant="inverse" size="sm" className="business-collab__hero-action">نحوه همکاری</Button>
+            <Button href="#benefits" variant="inverse" size="sm" className="business-collab__hero-action">مزایای همکاری</Button>
+            <Button href="#partners" variant="inverse" size="sm" className="business-collab__hero-action">همکاران تجاری</Button>
+            <Button href="#frameworks" variant="inverse" size="sm" className="business-collab__hero-action">چارچوب‌ها</Button>
+            <Button href="#participation-contact" variant="inverse" size="sm" className="business-collab__hero-action">ارتباط جهت مشارکت</Button>
           </div>
         </div>
       </section>

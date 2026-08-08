@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import ViewAllButton from "../common/ViewAllButton";
+import SectionHeader from "../ui/SectionHeader/SectionHeader";
 import ActivityCard from "../activities/ActivityCard";
 import CoursesSliderControls from "../activities/CoursesSliderControls";
 
@@ -280,21 +281,21 @@ function CoursesSection() {
   return (
     <section className="courses-section" id="courses">
       <div className="courses-section__container">
-        <div className="courses-section__heading">
-          <h2>رویدادها و دوره‌ها</h2>
-
-          <span className="courses-section__line" />
-
-          <CoursesSliderControls
-            slides={activitySlides}
-            activePage={activePage}
-            isMoving={isMoving}
-            pageCount={pageCount}
-            onPrevious={showPreviousPage}
-            onNext={showNextPage}
-            onSelectPage={showSelectedPage}
-          />
-        </div>
+        <SectionHeader
+          title="رویدادها و دوره‌ها"
+          className="courses-section__heading"
+          action={
+            <CoursesSliderControls
+              slides={activitySlides}
+              activePage={activePage}
+              isMoving={isMoving}
+              pageCount={pageCount}
+              onPrevious={showPreviousPage}
+              onNext={showNextPage}
+              onSelectPage={showSelectedPage}
+            />
+          }
+        />
 
         <div className="courses-section__viewport">
           <div

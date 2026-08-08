@@ -32,7 +32,7 @@
 }
 
 .documents-page__breadcrumb a:hover {
-  color: var(--color-accent);
+  color: var(--interaction-text-hover-color);
 }
 
 /* Page columns */
@@ -157,11 +157,11 @@
 }
 
 .documents-page__quick-card:hover {
-  color: var(--color-primary);
-  border-color: rgba(1, 210, 201, 0.32);
-  background-color: #ffffff;
-  box-shadow: 0 22px 48px rgba(20, 44, 74, 0.11);
-  transform: translateY(-5px);
+  color: var(--interaction-surface-hover-color);
+  border-color: var(--interaction-card-hover-border);
+  background-color: var(--interaction-card-hover-bg);
+  box-shadow: var(--interaction-card-hover-shadow);
+  transform: var(--interaction-card-hover-transform);
 }
 
 .documents-page__quick-card--active {
@@ -170,9 +170,8 @@
   background: linear-gradient(135deg, var(--color-primary), #24558c);
   box-shadow: 0 22px 48px rgba(26, 54, 93, 0.22);
 }
-
 .documents-page__quick-card--active:hover {
-  color: #ffffff;
+  color: var(--text-inverse);
 }
 
 .documents-page__quick-card-icon {
@@ -191,7 +190,7 @@
 }
 
 .documents-page__quick-card:hover .documents-page__quick-card-icon {
-  transform: translateY(-2px);
+  transform: var(--interaction-icon-hover-transform);
 }
 
 .documents-page__quick-card--active .documents-page__quick-card-icon {
@@ -261,23 +260,6 @@
   font-size: 13px;
   line-height: 1.9;
 }
-
-.documents-page__notice button {
-  position: absolute;
-  top: 50%;
-  left: 14px;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  color: #60706f;
-  background-color: rgba(0, 0, 0, 0.04);
-  font-family: Arial, sans-serif;
-  font-size: 19px;
-  transform: translateY(-50%);
-}
-
 /* Document groups */
 
 .document-group {
@@ -362,48 +344,16 @@
     color 200ms ease,
     transform 200ms ease;
 }
-
 .document-row__download {
   grid-area: action;
-  width: 112px;
-  min-height: 43px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: #7d848d;
-  background-color: #fafafa;
-  font-size: 13px;
   direction: rtl;
-  transition:
-    color 200ms ease,
-    background-color 200ms ease,
-    box-shadow 200ms ease,
-    transform 200ms ease;
 }
-
-.document-row__download svg {
-  width: 21px;
-  height: 21px;
-  flex: 0 0 auto;
-}
-
 .document-row:hover .document-row__title h2 {
-  color: var(--color-accent);
-  transform: translateX(-3px);
+  color: var(--interaction-text-hover-color);
 }
-
 .document-row:hover .document-row__title > span {
-  background-color: var(--color-accent);
-  transform: scale(1.15);
-}
-
-.document-row:hover .document-row__download,
-.document-row__download:hover {
-  color: var(--color-white);
-  background-color: var(--color-accent);
-  box-shadow: 0 8px 19px rgba(1, 210, 201, 0.2);
-  transform: translateY(-2px);
+  background-color: var(--interaction-card-icon-hover-color);
+  transform: var(--interaction-dot-hover-transform);
 }
 
 @media (max-width: 1450px) {
@@ -451,4 +401,8 @@
   .documents-page__quick-card-content small {
     font-size: 11px;
   }
+}
+
+.documents-page__notice-close {
+  flex: 0 0 auto;
 }

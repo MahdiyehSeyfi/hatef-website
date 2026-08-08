@@ -1,5 +1,8 @@
 import { useState } from "react";
 
+import Button from "../ui/Button/Button";
+import SectionHeader from "../ui/SectionHeader/SectionHeader";
+
 import "./AboutGovernanceSection.css";
 
 const executiveManagers = [
@@ -209,13 +212,9 @@ function AboutGovernanceSection() {
 
   return (
     <section className="about-governance" id="people-managers">
-      <header className="about-governance__main-heading">
-        <span />
-
-        <h2>افراد و مدیران</h2>
-
-        <span />
-      </header>
+      <div className="about-governance__main-heading">
+        <SectionHeader title="افراد و مدیران" />
+      </div>
 
       <div className="about-governance__container">
         <section className="about-governance__group" id="executive-manager">
@@ -295,13 +294,9 @@ function AboutGovernanceSection() {
       </div>
 
       <section className="about-roadmap" id="strategic-document">
-        <header className="about-governance__main-heading">
-          <span />
-
-          <h2>سند راهبردی هاتف</h2>
-
-          <span />
-        </header>
+        <div className="about-governance__main-heading">
+          <SectionHeader title="سند راهبردی هاتف" />
+        </div>
 
         <div className="about-roadmap__container">
           <div className="about-roadmap__accordion">
@@ -337,15 +332,23 @@ function AboutGovernanceSection() {
             <h3>بارگیری سند راهبردی هاتف</h3>
 
             <div>
-              <button type="button">
-                <DownloadIcon />
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                leadingIcon={<DownloadIcon />}
+              >
                 نسخه PDF
-              </button>
+              </Button>
 
-              <button type="button">
-                <DownloadIcon />
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                leadingIcon={<DownloadIcon />}
+              >
                 نسخه DOCX
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -367,15 +370,23 @@ function AboutGovernanceSection() {
                 </div>
 
                 <div className="about-report__actions">
-                  <button type="button">
-                    <DownloadIcon />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    leadingIcon={<DownloadIcon />}
+                  >
                     نسخه PDF
-                  </button>
+                  </Button>
 
-                  <button type="button">
-                    <DownloadIcon />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    leadingIcon={<DownloadIcon />}
+                  >
                     نسخه DOCX
-                  </button>
+                  </Button>
                 </div>
               </article>
             ))}

@@ -4,6 +4,8 @@ import { useLocation } from "react-router";
 import heroImage from "../../assets/images/banner.png";
 import ctaImage from "../../assets/images/banner-2.png";
 
+import Button from "../../components/ui/Button/Button";
+
 import "./ResearchSupportPages.css";
 
 const guideBlocks = [
@@ -141,9 +143,9 @@ function ResearchHero() {
         <p>طراحی مسیر تبدیل دستاوردهای پژوهشی و فناورانه به محصول و بازار</p>
 
         <div className="research-hero__actions">
-          <a href="#registration-guide">راهنمای ثبت‌نام</a>
-          <a href="#eligibility">شرایط احراز</a>
-          <a href="#proposal-guideline">شیوه‌نامه تدوین پروپوزال</a>
+          <Button href="#registration-guide" variant="inverse" size="md" className="research-hero__action">راهنمای ثبت‌نام</Button>
+          <Button href="#eligibility" variant="inverse" size="md" className="research-hero__action">شرایط احراز</Button>
+          <Button href="#proposal-guideline" variant="inverse" size="md" className="research-hero__action">شیوه‌نامه تدوین پروپوزال</Button>
         </div>
       </div>
     </section>
@@ -278,7 +280,7 @@ function GuideEligibilityPage() {
               هدایت فناوری آغاز شود.
             </p>
 
-            <a href="/services/consulting">مشاوره با کارشناسان</a>
+            <Button href="/services/consulting" variant="secondary" size="md" className="research-cta__action">مشاوره با کارشناسان</Button>
           </div>
         </section>
 
@@ -307,8 +309,8 @@ function GuideEligibilityPage() {
                 <span>{file.title}</span>
 
                 <div>
-                  <a href="#download">نسخه PDF</a>
-                  <a href="#download">نسخه Docx</a>
+                  <Button href="#download" variant="outline" size="sm">نسخه PDF</Button>
+                  <Button href="#download" variant="outline" size="sm">نسخه Docx</Button>
                 </div>
               </div>
             ))}

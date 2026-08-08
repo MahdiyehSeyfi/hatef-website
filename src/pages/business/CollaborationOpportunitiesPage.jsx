@@ -12,6 +12,8 @@ import {
   SITE_PUBLICATION_DISPLAY_GROUPS,
 } from "../../services/projectPublicationService";
 
+import Button from "../../components/ui/Button/Button";
+
 import "./CollaborationOpportunitiesPage.css";
 
 const articleParagraphs = [
@@ -83,12 +85,15 @@ function ProjectCard({ project }) {
           <li>وضعیت: {project.level}</li>
         </ul>
 
-        <Link
+        <Button
           to={`/business/opportunities/${project.id}`}
+          variant="primary"
+          size="sm"
+          fullWidth
           className="collab-opportunities__card-button"
         >
           {project.button}
-        </Link>
+        </Button>
       </div>
     </article>
   );
@@ -117,13 +122,15 @@ function ProjectSection({ id, title, subtitle, projects }) {
 
         {hasMore && (
           <div className="collab-opportunities__more-wrap">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="md"
               className="collab-opportunities__more"
               onClick={handleShowMore}
             >
               مشاهده بیشتر
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -154,15 +161,17 @@ function OpportunitiesArticle() {
             ))}
           </div>
 
-          <button
+          <Button
             type="button"
-            onClick={() => setIsExpanded((current) => !current)}
+            variant="outline"
+            size="md"
             className="collab-opportunities__article-button"
+            onClick={() => setIsExpanded((current) => !current)}
             aria-expanded={isExpanded}
+            trailingIcon={isExpanded ? "↑" : "↓"}
           >
             {isExpanded ? "بستن مطلب" : "مطالعه بیشتر"}
-            <span aria-hidden="true">{isExpanded ? "↑" : "↓"}</span>
-          </button>
+          </Button>
         </div>
       </div>
     </section>
@@ -210,9 +219,9 @@ function CollaborationOpportunitiesPage() {
             </p>
 
             <div className="collab-opportunities__hero-actions">
-              <a href="#shining-projects">طرح‌های درخشان</a>
-              <a href="#new-projects">طرح‌های جدید</a>
-              <a href="#growing-projects">طرح‌های در حال رشد</a>
+              <Button href="#shining-projects" variant="inverse" size="md" className="collab-opportunities__hero-action">طرح‌های درخشان</Button>
+              <Button href="#new-projects" variant="inverse" size="md" className="collab-opportunities__hero-action">طرح‌های جدید</Button>
+              <Button href="#growing-projects" variant="inverse" size="md" className="collab-opportunities__hero-action">طرح‌های در حال رشد</Button>
             </div>
           </div>
 

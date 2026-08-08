@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
-
 import ActivityCard from "./ActivityCard";
+import Button from "../ui/Button/Button";
+import IconButton from "../ui/IconButton/IconButton";
+import SectionHeader from "../ui/SectionHeader/SectionHeader";
 import "./ActivitiesCarousel.css";
 
 const cardsPerPage = 4;
@@ -85,22 +86,22 @@ function ActivitiesCarousel({
 
   return (
     <section className="activity-carousel">
-      <header className="activity-carousel__heading">
-        <h2>{title}</h2>
-
-        <span className="activity-carousel__line" />
-
-        <div className="activity-carousel__controls">
-          {pageCount > 1 && (
-            <>
-              <button
+      <SectionHeader
+        title={title}
+        className="activity-carousel__heading"
+        action={
+          pageCount > 1 ? (
+            <div className="activity-carousel__controls">
+              <IconButton
                 type="button"
+                variant="outline"
+                size="md"
                 className="activity-carousel__arrow"
                 onClick={showPreviousPage}
                 aria-label="اسلاید قبلی"
               >
                 <SliderArrow direction="previous" />
-              </button>
+              </IconButton>
 
               <div
                 className="activity-carousel__dots"
@@ -124,18 +125,20 @@ function ActivitiesCarousel({
                 })}
               </div>
 
-              <button
+              <IconButton
                 type="button"
+                variant="outline"
+                size="md"
                 className="activity-carousel__arrow"
                 onClick={showNextPage}
                 aria-label="اسلاید بعدی"
               >
                 <SliderArrow direction="next" />
-              </button>
-            </>
-          )}
-        </div>
-      </header>
+              </IconButton>
+            </div>
+          ) : null
+        }
+      />
 
       <div className="activity-carousel__viewport">
         <div
@@ -159,10 +162,15 @@ function ActivitiesCarousel({
 
       {shouldShowViewAll && (
         <div className="activity-carousel__footer">
-          <Link to={viewAllPath} className="activity-carousel__view-all">
+          <Button
+            to={viewAllPath}
+            variant="outline"
+            size="sm"
+            trailingIcon="←"
+            className="activity-carousel__view-all"
+          >
             {viewAllLabel}
-            <span aria-hidden="true">←</span>
-          </Link>
+          </Button>
         </div>
       )}
     </section>

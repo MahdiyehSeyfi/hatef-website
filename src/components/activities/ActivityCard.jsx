@@ -1,6 +1,9 @@
 import { Link } from "react-router";
 
 import fallbackImage from "../../assets/images/banner.png";
+import Badge from "../ui/Badge/Badge";
+import Button from "../ui/Button/Button";
+import Card from "../ui/Card/Card";
 
 import "./ActivityCard.css";
 
@@ -104,7 +107,7 @@ function ActivityCard({ item, activity }) {
   const buttonLabel = getActivityButtonLabel(currentItem);
 
   return (
-    <article className="activity-card">
+    <Card as="article" interactive className="activity-card">
       <Link
         to={activityPath}
         className="activity-card__media"
@@ -116,7 +119,9 @@ function ActivityCard({ item, activity }) {
           alt={activityTitle}
         />
 
-        <span className="activity-card__status">{statusLabel}</span>
+        <Badge tone="warning" className="activity-card__status">
+          {statusLabel}
+        </Badge>
       </Link>
 
       <div className="activity-card__content">
@@ -141,11 +146,17 @@ function ActivityCard({ item, activity }) {
           </div>
         </dl>
 
-        <Link to={activityPath} className="activity-card__button">
+        <Button
+          to={activityPath}
+          variant="primary"
+          size="sm"
+          fullWidth
+          className="activity-card__button"
+        >
           {buttonLabel}
-        </Link>
+        </Button>
       </div>
-    </article>
+    </Card>
   );
 }
 

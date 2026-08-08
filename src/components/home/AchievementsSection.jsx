@@ -3,6 +3,8 @@ import { Link } from "react-router";
 
 import bannerImage from "../../assets/images/banner.png";
 import ViewAllButton from "../common/ViewAllButton";
+import Button from "../ui/Button/Button";
+import SectionHeader from "../ui/SectionHeader/SectionHeader";
 
 import { allCollaborationProjects } from "../../data/collaborationProjectsData";
 import { getPublishedSuccessfulProjectItems } from "../../services/projectPublicationService";
@@ -113,13 +115,12 @@ function AchievementsSection() {
 
   return (
     <section className="achievements-section" id="achievements">
-      <header className="achievements-section__heading">
-        <span className="achievements-section__heading-line" />
-
-        <h2>دستاوردهای هاتف</h2>
-
-        <span className="achievements-section__heading-line" />
-      </header>
+      <div className="achievements-section__heading-wrap">
+        <SectionHeader
+          title="دستاوردهای هاتف"
+          className="achievements-section__main-heading"
+        />
+      </div>
 
       <div className="achievements-section__body">
         <div className="achievements-section__content">
@@ -160,8 +161,10 @@ function AchievementsSection() {
               />
 
               <span className="achievement-visual__overlay">
-                <span className="achievement-visual__view-button">
-                  مشاهده دستاورد
+                <span className="achievement-visual__view-reveal">
+                  <Button as="span" variant="inverse" size="md" width="wide">
+                    مشاهده دستاورد
+                  </Button>
                 </span>
               </span>
             </Link>

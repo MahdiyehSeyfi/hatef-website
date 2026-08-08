@@ -1,21 +1,19 @@
 .expandable-article {
   position: relative;
-  margin-top: 35px;
-  padding: 52px 0;
-  background: linear-gradient(135deg, #f8fafc, #f2f7fa);
+  margin-top: var(--space-8);
+  padding: var(--space-12) 0;
+  background: var(--surface-subtle);
 }
 
 .expandable-article__container {
-  width: min(100%, 1180px);
+  width: min(
+    calc(100% - (2 * var(--gutter-desktop))),
+    var(--layout-content)
+  );
   margin-inline: auto;
 }
 
-.expandable-article h2 {
-  margin: 0 0 24px;
-  color: var(--color-black);
-  font-size: 24px;
-  font-weight: 700;
-}
+
 
 .expandable-article__content {
   position: relative;
@@ -48,14 +46,14 @@
 }
 
 .expandable-article__content p {
-  margin: 0 0 15px;
-  color: #3e454e;
-  font-size: 14px;
-  line-height: 2.35;
+  margin: 0 0 var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--text-body);
+  line-height: var(--line-body);
   text-align: justify;
   transition:
-    filter 400ms ease,
-    opacity 400ms ease;
+    filter var(--duration-slow) var(--ease-standard),
+    opacity var(--duration-slow) var(--ease-standard);
 }
 
 .expandable-article__content--collapsed p:nth-child(n + 2) {
@@ -68,31 +66,10 @@
   opacity: 1;
 }
 
-.expandable-article__button {
-  min-width: 190px;
-  min-height: 47px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 25px;
-  padding: 9px 22px;
-  border: 1px solid var(--color-primary);
-  color: var(--color-primary);
-  background-color: transparent;
-  font-family: inherit;
-  font-size: 13px;
-  transition:
-    color 200ms ease,
-    background-color 200ms ease,
-    transform 200ms ease;
+.expandable-article__button {margin-top: var(--space-6);
 }
 
-.expandable-article__button:hover {
-  color: var(--color-white);
-  background-color: var(--color-primary);
-  transform: translateY(-2px);
-}
+
 
 .expandable-article__arrow {
   font-family: Arial, sans-serif;
@@ -101,4 +78,20 @@
 
 .expandable-article__arrow--open {
   transform: rotate(180deg);
+}
+
+
+@media (max-width: 1280px) {
+  .expandable-article__container {
+    width: min(
+      calc(100% - (2 * var(--gutter-tablet))),
+      var(--layout-content)
+    );
+  }
+}
+
+@media (max-width: 640px) {
+  .expandable-article__container {
+    width: calc(100% - (2 * var(--gutter-mobile)));
+  }
 }

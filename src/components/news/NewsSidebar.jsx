@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
+import SectionHeader from "../ui/SectionHeader/SectionHeader";
 import {
   getImportantPublicNewsItems,
   getLatestPublicNewsItems,
@@ -10,10 +11,11 @@ import "./NewsSidebar.css";
 function NewsSidebarGroup({ group }) {
   return (
     <section className="news-sidebar__box">
-      <header className="news-sidebar__heading">
-        <span />
-        <h2>{group.title}</h2>
-      </header>
+      <SectionHeader
+        title={group.title}
+        variant="subsection"
+        className="news-sidebar__heading"
+      />
 
       <ul className="news-sidebar__list">
         {group.items.length === 0 ? (

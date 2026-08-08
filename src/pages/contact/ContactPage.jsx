@@ -1,6 +1,6 @@
-import { Link } from "react-router";
-
 import ContactFormSection from "../../components/common/ContactFormSection";
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import bannerImage from "../../assets/images/banner.png";
 import facebookIcon from "../../assets/icons/contact/facebook.svg";
@@ -162,26 +162,18 @@ const socialLinks = [
   },
 ];
 
-function SectionHeading({ children }) {
-  return (
-    <div className="contact-page__section-heading">
-      <h2>{children}</h2>
-      <span />
-    </div>
-  );
-}
 
 function ContactPage() {
   return (
     <div className="contact-page">
       <div className="contact-page__container">
-        <nav className="contact-page__breadcrumb" aria-label="مسیر صفحه">
-          <Link to="/">صفحه اصلی</Link>
-
-          <span aria-hidden="true">/</span>
-
-          <span>تماس با ما</span>
-        </nav>
+        <Breadcrumb
+          className="contact-page__breadcrumb"
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "تماس با ما" },
+          ]}
+        />
 
         <section className="contact-page__banner">
           <img src={bannerImage} alt="" aria-hidden="true" />
@@ -201,7 +193,7 @@ function ContactPage() {
         </section>
 
         <section className="contact-page__methods">
-          <SectionHeading>راه‌های ارتباطی</SectionHeading>
+          <SectionHeader title="راه‌های ارتباطی" />
 
           <div className="contact-methods__grid">
             {contactMethods.map(({ id, title, value, href, Icon }) => (

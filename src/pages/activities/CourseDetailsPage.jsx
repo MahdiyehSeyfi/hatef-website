@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Link,
   Navigate,
   useNavigate,
   useParams,
@@ -8,6 +7,10 @@ import {
 } from "react-router";
 
 import ActivitiesCarousel from "../../components/activities/ActivitiesCarousel";
+import Badge from "../../components/ui/Badge/Badge";
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
+import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 import ExpandableArticle from "../../components/activities/ExpandableArticle";
 
 import {
@@ -475,28 +478,29 @@ function CourseDetailsPage() {
     <div className="course-details-page">
       <section className="course-details-hero">
         <div className="course-details-page__container">
-          <nav className="course-details__breadcrumb" aria-label="مسیر صفحه">
-            <Link to="/">صفحه اصلی</Link>
-            <span>/</span>
-            <Link to="/courses/all">دوره‌های توانمندسازی</Link>
-            <span>/</span>
-            <span>{course.title}</span>
-          </nav>
+          <Breadcrumb
+            className="course-details__breadcrumb"
+            items={[
+              { label: "صفحه اصلی", to: "/" },
+              { label: "دوره‌های توانمندسازی", to: "/courses/all" },
+              { label: course.title },
+            ]}
+          />
 
           <div className="course-details-hero__grid">
             <div className="course-details-hero__media">
               <img src={course.image} alt={course.title} />
 
               <div className="course-details-hero__badges">
-                <span>{statusLabel}</span>
-                <span>{course.startDate}</span>
+                <Badge tone="success">{statusLabel}</Badge>
+                <Badge tone="brand">{course.startDate}</Badge>
               </div>
             </div>
 
             <div className="course-details-hero__content">
-              <span className="course-details-hero__eyebrow">
+              <Badge tone="info" className="course-details-hero__eyebrow">
                 دوره تخصصی هاتف
-              </span>
+              </Badge>
 
               <h1>{course.title}</h1>
 
@@ -504,12 +508,15 @@ function CourseDetailsPage() {
                 <p key={paragraph}>{paragraph}</p>
               ))}
 
-              <a
+              <Button
                 href="#course-registration"
+                variant="primary"
+                size="md"
+                width="wide"
                 className="course-details-hero__button"
               >
                 {actionLabel}
-              </a>
+              </Button>
             </div>
           </div>
 
@@ -539,8 +546,8 @@ function CourseDetailsPage() {
                 id="course-registration"
               >
                 <div className="course-registration-card__header">
-                  <span>{statusLabel}</span>
-                  <span>ظرفیت محدود</span>
+                  <Badge tone="success">{statusLabel}</Badge>
+                  <Badge tone="warning">ظرفیت محدود</Badge>
                 </div>
 
                 <h2>{course.title}</h2>
@@ -586,53 +593,39 @@ function CourseDetailsPage() {
                 </div>
 
                 {registrationNotice && (
-                  <p
-                    style={{
-                      margin: "16px 0 0",
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      background: "#f0fdf4",
-                      color: "#166534",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      lineHeight: 1.9,
-                    }}
-                  >
+                  <p className="course-registration-card__notice" role="status">
                     {registrationNotice}
                   </p>
                 )}
 
                 {course.status === "registering" && !isPreviewMode ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
+                    size="md"
+                    fullWidth
                     className="course-registration-card__button"
                     onClick={handleCourseRegistration}
                     disabled={!canRegister || alreadyRegistered}
-                    style={{
-                      border: 0,
-                      width: "100%",
-                      opacity: !canRegister || alreadyRegistered ? 0.55 : 1,
-                      cursor:
-                        !canRegister || alreadyRegistered
-                          ? "not-allowed"
-                          : "pointer",
-                    }}
                   >
                     {registrationStats.isFull
                       ? "ظرفیت تکمیل شده"
                       : alreadyRegistered
                         ? "قبلاً ثبت‌نام کرده‌اید"
                         : actionLabel}
-                  </button>
+                  </Button>
                 ) : (
-                  <a
+                  <Button
                     href="#course-registration"
+                    variant="outline"
+                    size="md"
+                    fullWidth
                     className="course-registration-card__button"
                   >
                     {isPreviewMode
                       ? "پیش‌نمایش ثبت‌نام غیرفعال است"
                       : actionLabel}
-                  </a>
+                  </Button>
                 )}
               </div>
 
@@ -655,20 +648,24 @@ function CourseDetailsPage() {
 
             <main className="course-details-article">
               <section className="course-content-section">
-                <span className="course-content-section__eyebrow">
-                  معرفی دوره
-                </span>
-                <h2>{course.introTitle || "محورهای پژوهشی سال جاری"}</h2>
+                <SectionHeader
+                  eyebrow="معرفی دوره"
+                  title={course.introTitle || "محورهای پژوهشی سال جاری"}
+                  variant="subsection"
+                  className="course-content-section__heading"
+                />
                 {introParagraphs.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
               </section>
 
               <section className="course-content-section">
-                <span className="course-content-section__eyebrow">
-                  دستاوردهای آموزشی
-                </span>
-                <h2>در این دوره چه می‌آموزید؟</h2>
+                <SectionHeader
+                  eyebrow="دستاوردهای آموزشی"
+                  title="در این دوره چه می‌آموزید؟"
+                  variant="subsection"
+                  className="course-content-section__heading"
+                />
 
                 <div className="course-learning-outcomes">
                   {learningOutcomes.map((outcome, index) => (
@@ -696,10 +693,12 @@ function CourseDetailsPage() {
               </section>
 
               <section className="course-content-section">
-                <span className="course-content-section__eyebrow">
-                  برنامه آموزشی
-                </span>
-                <h2>سرفصل‌های دوره</h2>
+                <SectionHeader
+                  eyebrow="برنامه آموزشی"
+                  title="سرفصل‌های دوره"
+                  variant="subsection"
+                  className="course-content-section__heading"
+                />
 
                 <div className="course-modules">
                   {courseModules.map((module, index) => {
@@ -729,10 +728,12 @@ function CourseDetailsPage() {
               </section>
 
               <section className="course-content-section">
-                <span className="course-content-section__eyebrow">
-                  تیم آموزشی
-                </span>
-                <h2>مدرسان دوره</h2>
+                <SectionHeader
+                  eyebrow="تیم آموزشی"
+                  title="مدرسان دوره"
+                  variant="subsection"
+                  className="course-content-section__heading"
+                />
 
                 <div className="course-instructors">
                   {courseInstructors.map((instructor, index) => (
@@ -754,10 +755,12 @@ function CourseDetailsPage() {
               </section>
 
               <section className="course-content-section">
-                <span className="course-content-section__eyebrow">
-                  مزایای شرکت
-                </span>
-                <h2>چرا این دوره؟</h2>
+                <SectionHeader
+                  eyebrow="مزایای شرکت"
+                  title="چرا این دوره؟"
+                  variant="subsection"
+                  className="course-content-section__heading"
+                />
 
                 <div className="course-benefits">
                   {courseBenefits.map((benefit, index) => (
@@ -776,10 +779,12 @@ function CourseDetailsPage() {
               </section>
 
               <section className="course-content-section">
-                <span className="course-content-section__eyebrow">
-                  سوالات متداول
-                </span>
-                <h2>پرسش‌های رایج درباره دوره</h2>
+                <SectionHeader
+                  eyebrow="سوالات متداول"
+                  title="پرسش‌های رایج درباره دوره"
+                  variant="subsection"
+                  className="course-content-section__heading"
+                />
 
                 <div className="course-faq">
                   {frequentlyAskedQuestions.map((question, index) => {

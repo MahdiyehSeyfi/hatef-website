@@ -9,6 +9,9 @@ import {
   getCurrentUserDashboardPath,
 } from "../../services/authService";
 
+import Button from "../ui/Button/Button";
+import IconButton from "../ui/IconButton/IconButton";
+
 import "./Header.css";
 
 const HEADER_SCROLL_OFFSET = 118;
@@ -456,13 +459,17 @@ function AccountMenuLink({ currentUser, onNavigate }) {
 
   if (!currentUser) {
     return (
-      <SmartLink
+      <Button
+        as={SmartLink}
         href="/auth"
+        variant="inverse"
+        size="md"
+        width="compact"
         className="site-header__login"
         onClick={onNavigate}
       >
         ورود | ثبت‌نام
-      </SmartLink>
+      </Button>
     );
   }
 
@@ -470,8 +477,12 @@ function AccountMenuLink({ currentUser, onNavigate }) {
   const avatarPreview = currentUser.avatarPreview || currentUser.avatar || "";
 
   return (
-    <SmartLink
+    <Button
+      as={SmartLink}
       href={dashboardPath}
+      variant="inverse"
+      size="md"
+      width="wide"
       className="site-header__login site-header__account"
       onClick={onNavigate}
       aria-label={`ورود به حساب کاربری ${fullName}`}
@@ -486,7 +497,7 @@ function AccountMenuLink({ currentUser, onNavigate }) {
       </span>
 
       <span className="site-header__account-name">{fullName}</span>
-    </SmartLink>
+    </Button>
   );
 }
 
@@ -641,17 +652,34 @@ function Header() {
           </nav>
 
           <div className="site-header__actions">
-            <button
-              className={`site-header__search ${
-                isSearchOpen ? "site-header__search--active" : ""
-              }`}
+            <IconButton
+              className="site-header__search"
+              variant="inverse"
+              size="md"
+              shape="rounded"
               type="button"
               aria-label="بازکردن جست‌وجو"
               aria-expanded={isSearchOpen}
               onClick={() => setIsSearchOpen((current) => !current)}
             >
-              <img src={searchIcon} alt="" />
-            </button>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle
+                  cx="11"
+                  cy="11"
+                  r="6.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                />
+                <path
+                  d="M16 16l4 4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </IconButton>
 
             <AccountMenuLink
               currentUser={currentUser}
@@ -675,22 +703,36 @@ function Header() {
               autoFocus={isSearchOpen}
             />
 
-            <button
+            <Button
               className="site-search__submit"
               type="submit"
+              variant="primary"
+              size="md"
+              width="compact"
               disabled={!searchResults.length}
             >
               جست‌وجو
-            </button>
+            </Button>
 
-            <button
+            <IconButton
               className="site-search__close"
               type="button"
+              variant="ghost"
+              size="md"
+              shape="rounded"
               onClick={closeSearch}
               aria-label="بستن جست‌وجو"
             >
-              ×
-            </button>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M6 6l12 12M18 6L6 18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </IconButton>
           </form>
 
           {normalizedQuery && (
