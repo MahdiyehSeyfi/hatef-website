@@ -5,7 +5,10 @@ import bannerImage from "../../assets/images/banner.png";
 import { getCalls, getPublishedCalls } from "../../services/callService";
 import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
 
+import Badge from "../../components/ui/Badge/Badge";
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import "./CurrentFieldsPage.css";
 
@@ -156,24 +159,6 @@ function getCurrentAxisTitle(currentAxisCalls) {
   return firstCall.field || firstCall.category || "محور سال جاری";
 }
 
-function SectionHeading({ title, warning = false }) {
-  return (
-    <div className="current-fields-page__subheading">
-      <div className="current-fields-page__subheading-label">
-        <span
-          className={`current-fields-page__subheading-dot ${
-            warning ? "current-fields-page__subheading-dot--warning" : ""
-          }`}
-        />
-
-        <h2>{title}</h2>
-      </div>
-
-      <span className="current-fields-page__subheading-line" />
-    </div>
-  );
-}
-
 function AxisCallCard({ call, index, compact = false }) {
   const callPath = getCallPath(call);
   const callStatusLabel = getCallStatusLabel(call);
@@ -199,19 +184,18 @@ function AxisCallCard({ call, index, compact = false }) {
 
             <p>{getCallDescription(call)}</p>
 
-            <span>مشاهده جزئیات</span>
+            <Button as="span" variant="inverse" size="sm">
+              مشاهده جزئیات
+            </Button>
           </div>
         </div>
 
-        <span
-          className={`current-fields-page__call-badge ${
-            isClosed
-              ? "current-fields-page__call-badge--closed"
-              : "current-fields-page__call-badge--active"
-          }`}
+        <Badge
+          tone={isClosed ? "neutral" : "success"}
+          className="current-fields-page__call-badge"
         >
           {callStatusLabel}
-        </span>
+        </Badge>
 
         <span className="current-fields-page__call-deadline">
           {getCallDeadline(call)}
@@ -253,6 +237,15 @@ function CurrentFieldsPage() {
 
   return (
     <main className="current-fields-page">
+      <div className="current-fields-page__container current-fields-page__breadcrumb-wrap">
+        <Breadcrumb
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "محورهای سال جاری" },
+          ]}
+        />
+      </div>
+
       <section className="current-fields-page__hero">
         <img src={bannerImage} alt="" aria-hidden="true" />
 
@@ -272,10 +265,10 @@ function CurrentFieldsPage() {
             </p>
 
             <div className="current-fields-page__hero-actions">
-              <Button href="#current-year-axis" variant="inverse" size="md" className="current-fields-page__hero-action">
+              <Button href="#current-year-axis" variant="inverse" size="md">
                 مشاهده محور سال جاری
               </Button>
-              <Button href="#previous-year-axis" variant="inverse" size="md" className="current-fields-page__hero-action">
+              <Button href="#previous-year-axis" variant="inverse" size="md">
                 محورهای سال‌های گذشته
               </Button>
             </div>
@@ -302,8 +295,9 @@ function CurrentFieldsPage() {
 
       <section className="current-fields-page__section" id="current-year-axis">
         <div className="current-fields-page__container">
-          <SectionHeading
+          <SectionHeader
             title={`فراخوان‌های محور امسال: ${currentAxisTitle}`}
+            className="current-fields-page__section-heading"
           />
 
           {currentAxisCalls.length > 0 ? (
@@ -325,7 +319,7 @@ function CurrentFieldsPage() {
         id="previous-year-axis"
       >
         <div className="current-fields-page__container">
-          <SectionHeading title="محورهای سال‌های گذشته" warning />
+          <SectionHeader title="محورهای سال‌های گذشته" tone="warning" className="current-fields-page__section-heading" />
 
           {previousAxisCalls.length > 0 ? (
             <div className="current-fields-page__previous-list">
@@ -344,10 +338,12 @@ function CurrentFieldsPage() {
       <section className="current-fields-page__article">
         <div className="current-fields-page__container">
           <div className="current-fields-page__article-card">
-            <div className="current-fields-page__article-heading">
-              <span>درباره انتخاب محورها</span>
-              <h2>تمرکز بر نیازهای واقعی، اولویت‌های فناورانه و ظرفیت اجرا</h2>
-            </div>
+            <SectionHeader
+              eyebrow="درباره انتخاب محورها"
+              title="تمرکز بر نیازهای واقعی، اولویت‌های فناورانه و ظرفیت اجرا"
+              variant="subsection"
+              className="current-fields-page__article-heading"
+            />
 
             <div className="current-fields-page__article-content">
               <p>
@@ -368,7 +364,7 @@ function CurrentFieldsPage() {
               to="/research-support/calls"
               variant="outline"
               size="md"
-              className="current-fields-page__article-button"
+             
             >
               مشاهده همه فراخوان‌ها
             </Button>

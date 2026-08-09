@@ -477,23 +477,6 @@
   line-height: 2;
 }
 
-.previous-plan-card__overlay-button {
-  width: 188px;
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  border-radius: 11px;
-  color: var(--color-white);
-  background-color: rgba(255, 255, 255, 0.04);
-  font-size: 13px;
-  transition:
-    color 180ms ease,
-    background-color 180ms ease,
-    transform 180ms ease;
-}
 .previous-plan-card__media:hover .previous-plan-card__image {
   filter: var(--interaction-overlay-media-hover-filter);
   transform: var(--interaction-overlay-media-hover-transform);
@@ -504,14 +487,10 @@
   opacity: 1;
 }
 
-.previous-plan-card__media:hover .previous-plan-card__overlay-button {
+.previous-plan-card__media:hover .ui-button {
   animation: previous-button-enter 350ms ease both;
 }
 
-.previous-plan-card__overlay-button:hover {
-  color: var(--color-primary);
-  background-color: var(--color-white);
-}
 
 .previous-plan-card__body {
   padding: 16px 2px 2px;

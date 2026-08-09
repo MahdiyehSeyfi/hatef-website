@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 
 import bannerImage from "../../assets/images/banner-2.png";
 import mentoringImage from "../../assets/images/services/mentoring-service.png";
@@ -10,7 +10,9 @@ import {
   getCurrentUserDashboardPath,
 } from "../../services/authService";
 
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import "./TechnologyGuidancePage.css";
 
@@ -177,16 +179,6 @@ function FeatureIcon() {
   );
 }
 
-function SectionTitle({ children }) {
-  return (
-    <header className="service-page__section-title">
-      <span />
-      <h2>{children}</h2>
-      <span />
-    </header>
-  );
-}
-
 function TechnologyGuidancePage() {
   const navigate = useNavigate();
 
@@ -201,6 +193,15 @@ function TechnologyGuidancePage() {
 
   return (
     <main className="service-page">
+      <div className="service-page__container service-page__breadcrumb-wrap">
+        <Breadcrumb
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "راهبری و هدایت فناور" },
+          ]}
+        />
+      </div>
+
       <section className="service-hero">
         <div className="service-hero__image">
           <img src={mentoringImage} alt="راهبری و هدایت فناور" />
@@ -236,7 +237,7 @@ function TechnologyGuidancePage() {
 
       <div className="service-page__container">
         <section className="service-process" id="guidance-process">
-          <SectionTitle>فرآیند راهبری</SectionTitle>
+          <SectionHeader title="فرآیند راهبری" className="service-page__section-heading" />
 
           <div className="service-process__grid">
             {processSteps.map((step) => (
@@ -253,7 +254,7 @@ function TechnologyGuidancePage() {
         </section>
 
         <section className="service-reasons" id="why-guidance">
-          <SectionTitle>چرا راهبری؟</SectionTitle>
+          <SectionHeader title="چرا راهبری؟" className="service-page__section-heading" />
 
           <div className="service-reasons__grid">
             {reasons.map((reason) => (
@@ -270,7 +271,7 @@ function TechnologyGuidancePage() {
         </section>
 
         <section className="service-benefits" id="guidance-benefits">
-          <SectionTitle>شما دریافت می‌کنید</SectionTitle>
+          <SectionHeader title="شما دریافت می‌کنید" className="service-page__section-heading" />
 
           <div className="service-benefits__grid">
             {benefits.map((benefit) => (
@@ -306,13 +307,13 @@ function TechnologyGuidancePage() {
                 href="/auth"
                 variant="secondary"
                 size="md"
-                className="service-cta__action"
+               
                 onClick={handleProtectedRequest}
               >
                 ثبت درخواست
               </Button>
 
-              <Button to="/services/consulting" variant="inverse" size="md" className="service-cta__action">
+              <Button to="/services/consulting" variant="inverse" size="md">
                 مشاوره با کارشناسان
               </Button>
             </div>
@@ -329,7 +330,7 @@ function TechnologyGuidancePage() {
         />
 
         <section className="service-faq" id="service-faq">
-          <SectionTitle>سوالات شما</SectionTitle>
+          <SectionHeader title="سوالات شما" className="service-page__section-heading" />
 
           <div className="service-faq__list">
             {faqs.map((faq) => (

@@ -463,8 +463,8 @@ function AccountMenuLink({ currentUser, onNavigate }) {
         as={SmartLink}
         href="/auth"
         variant="inverse"
-        size="md"
-        width="compact"
+        size="sm"
+        width="content"
         className="site-header__login"
         onClick={onNavigate}
       >

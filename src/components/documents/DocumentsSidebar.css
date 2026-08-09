@@ -3,45 +3,23 @@
   direction: rtl;
 }
 
-/* Sidebar boxes */
-
 .documents-sidebar__box {
   width: 100%;
-  margin-bottom: 30px;
-  padding: 24px 26px 17px;
-  background-color: #fafafa;
+  margin-bottom: var(--space-6);
+  padding: var(--space-6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface-subtle);
+  box-shadow: var(--shadow-xs);
 }
 
 .documents-sidebar__box:last-child {
   margin-bottom: 0;
 }
 
-/* Box heading */
-
 .documents-sidebar__box-heading {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-bottom: 14px;
+  margin-bottom: var(--space-3);
 }
-
-.documents-sidebar__box-heading > span {
-  width: 9px;
-  height: 9px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background-color: var(--color-accent);
-}
-
-.documents-sidebar__box-heading h2 {
-  margin: 0;
-  color: var(--color-black);
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.8;
-}
-
-/* Document links */
 
 .documents-sidebar__list {
   margin: 0;
@@ -50,7 +28,7 @@
 }
 
 .documents-sidebar__list li {
-  border-bottom: 1px solid #e7eaee;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .documents-sidebar__list li:last-child {
@@ -60,15 +38,13 @@
 .documents-sidebar__list a {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 13px 0;
-  color: #25292f;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1.9;
-  transition:
-    color 180ms ease,
-    transform 180ms ease;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  color: var(--text-secondary);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--line-body);
+  transition: var(--interaction-transition-color);
 }
 
 .documents-sidebar__item-dot {
@@ -76,31 +52,29 @@
   height: 8px;
   flex: 0 0 auto;
   margin-top: 8px;
-  border-radius: 50%;
-  background-color: #cfd2d6;
+  border-radius: var(--radius-full);
+  background-color: var(--color-neutral-300);
   transition:
-    background-color 180ms ease,
-    transform 180ms ease;
+    background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
 }
-
-/* Hover */
 
 .documents-sidebar__list a:hover {
   color: var(--interaction-text-hover-color);
 }
+
 .documents-sidebar__list a:hover .documents-sidebar__item-dot {
   background-color: var(--interaction-card-icon-hover-color);
   transform: var(--interaction-dot-hover-transform);
 }
 
-/* Keyboard accessibility */
-
 .documents-sidebar__list a:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 4px;
-  color: var(--color-accent);
+  outline: none;
+  border-radius: var(--radius-sm);
+  color: var(--interaction-text-hover-color);
+  box-shadow: var(--focus-ring);
 }
 
 .documents-sidebar__list a:focus-visible .documents-sidebar__item-dot {
-  background-color: var(--color-accent);
+  background-color: var(--interaction-card-icon-hover-color);
 }

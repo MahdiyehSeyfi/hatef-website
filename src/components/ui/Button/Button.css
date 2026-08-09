@@ -78,16 +78,16 @@
 
 .ui-button.ui-button--secondary {
   color: var(--text-inverse);
-  border-color: var(--color-action-600);
-  background-color: var(--color-action-600);
+  border-color: var(--color-action-500);
+  background-color: var(--color-action-500);
 }
 
 .ui-button.ui-button--secondary:hover:not(:disabled):not([aria-disabled="true"]) {
   color: var(--text-inverse);
-  border-color: var(--color-action-700);
-  background-color: var(--color-action-700);
+  border-color: var(--color-action-600);
+  background-color: var(--color-action-600);
   box-shadow: var(--interaction-button-secondary-hover-shadow);
-  transform: var(--interaction-button-hover-transform);
+  transform: translateY(-1px);
 }
 
 .ui-button.ui-button--primary:active:not(:disabled):not([aria-disabled="true"]),
@@ -122,7 +122,7 @@
 
 .ui-button.ui-button--inverse {
   color: var(--text-inverse);
-  border-color: rgba(255, 255, 255, 0.72);
+  border-color: rgba(255, 255, 255, 0.42);
   background-color: rgba(255, 255, 255, 0.04);
 }
 

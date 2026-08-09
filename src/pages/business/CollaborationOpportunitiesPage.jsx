@@ -12,7 +12,11 @@ import {
   SITE_PUBLICATION_DISPLAY_GROUPS,
 } from "../../services/projectPublicationService";
 
+import ViewAllButton from "../../components/common/ViewAllButton";
+import Badge from "../../components/ui/Badge/Badge";
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import "./CollaborationOpportunitiesPage.css";
 
@@ -50,14 +54,11 @@ function mergeGroupProjects(dynamicProjects, groupTitle, staticProjects) {
 
 function SectionHeading({ title, subtitle }) {
   return (
-    <div className="collab-opportunities__section-heading">
-      <div className="collab-opportunities__section-title">
-        <span />
-        <h2>{title}</h2>
-      </div>
-
-      {subtitle && <p>{subtitle}</p>}
-    </div>
+    <SectionHeader
+      title={title}
+      description={subtitle}
+      className="collab-opportunities__section-heading"
+    />
   );
 }
 
@@ -69,7 +70,13 @@ function ProjectCard({ project }) {
         className="collab-opportunities__card-image"
       >
         <img src={project.image} alt={project.title} />
-        <span>{project.badge}</span>
+        <Badge
+          tone="warning"
+          size="sm"
+          className="collab-opportunities__card-badge"
+        >
+          {project.badge}
+        </Badge>
       </Link>
 
       <div className="collab-opportunities__card-body">
@@ -122,15 +129,13 @@ function ProjectSection({ id, title, subtitle, projects }) {
 
         {hasMore && (
           <div className="collab-opportunities__more-wrap">
-            <Button
+            <ViewAllButton
               type="button"
-              variant="outline"
-              size="md"
               className="collab-opportunities__more"
               onClick={handleShowMore}
             >
               مشاهده بیشتر
-            </Button>
+            </ViewAllButton>
           </div>
         )}
       </div>
@@ -202,6 +207,15 @@ function CollaborationOpportunitiesPage() {
 
   return (
     <main className="collab-opportunities">
+      <div className="collab-opportunities__container collab-opportunities__breadcrumb-wrap">
+        <Breadcrumb
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "فرصت‌های همکاری" },
+          ]}
+        />
+      </div>
+
       <section className="collab-opportunities__hero">
         <img src={bannerImage} alt="" aria-hidden="true" />
 

@@ -41,6 +41,7 @@ function ActivitiesCarousel({
   items,
   viewAllPath,
   viewAllLabel = "مشاهده همه",
+  renderItem = null,
 }) {
   const pages = useMemo(() => createPages(items), [items]);
   const [activePage, setActivePage] = useState(0);
@@ -152,9 +153,15 @@ function ActivitiesCarousel({
               className="activity-carousel__page"
               key={`${title}-page-${pageIndex}`}
             >
-              {page.map((item) => (
-                <ActivityCard item={item} key={item.id} />
-              ))}
+              {page.map((item) =>
+                renderItem ? (
+                  <div className="activity-carousel__custom-item" key={item.id}>
+                    {renderItem(item)}
+                  </div>
+                ) : (
+                  <ActivityCard item={item} key={item.id} />
+                ),
+              )}
             </div>
           ))}
         </div>

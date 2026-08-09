@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 
 import bannerImage from "../../assets/images/banner-2.png";
 import commercializationImage from "../../assets/images/services/commercialization-service.png";
@@ -11,7 +11,9 @@ import {
   getCurrentUserDashboardPath,
 } from "../../services/authService";
 
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import "./TechnologyGuidancePage.css";
 
@@ -201,16 +203,6 @@ function FeatureIcon() {
   );
 }
 
-function SectionTitle({ children }) {
-  return (
-    <header className="service-page__section-title">
-      <span />
-      <h2>{children}</h2>
-      <span />
-    </header>
-  );
-}
-
 function CommercializationRoadmapPage() {
   useServiceHashScroll();
 
@@ -227,6 +219,15 @@ function CommercializationRoadmapPage() {
 
   return (
     <main className="service-page">
+      <div className="service-page__container service-page__breadcrumb-wrap">
+        <Breadcrumb
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "نقشه راه تجاری‌سازی فناوری" },
+          ]}
+        />
+      </div>
+
       <section className="service-hero">
         <div className="service-hero__image">
           <img src={commercializationImage} alt="نقشه راه تجاری‌سازی فناوری" />
@@ -265,7 +266,7 @@ function CommercializationRoadmapPage() {
 
       <div className="service-page__container">
         <section className="service-process" id="roadmap-process">
-          <SectionTitle>مراحل تدوین نقشه راه</SectionTitle>
+          <SectionHeader title="مراحل تدوین نقشه راه" className="service-page__section-heading" />
 
           <div className="service-process__grid">
             {processSteps.map((step) => (
@@ -282,7 +283,7 @@ function CommercializationRoadmapPage() {
         </section>
 
         <section className="service-reasons" id="why-roadmap">
-          <SectionTitle>مزایای طراحی مسیر تجاری‌سازی</SectionTitle>
+          <SectionHeader title="مزایای طراحی مسیر تجاری‌سازی" className="service-page__section-heading" />
 
           <div className="service-reasons__grid">
             {reasons.map((reason) => (
@@ -299,7 +300,7 @@ function CommercializationRoadmapPage() {
         </section>
 
         <section className="service-benefits" id="roadmap-benefits">
-          <SectionTitle>شما دریافت می‌کنید</SectionTitle>
+          <SectionHeader title="شما دریافت می‌کنید" className="service-page__section-heading" />
 
           <div className="service-benefits__grid">
             {benefits.map((benefit) => (
@@ -335,13 +336,13 @@ function CommercializationRoadmapPage() {
                 href="/auth"
                 variant="secondary"
                 size="md"
-                className="service-cta__action"
+               
                 onClick={handleProtectedRequest}
               >
                 ثبت درخواست
               </Button>
 
-              <Button to="/services/consulting" variant="inverse" size="md" className="service-cta__action">
+              <Button to="/services/consulting" variant="inverse" size="md">
                 مشاوره با کارشناسان
               </Button>
             </div>
@@ -358,7 +359,7 @@ function CommercializationRoadmapPage() {
         />
 
         <section className="service-faq" id="service-faq">
-          <SectionTitle>سوالات شما</SectionTitle>
+          <SectionHeader title="سوالات شما" className="service-page__section-heading" />
 
           <div className="service-faq__list">
             {faqs.map((faq) => (

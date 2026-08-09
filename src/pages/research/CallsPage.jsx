@@ -11,7 +11,10 @@ import {
 } from "../../services/callService";
 import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
 
+import Badge from "../../components/ui/Badge/Badge";
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import "./CallsPage.css";
 
@@ -73,24 +76,6 @@ function mapCallForCard(call, index) {
   };
 }
 
-function CallsSubheading({ title, warning = false, showLine = true }) {
-  return (
-    <div className="calls-page__subheading">
-      <div className="calls-page__subheading-label">
-        <span
-          className={`calls-page__subheading-dot ${
-            warning ? "calls-page__subheading-dot--warning" : ""
-          }`}
-        />
-
-        <h2>{title}</h2>
-      </div>
-
-      {showLine && <span className="calls-page__subheading-line" />}
-    </div>
-  );
-}
-
 function CallCard({ call, isActive = false }) {
   return (
     <article
@@ -123,19 +108,18 @@ function CallCard({ call, isActive = false }) {
               مدارک موردنیاز
             </p>
 
-            <span>مشاهده جزئیات</span>
+            <Button as="span" variant="inverse" size="sm">
+              مشاهده جزئیات
+            </Button>
           </div>
         </div>
 
-        <div
-          className={`calls-page__call-badge ${
-            isActive
-              ? "calls-page__call-badge--active"
-              : "calls-page__call-badge--closed"
-          }`}
+        <Badge
+          tone={isActive ? "success" : "neutral"}
+          className="calls-page__call-badge"
         >
           {call.statusLabel}
-        </div>
+        </Badge>
 
         <div className="calls-page__call-deadline">{call.deadline}</div>
       </Link>
@@ -150,10 +134,12 @@ function CallsArticle() {
     <section className="calls-page__article">
       <div className="calls-page__container">
         <div className="calls-page__article-card">
-          <div className="calls-page__article-heading">
-            <span>درباره فراخوان‌ها</span>
-            <h2>فراخوان‌های برنامه هاتف چگونه عمل می‌کنند؟</h2>
-          </div>
+          <SectionHeader
+            eyebrow="درباره فراخوان‌ها"
+            title="فراخوان‌های برنامه هاتف چگونه عمل می‌کنند؟"
+            variant="subsection"
+            className="calls-page__article-heading"
+          />
 
           <div
             className={`calls-page__article-content ${
@@ -171,7 +157,7 @@ function CallsArticle() {
             type="button"
             variant="outline"
             size="md"
-            className="calls-page__article-button"
+           
             onClick={() => setIsExpanded((current) => !current)}
             aria-expanded={isExpanded}
             trailingIcon={isExpanded ? "↑" : "↓"}
@@ -234,6 +220,15 @@ function CallsPage() {
 
   return (
     <main className="calls-page">
+      <div className="calls-page__container calls-page__breadcrumb-wrap">
+        <Breadcrumb
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "فراخوان‌های برنامه هاتف" },
+          ]}
+        />
+      </div>
+
       <section className="calls-page__hero">
         <img src={bannerImage} alt="" aria-hidden="true" />
 
@@ -251,10 +246,10 @@ function CallsPage() {
             </p>
 
             <div className="calls-page__hero-actions">
-              <Button href="#active-calls" variant="inverse" size="md" className="calls-page__hero-action">
+              <Button href="#active-calls" variant="inverse" size="md">
                 فراخوان‌های فعال
               </Button>
-              <Button href="#previous-calls" variant="inverse" size="md" className="calls-page__hero-action">
+              <Button href="#previous-calls" variant="inverse" size="md">
                 دوره‌های پیشین
               </Button>
             </div>
@@ -281,7 +276,7 @@ function CallsPage() {
 
       <div className="calls-page__container">
         <section className="calls-page__section" id="active-calls">
-          <CallsSubheading title="فراخوان‌های فعال" />
+          <SectionHeader title="فراخوان‌های فعال" className="calls-page__section-heading" />
 
           {activeCalls.length > 0 ? (
             <div className="calls-page__previous-list">
@@ -297,7 +292,7 @@ function CallsPage() {
         </section>
 
         <section className="calls-page__section" id="previous-calls">
-          <CallsSubheading title="دوره‌های پیشین" warning showLine={false} />
+          <SectionHeader title="دوره‌های پیشین" tone="warning" className="calls-page__section-heading" />
 
           {visiblePreviousCalls.length > 0 ? (
             <div className="calls-page__previous-list">
@@ -317,7 +312,7 @@ function CallsPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="calls-page__more"
+               
                 onClick={handleShowMore}
               >
                 بیشتر

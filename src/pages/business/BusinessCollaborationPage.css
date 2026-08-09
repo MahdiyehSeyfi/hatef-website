@@ -1,17 +1,26 @@
 .business-collab {
-  --business-collab-width: 1180px;
+  --business-collab-width: var(--layout-content);
 
   direction: rtl;
 
   padding: 0;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 }
 
 .business-collab__container {
-  width: min(calc(100% - 120px), var(--business-collab-width));
+  width: min(
+    calc(100% - (2 * var(--gutter-desktop))),
+    var(--business-collab-width)
+  );
 
   margin-inline: auto;
+}
+
+
+.business-collab__breadcrumb-wrap {
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-6);
 }
 
 /* Hero like previous samples */
@@ -68,14 +77,17 @@
 
   border-radius: 50% 50% 0 0;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 }
 
 .business-collab__hero-content {
   position: relative;
   z-index: 3;
 
-  width: min(calc(100% - 160px), var(--business-collab-width));
+  width: min(
+    calc(100% - (2 * var(--gutter-desktop))),
+    var(--business-collab-width)
+  );
 
   margin-inline: auto;
 
@@ -134,57 +146,20 @@
 .business-collab__partners,
 .business-collab__faq,
 .business-collab__contact {
-  padding: 56px 0 22px;
+  padding: var(--space-16) 0;
 }
 
 .business-collab__hero + .business-collab__section {
-  padding-top: 76px;
+  padding-top: var(--space-16);
 }
 
 .business-collab__section-heading {
-  margin-bottom: 34px;
-
-  text-align: right;
+  margin-bottom: var(--space-8);
 }
 
-.business-collab__section-title {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
 
-  margin-bottom: 10px;
-}
 
-.business-collab__section-title span {
-  width: 10px;
-  height: 10px;
 
-  border-radius: 50%;
-
-  background-color: var(--color-accent);
-}
-
-.business-collab__section-title h2 {
-  margin: 0;
-
-  color: #050505;
-
-  font-size: 34px;
-  font-weight: 900;
-  line-height: 1.6;
-}
-
-.business-collab__section-heading p {
-  max-width: 760px;
-
-  margin: 0;
-
-  color: #5d6670;
-
-  font-size: 13px;
-  line-height: 2;
-}
 
 /* Process centered */
 
@@ -192,7 +167,7 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 26px;
+  gap: var(--space-6);
 
   max-width: 1160px;
 
@@ -210,11 +185,11 @@
 
   padding: 30px 24px 28px;
 
-  border: 1px solid #e4e9ee;
-  border-radius: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 
-  background-color: #ffffff;
-  box-shadow: 0 18px 42px rgba(20, 44, 74, 0.05);
+  background-color: var(--surface-page);
+  box-shadow: var(--shadow-xs);
 
   text-align: center;
 
@@ -254,7 +229,7 @@
 .business-collab__process-item h3 {
   margin: 0 0 10px;
 
-  color: #111111;
+  color: var(--text-primary);
 
   font-size: 16px;
   font-weight: 900;
@@ -264,7 +239,7 @@
 .business-collab__process-item p {
   margin: 0;
 
-  color: #56606a;
+  color: var(--text-secondary);
 
   font-size: 13px;
   line-height: 2.05;
@@ -276,7 +251,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 
-  gap: 24px;
+  gap: var(--space-6);
 }
 
 .business-collab__benefit-card {
@@ -284,11 +259,11 @@
 
   padding: 30px 24px 26px;
 
-  border: 1px solid #e4e9ee;
-  border-radius: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 
-  background-color: #ffffff;
-  box-shadow: 0 18px 42px rgba(20, 44, 74, 0.05);
+  background-color: var(--surface-page);
+  box-shadow: var(--shadow-xs);
 
   text-align: right;
 
@@ -314,7 +289,7 @@
 
   margin-bottom: 18px;
 
-  color: #111111;
+  color: var(--text-primary);
 
   transition:
     color 220ms ease,
@@ -335,7 +310,7 @@
 .business-collab__benefit-card h3 {
   margin: 0 0 10px;
 
-  color: #111111;
+  color: var(--text-primary);
 
   font-size: 16px;
   font-weight: 900;
@@ -345,7 +320,7 @@
 .business-collab__benefit-card p {
   margin: 0;
 
-  color: #56606a;
+  color: var(--text-secondary);
 
   font-size: 13px;
   line-height: 2.05;
@@ -369,11 +344,11 @@
 
   padding: 24px;
 
-  border: 1px solid #e4e9ee;
-  border-radius: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 
-  background-color: #ffffff;
-  box-shadow: 0 18px 42px rgba(20, 44, 74, 0.05);
+  background-color: var(--surface-page);
+  box-shadow: var(--shadow-xs);
 
   transition:
     border-color 220ms ease,
@@ -419,7 +394,7 @@
 .business-collab__partner-stat h3 {
   margin: 0 0 8px;
 
-  color: #111111;
+  color: var(--text-primary);
 
   font-size: 18px;
   font-weight: 900;
@@ -429,7 +404,7 @@
 .business-collab__partner-stat p {
   margin: 0;
 
-  color: #56606a;
+  color: var(--text-secondary);
 
   font-size: 13px;
   line-height: 2;
@@ -472,9 +447,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 22px;
+  gap: 34px;
 
-  margin-top: 42px;
+  margin-top: 58px;
 }
 /* Framework tabs */
 
@@ -504,7 +479,7 @@
   border-radius: 14px;
 
   color: #1d2730;
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 
   font-family: inherit;
   font-size: 14px;
@@ -532,9 +507,9 @@
   padding: 32px 36px;
 
   border: 1px solid #e1e6eb;
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
   box-shadow: 0 20px 46px rgba(20, 44, 74, 0.06);
 
   text-align: right;
@@ -561,7 +536,7 @@
 .business-collab__framework-panel h3 {
   margin: 0 0 14px;
 
-  color: #111111;
+  color: var(--text-primary);
 
   font-size: 22px;
   font-weight: 900;
@@ -637,7 +612,7 @@
 
   padding: 8px 4px;
 
-  color: #111111;
+  color: var(--text-primary);
 
   font-size: 14px;
   font-weight: 800;
@@ -694,9 +669,6 @@
 /* Smaller desktop */
 
 @media (max-width: 1450px) {
-  .business-collab {
-    --business-collab-width: 1080px;
-  }
 
   .business-collab__hero {
     min-height: 400px;
@@ -707,7 +679,7 @@
   }
 
   .business-collab__process-grid {
-    gap: 24px;
+    gap: var(--space-6);
   }
 
   .business-collab__benefits-grid {
@@ -716,5 +688,45 @@
 
   .business-collab__framework-tabs {
     grid-template-columns: 290px minmax(0, 1fr);
+  }
+}
+
+
+/* Phase 11 — Design System responsive axis */
+@media (max-width: 1024px) {
+  .business-collab__partner-actions {
+    gap: 22px;
+    margin-top: 48px;
+  }
+
+  .business-collab__container,
+  .business-collab__hero-content {
+    width: min(
+      calc(100% - (2 * var(--gutter-tablet))),
+      var(--business-collab-width)
+    );
+  }
+}
+
+@media (max-width: 767px) {
+  .business-collab__partner-actions {
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 46px;
+  }
+
+  .business-collab__container,
+  .business-collab__hero-content {
+    width: min(
+      calc(100% - (2 * var(--gutter-mobile))),
+      var(--business-collab-width)
+    );
+  }
+
+  .business-collab__section,
+  .business-collab__partners,
+  .business-collab__faq,
+  .business-collab__contact {
+    padding-block: var(--space-12);
   }
 }

@@ -1,15 +1,24 @@
 .collab-project-details {
-  --project-details-width: 1240px;
+  --project-details-width: var(--layout-content);
 
   padding: 0 0 90px;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 }
 
 .collab-project-details__container {
-  width: min(calc(100% - 130px), var(--project-details-width));
+  width: min(
+    calc(100% - (2 * var(--gutter-desktop))),
+    var(--project-details-width)
+  );
 
   margin-inline: auto;
+}
+
+
+.collab-project-details__breadcrumb-wrap {
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-6);
 }
 
 /* Hero */
@@ -71,14 +80,17 @@
 
   border-radius: 50% 50% 0 0;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 }
 
 .collab-project-details__hero-content {
   position: relative;
   z-index: 3;
 
-  width: min(calc(100% - 160px), var(--project-details-width));
+  width: min(
+    calc(100% - (2 * var(--gutter-desktop))),
+    var(--project-details-width)
+  );
 
   margin-inline: auto;
 
@@ -161,9 +173,9 @@
   padding: 22px;
 
   border: 1px solid rgba(1, 210, 201, 0.18);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
   box-shadow: 0 20px 48px rgba(20, 44, 74, 0.07);
 
   text-align: center;
@@ -188,7 +200,7 @@
 .collab-project-details__layout {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
-  gap: 72px;
+  gap: var(--space-16);
 
   align-items: start;
 
@@ -208,16 +220,16 @@
 .collab-project-details__info-card {
   padding: 26px 24px;
 
-  border: 1px solid #e5e9ed;
-  border-radius: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 
-  background-color: #fafafa;
+  background-color: var(--surface-subtle);
 }
 
 .collab-project-details__info-card h2 {
   margin: 0 0 22px;
 
-  color: #111111;
+  color: var(--text-primary);
 
   font-size: 17px;
   font-weight: 900;
@@ -299,34 +311,8 @@
   margin-bottom: 56px;
 }
 
-.collab-project-details__section-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 
-  margin-bottom: 22px;
 
-  direction: rtl;
-}
-
-.collab-project-details__section-title span {
-  width: 10px;
-  height: 10px;
-
-  border-radius: 50%;
-
-  background-color: var(--color-accent);
-}
-
-.collab-project-details__section-title h2 {
-  margin: 0;
-
-  color: #111111;
-
-  font-size: 28px;
-  font-weight: 900;
-  line-height: 1.7;
-}
 
 .collab-project-details__main p {
   margin: 0;
@@ -361,11 +347,11 @@
 
   padding: 14px 16px;
 
-  border: 1px solid #e1e6eb;
+  border: 1px solid var(--border-subtle);
   border-radius: 14px;
 
   color: #1d2730;
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 
   font-family: inherit;
   text-align: right;
@@ -404,10 +390,10 @@
 
   padding: 28px 30px;
 
-  border: 1px solid #e1e6eb;
-  border-radius: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
   box-shadow: 0 20px 46px rgba(20, 44, 74, 0.06);
 }
 
@@ -432,7 +418,7 @@
 .collab-project-details__report-panel h3 {
   margin: 0 0 14px;
 
-  color: #111111;
+  color: var(--text-primary);
 
   font-size: 19px;
   font-weight: 900;
@@ -485,7 +471,7 @@
   direction: rtl;
 }
 
-.collab-project-details__cta span {
+.collab-project-details__cta-eyebrow {
   color: var(--color-secondary);
 
   font-size: 13px;
@@ -530,70 +516,30 @@
   margin-bottom: 0;
 }
 
-/* Related */
+/* Related projects use the shared carousel shell. */
 
-.collab-project-details__related {
-  margin-bottom: 64px;
-}
-
-.collab-project-details__related-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-
-  direction: rtl;
-}
-
-.collab-project-details__related-grid a {
-  overflow: hidden;
-
-  border: 1px solid #e1e6eb;
-
-  background-color: #ffffff;
-
-  transition:
-    box-shadow 180ms ease,
-    transform 180ms ease;
-}
-
-.collab-project-details__related-grid a:hover {
-  box-shadow: var(--interaction-card-hover-shadow);
-
-  transform: var(--interaction-card-hover-transform);
-}
-
-.collab-project-details__related-grid img {
-  width: 100%;
-  height: 160px;
-
+.collab-project-details__related-card {
   display: block;
+  color: inherit;
+  text-decoration: none;
+}
 
+.collab-project-details__related-card img {
+  width: 100%;
+  height: 178px;
+  display: block;
   object-fit: cover;
 }
 
-.collab-project-details__related-grid span {
-  display: inline-flex;
-
-  margin: 16px 18px 8px;
-  padding: 4px 11px;
-
-  border-radius: 999px;
-
-  color: #111111;
-  background-color: var(--color-warning);
-
-  font-size: 11px;
-  font-weight: 900;
+.collab-project-details__related-badge {
+  margin: var(--space-4) var(--space-4) var(--space-2);
 }
 
-.collab-project-details__related-grid h3 {
+.collab-project-details__related-card h3 {
   min-height: 70px;
-
   margin: 0;
   padding: 0 18px 18px;
-
-  color: #111111;
-
+  color: var(--text-primary);
   font-size: 15px;
   font-weight: 900;
   line-height: 1.8;
@@ -606,17 +552,6 @@
   direction: ltr;
 }
 @media (max-width: 1450px) {
-  .collab-project-details {
-    --project-details-width: 1120px;
-  }
-
-  .collab-project-details__container {
-    width: min(calc(100% - 110px), var(--project-details-width));
-  }
-
-  .collab-project-details__hero-content {
-    width: min(calc(100% - 120px), var(--project-details-width));
-  }
 
   .collab-project-details__layout {
     grid-template-columns: 300px minmax(0, 1fr);
@@ -627,9 +562,7 @@
     font-size: 36px;
   }
 
-  .collab-project-details__section-title h2 {
-    font-size: 25px;
-  }
+  
 
   .collab-project-details__reports-tabs {
     grid-template-columns: 270px minmax(0, 1fr);
@@ -676,7 +609,7 @@
 .collab-project-details__rich-text h2,
 .collab-project-details__rich-text h3 {
   margin: 0 0 16px;
-  color: #111111;
+  color: var(--text-primary);
   font-weight: 900;
   line-height: 1.8;
 }
@@ -708,43 +641,37 @@
   }
 }
 
-/* v7 related projects: match original card proportions, 4 cards per row */
-.collab-project-details__related-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 26px;
-}
 
-.collab-project-details__related-grid a {
-  border-radius: 0;
-}
 
-.collab-project-details__related-grid img {
-  height: 178px;
-}
-
-.collab-project-details__related-grid span {
-  margin: 16px 18px 8px;
-}
-
-.collab-project-details__related-grid h3 {
-  min-height: 70px;
-  padding: 0 18px 18px;
-  font-size: 15px;
-  line-height: 1.8;
-}
-
-@media (max-width: 1450px) {
-  .collab-project-details__related-grid {
-    gap: 22px;
-  }
-
-  .collab-project-details__related-grid img {
-    height: 158px;
+@media (max-width: 900px) {
+  .collab-project-details__related-card img {
+    height: 168px;
   }
 }
 
-@media (max-width: 1280px) {
-  .collab-project-details__related-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (max-width: 640px) {
+  .collab-project-details__related-card img {
+    height: 190px;
+  }
+}
+
+/* Phase 11 — Design System responsive axis */
+@media (max-width: 1024px) {
+  .collab-project-details__container,
+  .collab-project-details__hero-content {
+    width: min(
+      calc(100% - (2 * var(--gutter-tablet))),
+      var(--project-details-width)
+    );
+  }
+}
+
+@media (max-width: 767px) {
+  .collab-project-details__container,
+  .collab-project-details__hero-content {
+    width: min(
+      calc(100% - (2 * var(--gutter-mobile))),
+      var(--project-details-width)
+    );
   }
 }

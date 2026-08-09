@@ -7,16 +7,21 @@ function ViewAllButton({
   href = "",
   children = "مشاهده همه",
   showArrow = true,
+  className = "",
+  ...restProps
 }) {
+  const classes = ["view-all-button", className].filter(Boolean).join(" ");
+
   return (
     <Button
       to={to}
-      href={href || (to ? "" : "#")}
+      href={href}
       variant="outline"
       size="sm"
       width="compact"
-      className="view-all-button"
+      className={classes}
       trailingIcon={showArrow ? "←" : null}
+      {...restProps}
     >
       {children}
     </Button>

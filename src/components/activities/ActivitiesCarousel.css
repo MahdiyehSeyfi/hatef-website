@@ -64,6 +64,15 @@
   direction: rtl;
 }
 
+.activity-carousel__custom-item {
+  min-width: 0;
+  height: 100%;
+}
+
+.activity-carousel__custom-item > * {
+  height: 100%;
+}
+
 .activity-carousel__footer {
   display: flex;
   justify-content: flex-start;

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 
 import ContactFormSection from "../../components/common/ContactFormSection";
+import ActivitiesCarousel from "../../components/activities/ActivitiesCarousel";
 import {
   allCollaborationProjects,
   getCollaborationProjectById,
@@ -11,17 +12,20 @@ import {
   getSitePublicationPreviewProject,
 } from "../../services/projectPublicationService";
 
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 import IconButton from "../../components/ui/IconButton/IconButton";
 
 import "./CollaborationProjectDetailsPage.css";
 
 function SectionTitle({ children }) {
   return (
-    <header className="collab-project-details__section-title">
-      <span />
-      <h2>{children}</h2>
-    </header>
+    <SectionHeader
+      title={children}
+      variant="subsection"
+      className="collab-project-details__section-title"
+    />
   );
 }
 
@@ -123,12 +127,35 @@ function CollaborationProjectDetailsPage() {
     getCollaborationProjectById(projectId) ||
     allCollaborationProjects[0];
 
-  const relatedProjects = allCollaborationProjects
-    .filter((item) => item.group === project.group && item.id !== project.id)
-    .slice(0, 4);
+  const relatedProjects = allCollaborationProjects.filter(
+    (item) => item.group === project.group && item.id !== project.id,
+  );
+
+  const relatedProjectCarouselItems = relatedProjects.map((relatedProject) => ({
+    ...relatedProject,
+    path: `/business/opportunities/${relatedProject.id}`,
+    statusLabel: relatedProject.badge,
+    buttonLabel: "مشاهده جزئیات",
+    firstMetaLabel: "تاریخ معرفی:",
+    firstMetaValue: relatedProject.date || "تاریخ معرفی ثبت نشده",
+    secondMetaLabel: "حوزه:",
+    secondMetaValue: relatedProject.field || "حوزه نامشخص",
+    thirdMetaLabel: "وضعیت:",
+    thirdMetaValue: relatedProject.level || "وضعیت نامشخص",
+  }));
 
   return (
     <main className="collab-project-details">
+      <div className="collab-project-details__container collab-project-details__breadcrumb-wrap">
+        <Breadcrumb
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "فرصت‌های همکاری", to: "/business/opportunities" },
+            { label: project.title },
+          ]}
+        />
+      </div>
+
       <section className="collab-project-details__hero">
         <div className="collab-project-details__hero-image">
           <img src={project.image} alt={project.title} />
@@ -163,7 +190,7 @@ function CollaborationProjectDetailsPage() {
 
           <div className="collab-project-details__hero-actions">
             <Button href="#cooperation-request" variant="secondary" size="md" className="collab-project-details__hero-action">درخواست همکاری</Button>
-            <Button href="#consultation-request" variant="inverse" size="md" className="collab-project-details__hero-action">درخواست مشاوره</Button>
+            <Button to="/services/consulting" variant="inverse" size="md" className="collab-project-details__hero-action">درخواست مشاوره</Button>
           </div>
         </div>
       </section>
@@ -278,7 +305,7 @@ function CollaborationProjectDetailsPage() {
           id="cooperation-request"
         >
           <div>
-            <span>شروع همکاری</span>
+            <span className="collab-project-details__cta-eyebrow">شروع همکاری</span>
             <h2>برای همکاری روی این طرح اقدام کنید</h2>
             <p>
               اطلاعات شما برای بررسی اولیه ثبت می‌شود و پس از ارزیابی، مسیر
@@ -290,7 +317,7 @@ function CollaborationProjectDetailsPage() {
             <Button href="#project-contact-form" variant="secondary" size="md" fullWidth>
               ثبت درخواست همکاری
             </Button>
-            <Button href="#project-contact-form" id="consultation-request" variant="inverse" size="md" fullWidth>
+            <Button to="/services/consulting" variant="inverse" size="md" fullWidth>
               درخواست مشاوره
             </Button>
           </div>
@@ -312,23 +339,13 @@ function CollaborationProjectDetailsPage() {
           />
         </section>
 
-        {relatedProjects.length > 0 && (
-          <section className="collab-project-details__related">
-            <SectionTitle>طرح‌های مشابه</SectionTitle>
-
-            <div className="collab-project-details__related-grid">
-              {relatedProjects.map((relatedProject) => (
-                <Link
-                  key={relatedProject.id}
-                  to={`/business/opportunities/${relatedProject.id}`}
-                >
-                  <img src={relatedProject.image} alt={relatedProject.title} />
-                  <span>{relatedProject.badge}</span>
-                  <h3>{relatedProject.title}</h3>
-                </Link>
-              ))}
-            </div>
-          </section>
+        {relatedProjectCarouselItems.length > 0 && (
+          <ActivitiesCarousel
+            title="طرح‌های مشابه"
+            items={relatedProjectCarouselItems}
+            viewAllPath="/business/opportunities"
+            viewAllLabel="مشاهده همه"
+          />
         )}
 
         <div className="collab-project-details__back-wrap">

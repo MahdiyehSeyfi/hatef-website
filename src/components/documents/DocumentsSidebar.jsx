@@ -1,5 +1,8 @@
 import { Link } from "react-router";
+
+import SectionHeader from "../ui/SectionHeader/SectionHeader";
 import { documentCategories, documentsData } from "../../data/documentsData";
+
 import "./DocumentsSidebar.css";
 
 function DocumentsSidebar() {
@@ -14,16 +17,20 @@ function DocumentsSidebar() {
 
         return (
           <section className="documents-sidebar__box" key={category.slug}>
-            <header className="documents-sidebar__box-heading">
-              <span />
-              <h2>{category.title}</h2>
-            </header>
+            <SectionHeader
+              title={category.title}
+              variant="subsection"
+              className="documents-sidebar__box-heading"
+            />
 
             <ul className="documents-sidebar__list">
               {sidebarItems.map((documentItem) => (
                 <li key={documentItem.id}>
                   <Link to={`/documents/${category.slug}`}>
-                    <span className="documents-sidebar__item-dot" />
+                    <span
+                      className="documents-sidebar__item-dot"
+                      aria-hidden="true"
+                    />
 
                     <span>{documentItem.title}</span>
                   </Link>

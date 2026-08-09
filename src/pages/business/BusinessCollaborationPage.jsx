@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { useLocation } from "react-router";
 
 import ContactFormSection from "../../components/common/ContactFormSection";
 
@@ -9,7 +9,9 @@ import behsazanLogo from "../../assets/logos/behsazan-mellat-logo.jpg";
 import mellatBankLogo from "../../assets/logos/mellat-bank-logo.jpg";
 import mellatVenturesLogo from "../../assets/logos/mellat-ventures-logo.png";
 
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import "./BusinessCollaborationPage.css";
 
@@ -256,14 +258,11 @@ function useBusinessHashScroll() {
 
 function SectionTitle({ children, subtitle }) {
   return (
-    <header className="business-collab__section-heading">
-      <div className="business-collab__section-title">
-        <span />
-        <h2>{children}</h2>
-      </div>
-
-      {subtitle && <p>{subtitle}</p>}
-    </header>
+    <SectionHeader
+      title={children}
+      description={subtitle}
+      className="business-collab__section-heading"
+    />
   );
 }
 
@@ -378,22 +377,20 @@ function PartnersSection() {
         <div className="business-collab__partner-actions">
           <Button
             to="/business/opportunities"
-            variant="primary"
-            size="md"
-            width="wide"
+            variant="secondary"
+            size="lg"
             className="business-collab__partner-action"
           >
-            مشاهده فرصت‌های همکاری
+            فرصت‌های همکاری
           </Button>
 
           <Button
             href="#participation-contact"
-            variant="outline"
-            size="md"
-            width="wide"
+            variant="primary"
+            size="lg"
             className="business-collab__partner-action"
           >
-            ارتباط جهت مشارکت
+            ارتباط جهت همکاری
           </Button>
         </div>
       </div>
@@ -500,6 +497,15 @@ function BusinessCollaborationPage() {
 
   return (
     <main className="business-collab">
+      <div className="business-collab__container business-collab__breadcrumb-wrap">
+        <Breadcrumb
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "همکاری‌های تجاری" },
+          ]}
+        />
+      </div>
+
       <section className="business-collab__hero" id="collaboration-top">
         <img src={heroImage} alt="" aria-hidden="true" />
 

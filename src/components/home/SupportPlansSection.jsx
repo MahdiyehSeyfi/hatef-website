@@ -371,10 +371,9 @@ function SupportPlansSection() {
                       <h4>{call.title}</h4>
                       <p>{getCallDescription(call)}</p>
 
-                      <span className="previous-plan-card__overlay-button">
+                      <Button as="span" variant="inverse" size="sm">
                         مشاهده جزئیات
-                        <span aria-hidden="true">←</span>
-                      </span>
+                      </Button>
                     </div>
                   </Link>
 

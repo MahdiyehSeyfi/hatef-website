@@ -4,7 +4,9 @@ import { useLocation } from "react-router";
 import heroImage from "../../assets/images/banner.png";
 import ctaImage from "../../assets/images/banner-2.png";
 
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import "./ResearchSupportPages.css";
 
@@ -157,21 +159,11 @@ function ResearchHero() {
         <p>طراحی مسیر تبدیل دستاوردهای پژوهشی و فناورانه به محصول و بازار</p>
 
         <div className="research-hero__actions">
-          <Button href="#review-system" variant="inverse" size="md" className="research-hero__action">نظام داوری</Button>
-          <Button href="#evaluation-criteria" variant="inverse" size="md" className="research-hero__action">معیارهای ارزیابی</Button>
+          <Button href="#review-system" variant="inverse" size="md">نظام داوری</Button>
+          <Button href="#evaluation-criteria" variant="inverse" size="md">معیارهای ارزیابی</Button>
         </div>
       </div>
     </section>
-  );
-}
-
-function SectionTitle({ children }) {
-  return (
-    <header className="research-section-title">
-      <span />
-      <h2>{children}</h2>
-      <span />
-    </header>
   );
 }
 
@@ -208,11 +200,20 @@ function ReviewEvaluationPage() {
 
   return (
     <main className="research-page">
+      <div className="research-page__container research-page__breadcrumb-wrap">
+        <Breadcrumb
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "روند ارزیابی هاتف" },
+          ]}
+        />
+      </div>
+
       <ResearchHero />
 
       <div className="research-page__container">
         <section className="research-text-section" id="review-system">
-          <SectionTitle>نظام داوری</SectionTitle>
+          <SectionHeader title="نظام داوری" className="research-section-heading" />
 
           <p>
             در این بخش، ساختار داوری طرح‌های پژوهشی و فناورانه معرفی می‌شود.
@@ -222,7 +223,7 @@ function ReviewEvaluationPage() {
         </section>
 
         <section className="research-process">
-          <SectionTitle>مراحل داوری</SectionTitle>
+          <SectionHeader title="مراحل داوری" className="research-section-heading" />
 
           <div className="research-process__grid">
             {reviewSteps.map((step) => (
@@ -239,7 +240,7 @@ function ReviewEvaluationPage() {
         </section>
 
         <section className="research-text-section">
-          <SectionTitle>اصول داوری</SectionTitle>
+          <SectionHeader title="اصول داوری" className="research-section-heading" />
 
           <p>
             فرآیند داوری بر پایه اصول مشخصی انجام می‌شود تا طرح‌ها به صورت
@@ -261,7 +262,7 @@ function ReviewEvaluationPage() {
         </section>
 
         <section className="research-text-section">
-          <SectionTitle>داوران چه کسانی هستند؟</SectionTitle>
+          <SectionHeader title="داوران چه کسانی هستند؟" className="research-section-heading" />
 
           <p>
             داوران از میان متخصصان دانشگاهی، پژوهشگران، کارشناسان حوزه فناوری،
@@ -277,7 +278,7 @@ function ReviewEvaluationPage() {
         </section>
 
         <section className="research-text-section" id="evaluation-criteria">
-          <SectionTitle>معیارهای ارزیابی</SectionTitle>
+          <SectionHeader title="معیارهای ارزیابی" className="research-section-heading" />
 
           <p>
             معیارهای ارزیابی برای سنجش کیفیت، امکان‌پذیری و ظرفیت توسعه طرح‌ها
@@ -306,7 +307,7 @@ function ReviewEvaluationPage() {
         </section>
 
         <section className="research-faq">
-          <SectionTitle>سوالات شما</SectionTitle>
+          <SectionHeader title="سوالات شما" className="research-section-heading" />
 
           <div className="research-faq__list">
             {faqs.map((faq) => (
@@ -335,7 +336,7 @@ function ReviewEvaluationPage() {
               ارزیابی طرح شما مشخص شود.
             </p>
 
-            <Button href="/services/consulting" variant="secondary" size="md" className="research-cta__action">مشاوره با کارشناسان</Button>
+            <Button href="/services/consulting" variant="secondary" size="md">مشاوره با کارشناسان</Button>
           </div>
         </section>
       </div>

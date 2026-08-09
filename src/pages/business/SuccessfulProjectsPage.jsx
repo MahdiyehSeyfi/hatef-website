@@ -5,7 +5,11 @@ import bannerImage from "../../assets/images/banner.png";
 import { allCollaborationProjects } from "../../data/collaborationProjectsData";
 import { getPublishedSuccessfulProjectItems } from "../../services/projectPublicationService";
 
+import ViewAllButton from "../../components/common/ViewAllButton";
+import Badge from "../../components/ui/Badge/Badge";
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import "./SuccessfulProjectsPage.css";
 
@@ -121,14 +125,11 @@ const articleParagraphs = [
 
 function SectionHeading({ title, subtitle }) {
   return (
-    <div className="successful-projects__section-heading">
-      <div className="successful-projects__section-title">
-        <span />
-        <h2>{title}</h2>
-      </div>
-
-      {subtitle && <p>{subtitle}</p>}
-    </div>
+    <SectionHeader
+      title={title}
+      description={subtitle}
+      className="successful-projects__section-heading"
+    />
   );
 }
 
@@ -216,7 +217,13 @@ function ProjectCard({ project }) {
         className="successful-projects__card-image"
       >
         <img src={project.image} alt={project.title} />
-        <span>پروژه موفق</span>
+        <Badge
+          tone="success"
+          size="sm"
+          className="successful-projects__card-badge"
+        >
+          پروژه موفق
+        </Badge>
       </Link>
 
       <div className="successful-projects__card-body">
@@ -275,15 +282,13 @@ function ProjectsSection() {
 
         {hasMore && (
           <div className="successful-projects__more-wrap">
-            <Button
+            <ViewAllButton
               type="button"
-              variant="outline"
-              size="md"
               className="successful-projects__more"
               onClick={handleShowMore}
             >
               مشاهده بیشتر
-            </Button>
+            </ViewAllButton>
           </div>
         )}
       </div>
@@ -327,10 +332,8 @@ function PublishedIntroducedProjectsSection() {
 
         {hasMore && (
           <div className="successful-projects__more-wrap">
-            <Button
+            <ViewAllButton
               type="button"
-              variant="outline"
-              size="md"
               className="successful-projects__more"
               onClick={() =>
                 setVisibleCount((current) =>
@@ -339,7 +342,7 @@ function PublishedIntroducedProjectsSection() {
               }
             >
               مشاهده بیشتر
-            </Button>
+            </ViewAllButton>
           </div>
         )}
       </div>
@@ -390,6 +393,15 @@ function SuccessArticle() {
 function SuccessfulProjectsPage() {
   return (
     <main className="successful-projects">
+      <div className="successful-projects__container successful-projects__breadcrumb-wrap">
+        <Breadcrumb
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "دستاوردها و پروژه‌های موفق" },
+          ]}
+        />
+      </div>
+
       <section className="successful-projects__hero">
         <img src={bannerImage} alt="" aria-hidden="true" />
 

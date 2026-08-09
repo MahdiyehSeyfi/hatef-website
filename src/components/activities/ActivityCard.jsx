@@ -66,11 +66,19 @@ function getFirstMetaValue(item) {
   );
 }
 
-function getPresenterLabel(item) {
+function getSecondMetaLabel(item) {
+  if (item.secondMetaLabel) {
+    return item.secondMetaLabel;
+  }
+
   return item.type === "event" ? "ارائه‌دهنده:" : "مدرس:";
 }
 
-function getPresenterValue(item) {
+function getSecondMetaValue(item) {
+  if (item.secondMetaValue) {
+    return item.secondMetaValue;
+  }
+
   if (item.type === "event") {
     return (
       item.presenter ||
@@ -89,7 +97,19 @@ function getPresenterValue(item) {
   );
 }
 
-function getOrganizerValue(item) {
+function getThirdMetaLabel(item) {
+  if (item.thirdMetaLabel) {
+    return item.thirdMetaLabel;
+  }
+
+  return "برگزارکننده:";
+}
+
+function getThirdMetaValue(item) {
+  if (item.thirdMetaValue) {
+    return item.thirdMetaValue;
+  }
+
   return item.organizer || "برنامه هاتف";
 }
 
@@ -136,13 +156,13 @@ function ActivityCard({ item, activity }) {
           </div>
 
           <div>
-            <dt>{getPresenterLabel(currentItem)}</dt>
-            <dd>{getPresenterValue(currentItem)}</dd>
+            <dt>{getSecondMetaLabel(currentItem)}</dt>
+            <dd>{getSecondMetaValue(currentItem)}</dd>
           </div>
 
           <div>
-            <dt>برگزارکننده:</dt>
-            <dd>{getOrganizerValue(currentItem)}</dd>
+            <dt>{getThirdMetaLabel(currentItem)}</dt>
+            <dd>{getThirdMetaValue(currentItem)}</dd>
           </div>
         </dl>
 

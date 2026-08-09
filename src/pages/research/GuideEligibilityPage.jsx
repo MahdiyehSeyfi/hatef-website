@@ -4,7 +4,9 @@ import { useLocation } from "react-router";
 import heroImage from "../../assets/images/banner.png";
 import ctaImage from "../../assets/images/banner-2.png";
 
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import "./ResearchSupportPages.css";
 
@@ -143,22 +145,12 @@ function ResearchHero() {
         <p>طراحی مسیر تبدیل دستاوردهای پژوهشی و فناورانه به محصول و بازار</p>
 
         <div className="research-hero__actions">
-          <Button href="#registration-guide" variant="inverse" size="md" className="research-hero__action">راهنمای ثبت‌نام</Button>
-          <Button href="#eligibility" variant="inverse" size="md" className="research-hero__action">شرایط احراز</Button>
-          <Button href="#proposal-guideline" variant="inverse" size="md" className="research-hero__action">شیوه‌نامه تدوین پروپوزال</Button>
+          <Button href="#registration-guide" variant="inverse" size="md">راهنمای ثبت‌نام</Button>
+          <Button href="#eligibility" variant="inverse" size="md">شرایط احراز</Button>
+          <Button href="#proposal-guideline" variant="inverse" size="md">شیوه‌نامه تدوین پروپوزال</Button>
         </div>
       </div>
     </section>
-  );
-}
-
-function SectionTitle({ children }) {
-  return (
-    <header className="research-section-title">
-      <span />
-      <h2>{children}</h2>
-      <span />
-    </header>
   );
 }
 
@@ -195,11 +187,20 @@ function GuideEligibilityPage() {
 
   return (
     <main className="research-page">
+      <div className="research-page__container research-page__breadcrumb-wrap">
+        <Breadcrumb
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "راهنمای شرکت در طرح حمایتی" },
+          ]}
+        />
+      </div>
+
       <ResearchHero />
 
       <div className="research-page__container">
         <section className="research-text-section" id="registration-guide">
-          <SectionTitle>راهنمای ثبت‌نام</SectionTitle>
+          <SectionHeader title="راهنمای ثبت‌نام" className="research-section-heading" />
 
           <p>
             در این بخش، راهنمای ثبت‌نام در طرح حمایتی هاتف ارائه می‌شود.
@@ -221,7 +222,7 @@ function GuideEligibilityPage() {
         </section>
 
         <section className="research-text-section" id="eligibility">
-          <SectionTitle>شرایط احراز</SectionTitle>
+          <SectionHeader title="شرایط احراز" className="research-section-heading" />
 
           <p>
             شرایط احراز برای اطمینان از هم‌راستایی طرح با اهداف برنامه حمایتی
@@ -251,7 +252,7 @@ function GuideEligibilityPage() {
         </section>
 
         <section className="research-faq">
-          <SectionTitle>سوالات شما</SectionTitle>
+          <SectionHeader title="سوالات شما" className="research-section-heading" />
 
           <div className="research-faq__list">
             {faqs.map((faq) => (
@@ -280,12 +281,12 @@ function GuideEligibilityPage() {
               هدایت فناوری آغاز شود.
             </p>
 
-            <Button href="/services/consulting" variant="secondary" size="md" className="research-cta__action">مشاوره با کارشناسان</Button>
+            <Button href="/services/consulting" variant="secondary" size="md">مشاوره با کارشناسان</Button>
           </div>
         </section>
 
         <section className="research-text-section" id="proposal-guideline">
-          <SectionTitle>شیوه‌نامه تدوین پروپوزال</SectionTitle>
+          <SectionHeader title="شیوه‌نامه تدوین پروپوزال" className="research-section-heading" />
 
           <p>
             پروپوزال طرح باید تصویر روشنی از مسئله، راهکار پیشنهادی، سطح آمادگی

@@ -1,17 +1,26 @@
 .successful-projects {
-  --successful-width: 1180px;
+  --successful-width: var(--layout-content);
 
   direction: rtl;
 
   padding: 0;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 }
 
 .successful-projects__container {
-  width: min(calc(100% - 120px), var(--successful-width));
+  width: min(
+    calc(100% - (2 * var(--gutter-desktop))),
+    var(--successful-width)
+  );
 
   margin-inline: auto;
+}
+
+
+.successful-projects__breadcrumb-wrap {
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-6);
 }
 
 /* Hero */
@@ -71,7 +80,7 @@
 
   border-radius: 50% 50% 0 0;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 }
 
 .successful-projects__hero-inner {
@@ -179,58 +188,20 @@
 
 .successful-projects__section,
 .successful-projects__achievements {
-  padding: 54px 0 16px;
+  padding: var(--space-16) 0;
 }
 
 .successful-projects__hero + .successful-projects__achievements {
-  padding-top: 76px;
+  padding-top: var(--space-16);
 }
 
 .successful-projects__section-heading {
-  margin-bottom: 34px;
-
-  text-align: right;
-  direction: rtl;
+  margin-bottom: var(--space-8);
 }
 
-.successful-projects__section-title {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
 
-  margin-bottom: 10px;
-}
 
-.successful-projects__section-title span {
-  width: 10px;
-  height: 10px;
 
-  border-radius: 50%;
-
-  background-color: var(--color-accent);
-}
-
-.successful-projects__section-title h2 {
-  margin: 0;
-
-  color: #050505;
-
-  font-size: 34px;
-  font-weight: 900;
-  line-height: 1.6;
-}
-
-.successful-projects__section-heading p {
-  max-width: 720px;
-
-  margin: 0;
-
-  color: #5d6670;
-
-  font-size: 13px;
-  line-height: 2;
-}
 
 /* Achievement stats */
 
@@ -253,7 +224,7 @@
   border: 1px solid rgba(1, 210, 201, 0.16);
   border-radius: 18px;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
   box-shadow: 0 18px 42px rgba(20, 44, 74, 0.06);
 
   text-align: center;
@@ -315,7 +286,7 @@
   border-radius: 14px;
 
   color: #1d2730;
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 
   font-family: inherit;
   font-size: 14px;
@@ -345,7 +316,7 @@
   border: 1px solid #e1e6eb;
   border-radius: 18px;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
   box-shadow: 0 20px 46px rgba(20, 44, 74, 0.06);
 
   text-align: right;
@@ -432,7 +403,7 @@
   border: 1px solid rgba(1, 210, 201, 0.18);
   border-radius: 18px;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
   box-shadow: 0 18px 42px rgba(20, 44, 74, 0.05);
 
   text-align: right;
@@ -497,9 +468,9 @@
 .successful-projects__card {
   overflow: hidden;
 
-  border: 1px solid #dfe4ea;
+  border: 1px solid var(--border-subtle);
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 
   transition:
     box-shadow 220ms ease,
@@ -544,27 +515,13 @@
   transform: var(--interaction-media-hover-transform);
 }
 
-.successful-projects__card-image span {
+.successful-projects__card-badge {
   position: absolute;
-  right: 12px;
-  bottom: 12px;
-
-  min-height: 25px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 4px 12px;
-
-  border-radius: 999px;
-
-  color: #111111;
-  background-color: var(--color-warning);
-
-  font-size: 11px;
-  font-weight: 900;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 2;
 }
+
 
 .successful-projects__card-body {
   padding: 20px 18px 18px;
@@ -725,9 +682,6 @@
 .successful-projects__article-button {margin-top: 24px;
 }
 @media (max-width: 1450px) {
-  .successful-projects {
-    --successful-width: 1080px;
-  }
 
   .successful-projects__hero {
     min-height: 400px;
@@ -758,5 +712,30 @@
 
   .successful-projects__tabs {
     grid-template-columns: 270px minmax(0, 1fr);
+  }
+}
+
+
+/* Phase 11 — Design System responsive axis */
+@media (max-width: 1024px) {
+  .successful-projects__container {
+    width: min(
+      calc(100% - (2 * var(--gutter-tablet))),
+      var(--successful-width)
+    );
+  }
+}
+
+@media (max-width: 767px) {
+  .successful-projects__container {
+    width: min(
+      calc(100% - (2 * var(--gutter-mobile))),
+      var(--successful-width)
+    );
+  }
+
+  .successful-projects__section,
+  .successful-projects__achievements {
+    padding-block: var(--space-12);
   }
 }

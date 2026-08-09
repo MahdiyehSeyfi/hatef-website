@@ -1,17 +1,26 @@
 .collab-opportunities {
-  --collab-width: 1180px;
+  --collab-width: var(--layout-content);
 
   direction: rtl;
 
   padding: 0;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 }
 
 .collab-opportunities__container {
-  width: min(calc(100% - 120px), var(--collab-width));
+  width: min(
+    calc(100% - (2 * var(--gutter-desktop))),
+    var(--collab-width)
+  );
 
   margin-inline: auto;
+}
+
+
+.collab-opportunities__breadcrumb-wrap {
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-6);
 }
 
 /* Hero */
@@ -71,7 +80,7 @@
 
   border-radius: 50% 50% 0 0;
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 }
 
 .collab-opportunities__hero-inner {
@@ -178,73 +187,33 @@
 /* Sections */
 
 .collab-opportunities__section {
-  padding: 36px 0 10px;
+  padding: var(--space-16) 0;
 }
 
 .collab-opportunities__hero + .collab-opportunities__section {
-  padding-top: 76px;
+  padding-top: var(--space-16);
 }
 
 .collab-opportunities__section-heading {
-  margin-bottom: 34px;
-
-  text-align: right;
-  direction: rtl;
+  margin-bottom: var(--space-8);
 }
 
-.collab-opportunities__section-title {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
 
-  margin-bottom: 10px;
 
-  direction: rtl;
-}
 
-.collab-opportunities__section-title span {
-  width: 10px;
-  height: 10px;
-
-  border-radius: 50%;
-
-  background-color: var(--color-accent);
-}
-
-.collab-opportunities__section-title h2 {
-  margin: 0;
-
-  color: #050505;
-
-  font-size: 34px;
-  font-weight: 900;
-  line-height: 1.6;
-}
-
-.collab-opportunities__section-heading p {
-  max-width: 720px;
-
-  margin: 0;
-
-  color: #5d6670;
-
-  font-size: 13px;
-  line-height: 2;
-}
 
 .collab-opportunities__cards {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 26px;
+  gap: var(--space-6);
 }
 
 .collab-opportunities__card {
   overflow: hidden;
 
-  border: 1px solid #dfe4ea;
+  border: 1px solid var(--border-subtle);
 
-  background-color: #ffffff;
+  background-color: var(--surface-page);
 
   transition:
     box-shadow 220ms ease,
@@ -289,27 +258,13 @@
   transform: var(--interaction-media-hover-transform);
 }
 
-.collab-opportunities__card-image span {
+.collab-opportunities__card-badge {
   position: absolute;
-  right: 12px;
-  bottom: 12px;
-
-  min-height: 25px;
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 4px 12px;
-
-  border-radius: 999px;
-
-  color: #111111;
-  background-color: var(--color-warning);
-
-  font-size: 11px;
-  font-weight: 900;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 2;
 }
+
 
 .collab-opportunities__card-body {
   padding: 20px 18px 18px;
@@ -470,9 +425,6 @@
 .collab-opportunities__article-button {margin-top: 24px;
 }
 @media (max-width: 1450px) {
-  .collab-opportunities {
-    --collab-width: 1080px;
-  }
 
   .collab-opportunities__hero {
     min-height: 400px;
@@ -497,5 +449,29 @@
 
   .collab-opportunities__card-body h3 {
     font-size: 15px;
+  }
+}
+
+
+/* Phase 11 — Design System responsive axis */
+@media (max-width: 1024px) {
+  .collab-opportunities__container {
+    width: min(
+      calc(100% - (2 * var(--gutter-tablet))),
+      var(--collab-width)
+    );
+  }
+}
+
+@media (max-width: 767px) {
+  .collab-opportunities__container {
+    width: min(
+      calc(100% - (2 * var(--gutter-mobile))),
+      var(--collab-width)
+    );
+  }
+
+  .collab-opportunities__section {
+    padding-block: var(--space-12);
   }
 }

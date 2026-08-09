@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 
 import bannerImage from "../../assets/images/banner-2.png";
 import consultingImage from "../../assets/images/services/consulting-service.png";
@@ -11,7 +11,9 @@ import {
   getCurrentUserDashboardPath,
 } from "../../services/authService";
 
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import "./TechnologyGuidancePage.css";
 
@@ -200,16 +202,6 @@ function FeatureIcon() {
   );
 }
 
-function SectionTitle({ children }) {
-  return (
-    <header className="service-page__section-title">
-      <span />
-      <h2>{children}</h2>
-      <span />
-    </header>
-  );
-}
-
 function ConsultingPage() {
   useServiceHashScroll();
 
@@ -226,6 +218,15 @@ function ConsultingPage() {
 
   return (
     <main className="service-page">
+      <div className="service-page__container service-page__breadcrumb-wrap">
+        <Breadcrumb
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "خدمات مشاوره" },
+          ]}
+        />
+      </div>
+
       <section className="service-hero">
         <div className="service-hero__image">
           <img src={consultingImage} alt="خدمات مشاوره هاتف" />
@@ -261,7 +262,7 @@ function ConsultingPage() {
 
       <div className="service-page__container">
         <section className="service-process" id="consulting-process">
-          <SectionTitle>فرآیند مشاوره</SectionTitle>
+          <SectionHeader title="فرآیند مشاوره" className="service-page__section-heading" />
 
           <div className="service-process__grid">
             {processSteps.map((step) => (
@@ -278,7 +279,7 @@ function ConsultingPage() {
         </section>
 
         <section className="service-reasons" id="why-consulting">
-          <SectionTitle>چرا مشاوره؟</SectionTitle>
+          <SectionHeader title="چرا مشاوره؟" className="service-page__section-heading" />
 
           <div className="service-reasons__grid">
             {reasons.map((reason) => (
@@ -295,7 +296,7 @@ function ConsultingPage() {
         </section>
 
         <section className="service-benefits" id="consulting-benefits">
-          <SectionTitle>شما دریافت می‌کنید</SectionTitle>
+          <SectionHeader title="شما دریافت می‌کنید" className="service-page__section-heading" />
 
           <div className="service-benefits__grid">
             {benefits.map((benefit) => (
@@ -331,13 +332,13 @@ function ConsultingPage() {
                 href="/auth"
                 variant="secondary"
                 size="md"
-                className="service-cta__action"
+               
                 onClick={handleProtectedRequest}
               >
                 ثبت درخواست
               </Button>
 
-              <Button to="/services/technology-guidance" variant="inverse" size="md" className="service-cta__action">
+              <Button to="/services/technology-guidance" variant="inverse" size="md">
                 دریافت خدمت منتورینگ
               </Button>
             </div>
@@ -354,7 +355,7 @@ function ConsultingPage() {
         />
 
         <section className="service-faq" id="service-faq">
-          <SectionTitle>سوالات شما</SectionTitle>
+          <SectionHeader title="سوالات شما" className="service-page__section-heading" />
 
           <div className="service-faq__list">
             {faqs.map((faq) => (

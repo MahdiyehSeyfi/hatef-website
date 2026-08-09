@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 
 import bannerImage from "../../assets/images/banner.png";
 import ctaBannerImage from "../../assets/images/banner-2.png";
@@ -14,7 +14,10 @@ import {
 } from "../../services/callService";
 import { CALL_STATUS, CALL_STATUS_LABELS } from "../../constants/statuses";
 
+import Badge from "../../components/ui/Badge/Badge";
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
 
 import "./CallDetailsPage.css";
 
@@ -151,23 +154,6 @@ function mapCallDetails(call) {
   };
 }
 
-function CallBadge({ children, variant = "default" }) {
-  return (
-    <span className={`call-details__badge call-details__badge--${variant}`}>
-      {children}
-    </span>
-  );
-}
-
-function SectionTitle({ children }) {
-  return (
-    <header className="call-details__section-title">
-      <span />
-      <h2>{children}</h2>
-    </header>
-  );
-}
-
 function QuickActions({ call }) {
   const links = quickLinks.map((item) => {
     if (item.download && call.pdfFileUrl) {
@@ -186,11 +172,11 @@ function QuickActions({ call }) {
         <Button
           key={item.id}
           href={item.href}
-          variant={item.download ? "ghost" : "outline"}
+          variant="outline"
           size="sm"
           fullWidth
           leadingIcon={item.download ? "↓" : null}
-          className="call-details__quick-link"
+         
           target={item.download && call.pdfFileUrl ? "_blank" : undefined}
           rel={item.download && call.pdfFileUrl ? "noreferrer" : undefined}
         >
@@ -198,7 +184,7 @@ function QuickActions({ call }) {
         </Button>
       ))}
 
-      <Button href="#submit-call" variant="primary" size="sm" fullWidth className="call-details__submit-button">
+      <Button href="#submit-call" variant="primary" size="sm" fullWidth>
         ارسال طرح
       </Button>
     </aside>
@@ -214,9 +200,9 @@ function CallHero({ call }) {
         <img src={call.image || bannerImage} alt={call.title} />
 
         <div className="call-details__hero-status">
-          <CallBadge variant={isActive ? "active" : "default"}>
+          <Badge tone={isActive ? "success" : "neutral"}>
             {call.submitStatus}
-          </CallBadge>
+          </Badge>
 
           <span>{call.deadline}</span>
         </div>
@@ -231,7 +217,7 @@ function CallHero({ call }) {
 
             <h1>{call.title}</h1>
 
-            <CallBadge>{call.category}</CallBadge>
+            <Badge tone="info">{call.category}</Badge>
           </div>
 
           <p>{call.description}</p>
@@ -250,7 +236,7 @@ function CallContent({ call }) {
   return (
     <article className="call-details__article">
       <section id="registration-guide">
-        <SectionTitle>محورهای پژوهشی سال جاری</SectionTitle>
+        <SectionHeader title="محورهای پژوهشی سال جاری" variant="subsection" className="call-details__section-heading" />
 
         <p>
           این فراخوان در حوزه <strong>{call.field}</strong> تعریف شده است و
@@ -264,7 +250,7 @@ function CallContent({ call }) {
       </section>
 
       <section id="eligibility">
-        <SectionTitle>شرایط احراز و ارسال آثار</SectionTitle>
+        <SectionHeader title="شرایط احراز و ارسال آثار" variant="subsection" className="call-details__section-heading" />
 
         <p>
           متقاضیان لازم است اطلاعات طرح، اعضای تیم، سوابق مرتبط، برنامه اجرایی و
@@ -285,7 +271,7 @@ function CallContent({ call }) {
       </section>
 
       <section id="proposal-guide">
-        <SectionTitle>راهنمای تدوین پروپوزال</SectionTitle>
+        <SectionHeader title="راهنمای تدوین پروپوزال" variant="subsection" className="call-details__section-heading" />
 
         <p>
           پروپوزال بهتر است شامل تعریف مسئله، راهکار پیشنهادی، نوآوری طرح، تیم
@@ -300,7 +286,7 @@ function CallContent({ call }) {
       </section>
 
       <section id="download-pdf">
-        <SectionTitle>نسخه PDF فراخوان</SectionTitle>
+        <SectionHeader title="نسخه PDF فراخوان" variant="subsection" className="call-details__section-heading" />
 
         {call.pdfFileUrl ? (
           <p>
@@ -334,8 +320,8 @@ function CallCta() {
         </p>
 
         <div className="call-details__cta-actions">
-          <Button to="/auth" variant="secondary" size="md" className="call-details__cta-action">ورود به سامانه</Button>
-          <Button to="/research-support/guide-eligibility" variant="inverse" size="md" className="call-details__cta-action">راهنمای شرکت</Button>
+          <Button to="/auth" variant="secondary" size="md">ورود به سامانه</Button>
+          <Button to="/research-support/guide-eligibility" variant="inverse" size="md">راهنمای شرکت</Button>
         </div>
       </div>
     </section>
@@ -345,7 +331,7 @@ function CallCta() {
 function CallFaq() {
   return (
     <section className="call-details__faq">
-      <SectionTitle>سوالات شما</SectionTitle>
+      <SectionHeader title="سوالات شما" variant="subsection" className="call-details__section-heading" />
 
       <div className="call-details__faq-list">
         {faqItems.map((faq) => (
@@ -368,7 +354,7 @@ function CallNotFound() {
     <main className="call-details">
       <div className="call-details__container">
         <section className="call-details__article">
-          <SectionTitle>فراخوان پیدا نشد</SectionTitle>
+          <SectionHeader title="فراخوان پیدا نشد" variant="subsection" className="call-details__section-heading" />
 
           <p>
             فراخوانی با این شناسه در سامانه ثبت نشده است یا ممکن است آدرس وارد
@@ -376,7 +362,7 @@ function CallNotFound() {
           </p>
 
           <div className="call-details__back-wrap">
-            <Button to="/research-support/calls" variant="outline" size="md" width="wide" className="call-details__back">
+            <Button to="/research-support/calls" variant="outline" size="md" width="wide">
               بازگشت به فهرست فراخوان‌ها
             </Button>
           </div>
@@ -426,6 +412,15 @@ function CallDetailsPage() {
   return (
     <main className="call-details">
       <div className="call-details__container">
+        <Breadcrumb
+          className="call-details__breadcrumb"
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "فراخوان‌ها", to: "/research-support/calls" },
+            { label: call.title },
+          ]}
+        />
+
         <CallHero call={call} />
 
         <div className="call-details__layout">
@@ -443,7 +438,7 @@ function CallDetailsPage() {
         <CallFaq />
 
         <div className="call-details__back-wrap">
-          <Button to="/research-support/calls" variant="outline" size="md" width="wide" className="call-details__back">
+          <Button to="/research-support/calls" variant="outline" size="md" width="wide">
             بازگشت به فهرست فراخوان‌ها
           </Button>
 

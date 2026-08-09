@@ -2,10 +2,12 @@ import { useMemo, useState } from "react";
 import { Link, Navigate, useParams } from "react-router";
 
 import DocumentsSidebar from "../../components/documents/DocumentsSidebar";
-import { getDocumentCategory } from "../../data/documentsData";
-
+import Badge from "../../components/ui/Badge/Badge";
+import Breadcrumb from "../../components/ui/Breadcrumb/Breadcrumb";
 import Button from "../../components/ui/Button/Button";
 import IconButton from "../../components/ui/IconButton/IconButton";
+import SectionHeader from "../../components/ui/SectionHeader/SectionHeader";
+import { getDocumentCategory } from "../../data/documentsData";
 
 import "./DocumentsPage.css";
 
@@ -113,17 +115,13 @@ function DocumentsQuickAccessPanel({ activeCategory }) {
 
   return (
     <section className="documents-page__quick-access">
-      <div className="documents-page__quick-access-head">
-        <span>مرکز مستندات هاتف</span>
-
-        <h1>دسترسی سریع به مستندات</h1>
-
-        <p>
-          اسناد، فرم‌ها، آیین‌نامه‌ها و قالب‌های موردنیاز برنامه هاتف در این بخش
-          دسته‌بندی شده‌اند تا دسترسی به فایل‌های موردنیاز سریع‌تر و ساده‌تر
-          انجام شود.
-        </p>
-      </div>
+      <SectionHeader
+        as="h1"
+        eyebrow="مرکز مستندات هاتف"
+        title="دسترسی سریع به مستندات"
+        description="اسناد، فرم‌ها، آیین‌نامه‌ها و قالب‌های موردنیاز برنامه هاتف در این بخش دسته‌بندی شده‌اند تا دسترسی به فایل‌های موردنیاز سریع‌تر و ساده‌تر انجام شود."
+        className="documents-page__quick-access-heading"
+      />
 
       <div className="documents-page__quick-access-grid">
         {accessItems.map((item) => {
@@ -147,9 +145,12 @@ function DocumentsQuickAccessPanel({ activeCategory }) {
                 <small>{item.description}</small>
               </span>
 
-              <span className="documents-page__quick-card-count">
+              <Badge
+                tone={isActive ? "warning" : "neutral"}
+                className="documents-page__quick-card-count"
+              >
                 {item.count} فایل
-              </span>
+              </Badge>
             </Link>
           );
         })}
@@ -183,17 +184,14 @@ function DocumentsPage() {
   return (
     <div className="documents-page">
       <div className="documents-page__container">
-        <nav className="documents-page__breadcrumb" aria-label="مسیر صفحه">
-          <Link to="/">صفحه اصلی</Link>
-
-          <span>/</span>
-
-          <span>مستندات</span>
-
-          <span>/</span>
-
-          <span>{currentCategory.title}</span>
-        </nav>
+        <Breadcrumb
+          className="documents-page__breadcrumb"
+          items={[
+            { label: "صفحه اصلی", to: "/" },
+            { label: "مستندات", to: "/documents/forms" },
+            { label: currentCategory.title },
+          ]}
+        />
 
         <div className="documents-page__layout">
           <DocumentsSidebar />
@@ -202,8 +200,8 @@ function DocumentsPage() {
             <DocumentsQuickAccessPanel activeCategory={category} />
 
             {downloadNotice && (
-              <p className="documents-page__notice" role="status">
-                {downloadNotice}
+              <div className="documents-page__notice" role="status">
+                <span>{downloadNotice}</span>
 
                 <IconButton
                   type="button"
@@ -215,15 +213,16 @@ function DocumentsPage() {
                 >
                   ×
                 </IconButton>
-              </p>
+              </div>
             )}
 
             {currentCategory.groups.map((group) => (
               <section className="document-group" key={group.id}>
-                <header className="document-group__heading">
-                  <h1>{group.title}</h1>
-                  <span />
-                </header>
+                <SectionHeader
+                  title={group.title}
+                  variant="subsection"
+                  className="document-group__heading"
+                />
 
                 <div className="document-group__items">
                   {group.items.map((documentItem) => (
@@ -241,9 +240,8 @@ function DocumentsPage() {
                       </Button>
 
                       <div className="document-row__title">
-                        <span />
-
-                        <h2>{documentItem.title}</h2>
+                        <span aria-hidden="true" />
+                        <h3>{documentItem.title}</h3>
                       </div>
                     </article>
                   ))}
