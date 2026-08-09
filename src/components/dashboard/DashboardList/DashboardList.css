@@ -1,0 +1,237 @@
+/*
+ * Canonical Dashboard List
+ * Visual source: user-approved Innovator > فراخوان‌ها > طرح‌های من.
+ *
+ * Current legacy selectors are deliberately mapped here so Innovator and
+ * Reviewer share one visual owner without changing application logic.
+ */
+
+.dashboard-list,
+.innovator-dashboard .submit-plan__submitted-list,
+.reviewer-dashboard .reviewer-dashboard__plans-list,
+.reviewer-dashboard .reviewer-dashboard__history-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Shared row surface = locked Innovator list language. */
+.dashboard-list__item.dashboard-panel,
+.innovator-dashboard .submit-plan__submitted-card.dashboard-panel,
+.reviewer-dashboard .reviewer-dashboard__plan-card.dashboard-panel,
+.reviewer-dashboard .reviewer-dashboard__history-list > .dashboard-panel {
+  border: 1px solid #e5edf4;
+  border-radius: 18px;
+  background: #f9fcff;
+  box-shadow: none;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.dashboard-list__item.dashboard-panel:hover,
+.innovator-dashboard .submit-plan__submitted-card.dashboard-panel:hover,
+.reviewer-dashboard .reviewer-dashboard__plan-card.dashboard-panel:hover,
+.reviewer-dashboard .reviewer-dashboard__history-list > .dashboard-panel:hover {
+  border-color: rgba(25, 180, 233, 0.35);
+  background: #f5fbff;
+  box-shadow: 0 12px 26px rgba(18, 48, 86, 0.06);
+  transform: translateY(-1px);
+}
+
+/* Keep the locked Innovator list geometry canonical. */
+.innovator-dashboard .submit-plan__submitted-card.dashboard-panel {
+  grid-template-columns: 32px minmax(0, 1fr) 132px auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+}
+
+/*
+ * Reviewer keeps its domain-specific tracking id, but follows the same
+ * compact rhythm, status column and action column as the Innovator source.
+ */
+.reviewer-dashboard .reviewer-dashboard__plan-card.dashboard-panel {
+  grid-template-columns: 96px minmax(0, 1fr) 132px 184px;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+}
+
+.reviewer-dashboard .reviewer-dashboard__history-list > .dashboard-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+}
+
+/* Index / tracking identity */
+.dashboard-list__index,
+.innovator-dashboard .submit-plan__order {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: #17406a;
+  background: #eef6fb;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.reviewer-dashboard .reviewer-dashboard__plan-id {
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+
+.reviewer-dashboard .reviewer-dashboard__plan-id > span {
+  display: none;
+}
+
+.reviewer-dashboard .reviewer-dashboard__plan-id > strong {
+  max-width: 100%;
+  padding: 5px 8px;
+  overflow: hidden;
+  border-radius: 9px;
+  color: #17406a;
+  background: #eef6fb;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Canonical information hierarchy. */
+.dashboard-list__main h4,
+.innovator-dashboard .submit-plan__submitted-info h4,
+.reviewer-dashboard .reviewer-dashboard__plan-title-row h4,
+.reviewer-dashboard .reviewer-dashboard__history-list h4 {
+  margin: 0 0 5px;
+  color: #10284b;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.7;
+}
+
+.dashboard-list__main p,
+.innovator-dashboard .submit-plan__submitted-info p,
+.reviewer-dashboard .reviewer-dashboard__plan-info > p,
+.reviewer-dashboard .reviewer-dashboard__history-list p {
+  margin: 0 0 4px;
+  color: #6b7f95;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.dashboard-list__main small,
+.innovator-dashboard .submit-plan__submitted-info small,
+.reviewer-dashboard .reviewer-dashboard__plan-meta span,
+.reviewer-dashboard .reviewer-dashboard__history-list > .dashboard-panel > div > span {
+  color: #8aa0b7;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.8;
+}
+
+.reviewer-dashboard .reviewer-dashboard__plan-meta {
+  gap: 3px 14px;
+  margin-top: 3px;
+}
+
+/* Status occupies the same stable visual column. */
+.reviewer-dashboard .reviewer-dashboard__plan-card > .dashboard-status-badge,
+.reviewer-dashboard .reviewer-dashboard__plan-card > [class*="status-badge"] {
+  justify-self: center;
+}
+
+/* Actions use Shared Button geometry, never page-defined button geometry. */
+.dashboard-list__actions,
+.innovator-dashboard .submit-plan__actions,
+.reviewer-dashboard .reviewer-dashboard__plan-actions,
+.reviewer-dashboard .reviewer-dashboard__history-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+/*
+ * Feedback is one semantic action with two labels. Give both states one
+ * canonical width so "ثبت" vs "ویرایش" cannot change row geometry.
+ */
+.reviewer-dashboard .reviewer-dashboard__plan-actions > .ui-button.ui-button {
+  width: 184px;
+  max-width: 184px;
+}
+
+/* History has the canonical compact action width. */
+.reviewer-dashboard .reviewer-dashboard__history-actions > .ui-button.ui-button {
+  width: 144px;
+  max-width: 144px;
+}
+
+/*
+ * Important: no Button palette/radius/hover is defined here.
+ * Button.css remains the sole owner of Button visuals.
+ */
+
+@media (max-width: 1280px) {
+  .reviewer-dashboard .reviewer-dashboard__plan-card.dashboard-panel {
+    grid-template-columns: 88px minmax(0, 1fr) 120px 184px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .innovator-dashboard .submit-plan__submitted-card.dashboard-panel,
+  .reviewer-dashboard .reviewer-dashboard__plan-card.dashboard-panel {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .innovator-dashboard .submit-plan__submitted-card > .submit-plan__status,
+  .innovator-dashboard .submit-plan__actions,
+  .reviewer-dashboard .reviewer-dashboard__plan-card > .dashboard-status-badge,
+  .reviewer-dashboard .reviewer-dashboard__plan-card > [class*="status-badge"],
+  .reviewer-dashboard .reviewer-dashboard__plan-actions {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .reviewer-dashboard .reviewer-dashboard__plan-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 700px) {
+  .innovator-dashboard .submit-plan__submitted-card.dashboard-panel,
+  .reviewer-dashboard .reviewer-dashboard__plan-card.dashboard-panel,
+  .reviewer-dashboard .reviewer-dashboard__history-list > .dashboard-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .reviewer-dashboard .reviewer-dashboard__plan-id {
+    justify-items: stretch;
+  }
+
+  .innovator-dashboard .submit-plan__submitted-card > .submit-plan__status,
+  .innovator-dashboard .submit-plan__actions,
+  .reviewer-dashboard .reviewer-dashboard__plan-card > .dashboard-status-badge,
+  .reviewer-dashboard .reviewer-dashboard__plan-card > [class*="status-badge"],
+  .reviewer-dashboard .reviewer-dashboard__plan-actions {
+    grid-column: 1;
+  }
+
+  .reviewer-dashboard .reviewer-dashboard__plan-actions > .ui-button.ui-button,
+  .reviewer-dashboard .reviewer-dashboard__history-actions > .ui-button.ui-button {
+    width: 100%;
+    max-width: none;
+  }
+}

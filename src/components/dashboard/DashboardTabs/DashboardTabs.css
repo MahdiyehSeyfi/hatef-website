@@ -56,7 +56,7 @@
   font-size: 11px;
 }
 
-.dashboard-tabs__item.is-active .dashboard-tabs .dashboard-tabs__count {
+.dashboard-tabs .dashboard-tabs__item.is-active .dashboard-tabs__count {
   color: var(--color-action-700);
   background: var(--color-action-100);
 }

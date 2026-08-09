@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 
@@ -12,13 +12,6 @@ import {
 } from "../../services/businessService";
 
 import {
-  addSupportTicket,
-  deleteSupportTicket,
-  getCurrentUserSupportTickets,
-} from "../../services/supportService";
-import {
-  deleteAllNotificationsForCurrentUser,
-  deleteNotification,
   getNotificationsForCurrentUser,
   markAllNotificationsAsReadForCurrentUser,
   markNotificationAsRead,
@@ -37,7 +30,30 @@ import {
   saveCurrentDashboardProfile,
 } from "../../services/userProfileService";
 
+import Button from "../../components/ui/Button/Button";
+import IconButton from "../../components/ui/IconButton/IconButton";
+import Input from "../../components/ui/Input/Input";
+import Select from "../../components/ui/Select/Select";
+import {
+  DashboardEmptyState,
+  DashboardFAQ,
+  DashboardMessages,
+  DashboardNotificationMenu,
+  DashboardPanel,
+  DashboardProfileEdit,
+  DashboardProfileMenu,
+  DashboardProfileView,
+  DashboardShell,
+  DashboardStatCard,
+  DashboardStatusBadge,
+  DashboardSupportRequests,
+} from "../../components/dashboard";
+import DashboardFilterBar from "../../components/dashboard/DashboardFilterBar/DashboardFilterBar";
+import DashboardList, { DashboardListItem } from "../../components/dashboard/DashboardList/DashboardList";
+
+import "./InnovatorDashboardPage.css";
 import "./BusinessDashboardPage.css";
+import "../../components/dashboard/DashboardChrome/DashboardChrome.css";
 
 const SITE_PUBLICATION_REQUESTS_STORAGE_KEY = "hatef_site_publication_requests";
 const SITE_PUBLICATION_REQUESTS_UPDATED_EVENT =
@@ -244,6 +260,12 @@ const SECTION_DATA = {
     sideItems: ["موقعیت‌های تجاری", "علاقه‌مندی‌ها", "درخواست‌ها", "پیام‌ها"],
     actionLabel: "مشاهده سوالات",
   },
+  profile: {
+    title: "پروفایل",
+  },
+  "edit-profile": {
+    title: "ویرایش پروفایل",
+  },
 };
 
 const BUSINESS_PROFILE = {
@@ -253,8 +275,8 @@ const BUSINESS_PROFILE = {
   mobile: "۰۹۱۲۱۲۳۴۵۶۷",
   email: "business.partner@example.com",
   role: "همکار تجاری",
-  memberSince: "عضو از سال ۱۴۰۴",
-  membershipDuration: "به مدت ۱ سال",
+  memberSince: "۱۴۰۴",
+  membershipDuration: "۱ سال",
   avatarLetter: "م",
 };
 
@@ -553,108 +575,6 @@ const FAQ_ITEMS = [
   },
 ];
 
-function MenuIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M4 7h16M4 12h16M4 17h16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M10 21h4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function ChevronIcon({ isOpen }) {
-  return (
-    <svg
-      className={isOpen ? "innovator-dashboard__nav-chevron--open" : ""}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
-      <path
-        d="M8 10l4 4 4-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function BackIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M9 6l6 6-6 6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function DashboardDateTime() {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setNow(new Date());
-    }, 60000);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const dateText = now.toLocaleDateString("fa-IR-u-ca-persian", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  const timeText = now.toLocaleTimeString("fa-IR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  return (
-    <div className="innovator-dashboard__date-time">
-      <span>تاریخ امروز</span>
-      <strong>{dateText}</strong>
-      <small>ساعت {timeText}</small>
-    </div>
-  );
-}
-
 function getCurrentPersianDateTime() {
   const now = new Date();
 
@@ -916,9 +836,12 @@ function OpportunityReportsTabs({ reports }) {
     <div className="business-opportunity-detail__reports-tabs">
       <div className="business-opportunity-detail__reports-nav" role="tablist">
         {reports.map((report) => (
-          <button
-            key={report.id}
+          <DashboardPanel
+            as="button"
             type="button"
+            interactive
+            padding="sm"
+            key={report.id}
             role="tab"
             aria-selected={report.id === activeReport.id}
             className={
@@ -930,13 +853,14 @@ function OpportunityReportsTabs({ reports }) {
           >
             <span>{report.title}</span>
             <small>{report.status}</small>
-          </button>
+          </DashboardPanel>
         ))}
       </div>
 
-      <div
+      <DashboardPanel
         className="business-opportunity-detail__report-panel"
         role="tabpanel"
+        padding="md"
       >
         <span className="business-opportunity-detail__report-label">
           {activeReport.type === "file" ? "گزارش قابل دانلود" : "گزارش متنی"}
@@ -946,14 +870,21 @@ function OpportunityReportsTabs({ reports }) {
         <p>{activeReport.text}</p>
 
         {activeReport.fileUrl ? (
-          <a href={activeReport.fileUrl}>دانلود فایل گزارش</a>
+          <Button
+            href={activeReport.fileUrl}
+            variant="outline"
+            size="sm"
+            width="content"
+          >
+            دانلود فایل گزارش
+          </Button>
         ) : (
           <div className="business-opportunity-detail__text-note">
             این بخش در حال حاضر به‌صورت متنی نمایش داده شده و فایل جداگانه‌ای
             برای آن بارگذاری نشده است.
           </div>
         )}
-      </div>
+      </DashboardPanel>
     </div>
   );
 }
@@ -1032,13 +963,12 @@ function OpportunityDetailPage({
           </div>
 
           <div className="business-opportunity-detail__hero-actions">
-            <button
+            <Button
               type="button"
-              className={
-                isRequested
-                  ? "business-opportunity-detail__request-button business-opportunity-detail__request-button--done"
-                  : "business-opportunity-detail__request-button"
-              }
+              variant={isRequested ? "outline" : "secondary"}
+              size="sm"
+              width="content"
+              className="business-opportunity-detail__request-button"
               onClick={onRequestCooperation}
               title={
                 isRequested
@@ -1047,32 +977,38 @@ function OpportunityDetailPage({
               }
             >
               {isRequested ? "✓ درخواست ثبت شده - لغو" : "درخواست همکاری"}
-            </button>
+            </Button>
 
-            <a
+            <Button
               href="?section=commercial-opportunities"
+              variant="outline"
+              size="sm"
+              width="content"
               className="business-opportunity-detail__back-link"
             >
               بازگشت به موقعیت‌ها
-            </a>
+            </Button>
           </div>
         </div>
 
         <aside className="business-opportunity-detail__visual-card">
-          <button
+          <IconButton
             type="button"
+            variant="outline"
+            size="md"
             className={
               isFavorite
                 ? "business-opportunity-detail__favorite business-opportunity-detail__favorite--active"
                 : "business-opportunity-detail__favorite"
             }
             onClick={() => onToggleFavorite?.(opportunity.id)}
+            aria-pressed={isFavorite}
             aria-label={
               isFavorite ? "حذف از علاقه‌مندی‌ها" : "افزودن به علاقه‌مندی‌ها"
             }
           >
             ★
-          </button>
+          </IconButton>
 
           <div className="business-opportunity-detail__symbolic-image">
             <span>{visual.icon}</span>
@@ -1139,13 +1075,12 @@ function OpportunityDetailPage({
               )}
             </dl>
 
-            <button
+            <Button
               type="button"
-              className={
-                isRequested
-                  ? "business-opportunity-detail__side-request business-opportunity-detail__side-request--done"
-                  : "business-opportunity-detail__side-request"
-              }
+              variant={isRequested ? "outline" : "secondary"}
+              size="sm"
+              fullWidth
+              className="business-opportunity-detail__side-request"
               onClick={onRequestCooperation}
               title={
                 isRequested
@@ -1154,16 +1089,19 @@ function OpportunityDetailPage({
               }
             >
               {isRequested ? "✓ درخواست ثبت شده - لغو" : "ثبت درخواست همکاری"}
-            </button>
+            </Button>
 
             {!isIntroducedCommercial && (
-              <a
+              <Button
                 href={getOpportunityProposalHref(opportunity)}
                 download={`${opportunity.title}.txt`}
+                variant="outline"
+                size="sm"
+                fullWidth
                 className="business-opportunity-detail__side-download"
               >
                 دانلود پروپوزال موقعیت
-              </a>
+              </Button>
             )}
           </div>
 
@@ -1352,26 +1290,32 @@ function DashboardHomePanel({
     .slice(0, 3);
 
   return (
-    <section className="dashboard-home business-dashboard-home business-dashboard-home--simple">
-      <div className="dashboard-home__stats">
+    <section className="business-dashboard-home">
+      <div className="business-dashboard-home__stats">
         {stats.map((item) => (
-          <article className="dashboard-home__stat-card" key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.hint}</small>
-          </article>
+          <DashboardStatCard
+            key={item.label}
+            label={item.label}
+            value={item.value}
+            hint={item.hint}
+          />
         ))}
       </div>
 
       <div className="business-dashboard-home__body">
-        <article className="business-dashboard-home__recent-request">
+        <DashboardPanel className="business-dashboard-home__recent-request" padding="md">
           <div className="business-dashboard-home__section-head">
             <span>درخواست اخیر</span>
             <h3>آخرین درخواست همکاری</h3>
           </div>
 
           {recentRequest ? (
-            <div className="business-dashboard-home__request-card">
+            <DashboardPanel
+              as="article"
+              variant="subtle"
+              padding="sm"
+              className="business-dashboard-home__request-card"
+            >
               <div>
                 <strong>
                   {recentRequest.opportunityTitle || recentRequest.title}
@@ -1380,44 +1324,50 @@ function DashboardHomePanel({
               </div>
 
               <div className="business-dashboard-home__request-meta">
-                <span>{recentRequest.status}</span>
+                <DashboardStatusBadge status={recentRequest.status} />
                 <small>{recentRequest.sentAt}</small>
               </div>
 
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
+                width="content"
                 onClick={() => onOpenOpportunity?.(recentRequest.opportunityId)}
               >
                 مشاهده موقعیت
-              </button>
-            </div>
+              </Button>
+            </DashboardPanel>
           ) : (
-            <div className="business-dashboard-home__empty-card">
-              هنوز درخواست همکاری ثبت نشده است.
-            </div>
+            <DashboardEmptyState
+              title="هنوز درخواست همکاری ثبت نشده است"
+              description="درخواست‌های جدید شما بعد از ثبت در این بخش نمایش داده می‌شوند."
+            />
           )}
-        </article>
+        </DashboardPanel>
 
-        <article className="business-dashboard-home__new-opportunities">
+        <DashboardPanel className="business-dashboard-home__new-opportunities" padding="md">
           <div className="business-dashboard-home__section-head">
             <span>پیشنهادهای جدید</span>
             <h3>موقعیت‌های جدید</h3>
           </div>
 
-          <div className="business-dashboard-home__opportunity-list">
+          <DashboardList className="business-dashboard-home__opportunity-list">
             {newOpportunities.map((item) => (
-              <button
+              <DashboardListItem
+                as="button"
                 type="button"
                 key={item.id}
+                className="business-dashboard-home__opportunity-item"
                 onClick={() => onOpenOpportunity?.(item.id)}
               >
-                <span>{item.category}</span>
+                <DashboardStatusBadge status={item.status} />
                 <strong>{item.title}</strong>
                 <small>{item.collaborationType}</small>
-              </button>
+              </DashboardListItem>
             ))}
-          </div>
-        </article>
+          </DashboardList>
+        </DashboardPanel>
       </div>
     </section>
   );
@@ -1438,16 +1388,21 @@ function OpportunitiesPanel({
 
   const categories = [
     "all",
-    ...new Set(opportunities.map((item) => item.category)),
+    ...new Set(opportunities.map((item) => item.category).filter(Boolean)),
   ];
-  const stages = ["all", ...new Set(opportunities.map((item) => item.stage))];
+  const stages = [
+    "all",
+    ...new Set(opportunities.map((item) => item.stage).filter(Boolean)),
+  ];
   const collaborationTypes = [
     "all",
-    ...new Set(opportunities.map((item) => item.collaborationType)),
+    ...new Set(
+      opportunities.map((item) => item.collaborationType).filter(Boolean),
+    ),
   ];
   const locations = [
     "all",
-    ...new Set(opportunities.map((item) => item.location)),
+    ...new Set(opportunities.map((item) => item.location).filter(Boolean)),
   ];
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -1464,8 +1419,9 @@ function OpportunitiesPanel({
         item.location,
         item.summary,
         item.estimatedSupport,
-        ...item.tags,
+        ...(item.tags || []),
       ]
+        .filter(Boolean)
         .join(" ")
         .toLowerCase()
         .includes(normalizedSearch);
@@ -1503,7 +1459,7 @@ function OpportunitiesPanel({
 
   return (
     <section className="business-opportunities">
-      <div className="business-opportunities__panel">
+      <DashboardPanel className="business-opportunities__panel" padding="md">
         <div className="business-opportunities__header">
           <div>
             <span>موقعیت‌های تجاری</span>
@@ -1515,21 +1471,21 @@ function OpportunitiesPanel({
           </div>
         </div>
 
-        <div className="business-opportunities__filters">
+        <DashboardFilterBar className="business-opportunities__filters">
           <label className="business-opportunities__search">
             <span>جستجوی دقیق</span>
-            <input
+            <Input
               type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="عنوان، حوزه، نوع همکاری، شهر، برچسب یا توضیح موقعیت را جستجو کنید..."
+              placeholder="عنوان، حوزه، نوع همکاری یا توضیح..."
             />
           </label>
 
           <div className="business-opportunities__filter-grid">
             <label>
               <span>حوزه</span>
-              <select
+              <Select
                 value={categoryFilter}
                 onChange={(event) => setCategoryFilter(event.target.value)}
               >
@@ -1538,12 +1494,12 @@ function OpportunitiesPanel({
                     {category === "all" ? "همه حوزه‌ها" : category}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label>
               <span>مرحله</span>
-              <select
+              <Select
                 value={stageFilter}
                 onChange={(event) => setStageFilter(event.target.value)}
               >
@@ -1552,12 +1508,12 @@ function OpportunitiesPanel({
                     {stage === "all" ? "همه مراحل" : stage}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label>
               <span>نوع همکاری</span>
-              <select
+              <Select
                 value={collaborationFilter}
                 onChange={(event) => setCollaborationFilter(event.target.value)}
               >
@@ -1566,12 +1522,12 @@ function OpportunitiesPanel({
                     {type === "all" ? "همه انواع" : type}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label>
               <span>محل اجرا</span>
-              <select
+              <Select
                 value={locationFilter}
                 onChange={(event) => setLocationFilter(event.target.value)}
               >
@@ -1580,51 +1536,70 @@ function OpportunitiesPanel({
                     {location === "all" ? "همه شهرها" : location}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           </div>
 
           <div className="business-opportunities__filter-actions">
-            <button
+            <Button
               type="button"
-              className={
-                onlyFavorites ? "business-opportunities__chip--active" : ""
-              }
+              variant={onlyFavorites ? "secondary" : "outline"}
+              size="sm"
+              width="content"
               onClick={() => setOnlyFavorites((current) => !current)}
             >
               فقط علاقه‌مندی‌ها
-            </button>
+            </Button>
 
-            <button type="button" onClick={resetFilters}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              width="content"
+              onClick={resetFilters}
+            >
               پاک‌کردن فیلترها
-            </button>
+            </Button>
 
             <span>{filteredOpportunities.length} موقعیت یافت شد</span>
           </div>
-        </div>
+        </DashboardFilterBar>
 
-        <div className="business-opportunities__grid business-opportunities__grid--detailed">
+        <div className="business-opportunities__grid">
           {filteredOpportunities.map((item) => {
             const isFavorite = favoriteIds.some(
               (favoriteId) => String(favoriteId) === String(item.id),
             );
 
             return (
-              <article className="business-opportunities__card" key={item.id}>
+              <DashboardPanel
+                as="article"
+                interactive
+                padding="md"
+                className="business-opportunities__card"
+                key={item.id}
+              >
                 <div className="business-opportunities__card-top">
-                  <span>{item.status}</span>
-                  <button
+                  <DashboardStatusBadge status={item.status} />
+                  <IconButton
                     type="button"
+                    variant="outline"
+                    size="sm"
                     className={
                       isFavorite
-                        ? "business-opportunities__favorite--active"
-                        : ""
+                        ? "business-opportunities__favorite business-opportunities__favorite--active"
+                        : "business-opportunities__favorite"
                     }
                     onClick={() => onToggleFavorite(item.id)}
-                    aria-label="افزودن به علاقه‌مندی‌ها"
+                    aria-pressed={isFavorite}
+                    aria-label={
+                      isFavorite
+                        ? "حذف از علاقه‌مندی‌ها"
+                        : "افزودن به علاقه‌مندی‌ها"
+                    }
                   >
                     ★
-                  </button>
+                  </IconButton>
                 </div>
 
                 <h4>
@@ -1640,13 +1615,13 @@ function OpportunitiesPanel({
                 <p>{item.summary}</p>
 
                 <div className="business-opportunities__info-list">
-                  <span>{item.field}</span>
-                  <span>{item.collaborationType}</span>
-                  <span>{item.location}</span>
+                  {item.field && <span>{item.field}</span>}
+                  {item.collaborationType && <span>{item.collaborationType}</span>}
+                  {item.location && <span>{item.location}</span>}
                 </div>
 
                 <div className="business-opportunities__tags">
-                  {item.tags.map((tag) => (
+                  {(item.tags || []).map((tag) => (
                     <small key={tag}>{tag}</small>
                   ))}
                 </div>
@@ -1654,24 +1629,28 @@ function OpportunitiesPanel({
                 <div className="business-opportunities__footer">
                   <small>{item.date}</small>
 
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
+                    width="content"
                     onClick={() => onOpenOpportunity(item.id)}
                   >
                     مشاهده
-                  </button>
+                  </Button>
                 </div>
-              </article>
+              </DashboardPanel>
             );
           })}
 
           {filteredOpportunities.length === 0 && (
-            <div className="business-opportunities__empty">
-              موقعیتی با این فیلترها پیدا نشد.
-            </div>
+            <DashboardEmptyState
+              title="موقعیتی پیدا نشد"
+              description="فیلترها یا عبارت جستجو را تغییر دهید."
+            />
           )}
         </div>
-      </div>
+      </DashboardPanel>
     </section>
   );
 }
@@ -1688,7 +1667,7 @@ function FavoritesPanel({
 
   return (
     <section className="business-opportunities">
-      <div className="business-opportunities__panel">
+      <DashboardPanel className="business-opportunities__panel" padding="md">
         <div className="business-opportunities__header">
           <div>
             <span>علاقه‌مندی‌ها</span>
@@ -1700,19 +1679,28 @@ function FavoritesPanel({
           </div>
         </div>
 
-        <div className="business-opportunities__grid business-opportunities__grid--detailed">
+        <div className="business-opportunities__grid">
           {favoriteItems.map((item) => (
-            <article className="business-opportunities__card" key={item.id}>
+            <DashboardPanel
+              as="article"
+              interactive
+              padding="md"
+              className="business-opportunities__card"
+              key={item.id}
+            >
               <div className="business-opportunities__card-top">
-                <span>ذخیره‌شده</span>
-                <button
+                <DashboardStatusBadge status="ذخیره‌شده" />
+                <IconButton
                   type="button"
-                  className="business-opportunities__favorite--active"
+                  variant="outline"
+                  size="sm"
+                  className="business-opportunities__favorite business-opportunities__favorite--active"
                   onClick={() => onToggleFavorite(item.id)}
+                  aria-pressed="true"
                   aria-label="حذف از علاقه‌مندی‌ها"
                 >
                   ★
-                </button>
+                </IconButton>
               </div>
 
               <h4>
@@ -1728,30 +1716,34 @@ function FavoritesPanel({
               <p>{item.summary}</p>
 
               <div className="business-opportunities__info-list">
-                <span>{item.field}</span>
-                <span>{item.collaborationType}</span>
-                <span>{item.location}</span>
+                {item.field && <span>{item.field}</span>}
+                {item.collaborationType && <span>{item.collaborationType}</span>}
+                {item.location && <span>{item.location}</span>}
               </div>
 
               <div className="business-opportunities__footer">
                 <small>{item.date}</small>
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
+                  width="content"
                   onClick={() => onOpenOpportunity(item.id)}
                 >
                   مشاهده
-                </button>
+                </Button>
               </div>
-            </article>
+            </DashboardPanel>
           ))}
 
           {favoriteItems.length === 0 && (
-            <div className="business-opportunities__empty">
-              هنوز موقعیتی به علاقه‌مندی‌ها اضافه نشده است.
-            </div>
+            <DashboardEmptyState
+              title="هنوز موقعیتی ذخیره نشده است"
+              description="موقعیت‌های موردنظر را از بخش موقعیت‌های تجاری به علاقه‌مندی‌ها اضافه کنید."
+            />
           )}
         </div>
-      </div>
+      </DashboardPanel>
     </section>
   );
 }
@@ -1765,116 +1757,100 @@ function CollaborationRequestsPanel({ requests, onOpenOpportunity }) {
       String(request.supabaseId || "") === String(selectedRequestId || ""),
   );
 
-  const openRequestDetail = (requestId) => {
-    setSelectedRequestId(requestId || "");
-  };
-
-  const closeRequestDetail = () => {
-    setSelectedRequestId("");
-  };
-
   if (selectedRequest) {
     const hasReply = Boolean(selectedRequest.supportReply);
 
     return (
-      <section className="support-requests collaboration-requests">
-        <div className="support-requests__panel">
-          <div className="support-requests__panel-header">
+      <section className="business-collaboration-requests">
+        <DashboardPanel className="business-collaboration-requests__panel" padding="md">
+          <div className="business-collaboration-requests__header">
             <div>
               <span>جزئیات درخواست همکاری</span>
               <h3>{selectedRequest.title}</h3>
               <p>ارسال شده در {selectedRequest.sentAt}</p>
             </div>
 
-            <button
+            <Button
               type="button"
-              className="support-requests__neutral-button"
-              onClick={closeRequestDetail}
+              variant="outline"
+              size="sm"
+              width="content"
+              onClick={() => setSelectedRequestId("")}
             >
               بازگشت به لیست درخواست‌ها
-            </button>
+            </Button>
           </div>
 
-          <div className="support-requests__detail-grid support-requests__detail-grid--compact">
-            <div>
-              <span>موقعیت تجاری</span>
-              <strong>
-                {selectedRequest.opportunityTitle || selectedRequest.title}
-              </strong>
-            </div>
-
-            <div>
-              <span>نوع همکاری</span>
-              <strong>{selectedRequest.collaborationType || "همکاری"}</strong>
-            </div>
-
-            <div>
-              <span>زمان ارسال</span>
-              <strong>{selectedRequest.sentAt}</strong>
-            </div>
-
-            <div>
-              <span>زمان پاسخ</span>
-              <strong>
-                {hasReply ? selectedRequest.repliedAt : "هنوز پاسخ ثبت نشده"}
-              </strong>
-            </div>
+          <div className="business-collaboration-requests__detail-grid">
+            {[
+              ["موقعیت تجاری", selectedRequest.opportunityTitle || selectedRequest.title],
+              ["نوع همکاری", selectedRequest.collaborationType || "همکاری"],
+              ["زمان ارسال", selectedRequest.sentAt],
+              ["زمان پاسخ", hasReply ? selectedRequest.repliedAt : "هنوز پاسخ ثبت نشده"],
+            ].map(([label, value]) => (
+              <DashboardPanel as="article" variant="subtle" padding="sm" key={label}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </DashboardPanel>
+            ))}
           </div>
 
-          <div className="support-requests__conversation">
-            <article className="support-requests__message support-requests__message--user">
+          <div className="business-collaboration-requests__conversation">
+            <DashboardPanel as="article" variant="subtle" padding="sm">
               <span>درخواست شما</span>
               <p>{selectedRequest.message}</p>
-            </article>
+            </DashboardPanel>
 
             {hasReply ? (
-              <article className="support-requests__message support-requests__message--support">
+              <DashboardPanel
+                as="article"
+                variant="subtle"
+                padding="sm"
+                className="business-collaboration-requests__reply"
+              >
                 <span>پاسخ کارشناس همکاری</span>
                 <p>{selectedRequest.supportReply}</p>
-              </article>
+              </DashboardPanel>
             ) : (
-              <article className="support-requests__empty-reply">
-                درخواست شما ثبت شده و در انتظار پیگیری کارشناس همکاری است.
-              </article>
+              <DashboardEmptyState
+                title="در انتظار پیگیری"
+                description="درخواست شما ثبت شده و هنوز پاسخی از کارشناس همکاری دریافت نشده است."
+              />
             )}
           </div>
-        </div>
+        </DashboardPanel>
       </section>
     );
   }
 
   return (
-    <section className="support-requests collaboration-requests">
-      <div className="support-requests__panel">
-        <div className="support-requests__panel-header">
+    <section className="business-collaboration-requests">
+      <DashboardPanel className="business-collaboration-requests__panel" padding="md">
+        <div className="business-collaboration-requests__header">
           <div>
             <span>درخواست‌های همکاری</span>
             <h3>درخواست‌های ثبت‌شده برای موقعیت‌های تجاری</h3>
             <p>
-              درخواست‌هایی که از صفحه داخلی موقعیت‌های تجاری ثبت می‌کنید در این
-              بخش نمایش داده می‌شوند.
+              درخواست‌هایی که از صفحه موقعیت‌های تجاری ثبت می‌کنید در این بخش
+              نمایش داده می‌شوند.
             </p>
           </div>
         </div>
 
-        <div className="support-requests__list">
+        <DashboardList className="business-collaboration-requests__list">
           {requests.map((request) => {
             const hasReply = Boolean(request.supportReply);
 
             return (
-              <article
-                className={`support-requests__card ${
-                  hasReply ? "support-requests__card--answered" : ""
-                }`}
+              <DashboardListItem
+                as="article"
+                className="business-collaboration-requests__card"
                 key={request.id || request.supabaseId}
               >
-                <div className="support-requests__card-main">
-                  <div className="support-requests__card-title">
-                    <h4>{request.opportunityTitle}</h4>
-
-                    <span className="support-requests__waiting-badge">
-                      {request.status}
-                    </span>
+                <div className="business-collaboration-requests__main">
+                  <div className="business-collaboration-requests__title">
+                    <h4>{request.opportunityTitle || request.title}</h4>
+                    <DashboardStatusBadge status={request.status} />
                   </div>
 
                   <p>{request.message}</p>
@@ -1885,918 +1861,49 @@ function CollaborationRequestsPanel({ requests, onOpenOpportunity }) {
                     </p>
                   )}
 
-                  <div className="support-requests__meta">
-                    <span>{request.opportunityField}</span>
-                    <span>{request.collaborationType}</span>
+                  <div className="business-collaboration-requests__meta">
+                    {request.opportunityField && <span>{request.opportunityField}</span>}
+                    {request.collaborationType && <span>{request.collaborationType}</span>}
                     <span>ارسال: {request.sentAt}</span>
                     {hasReply && <span>پاسخ: {request.repliedAt}</span>}
                   </div>
                 </div>
 
-                <div className="support-requests__actions">
-                  <button
+                <div className="business-collaboration-requests__actions">
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
+                    width="content"
                     onClick={() =>
-                      openRequestDetail(request.id || request.supabaseId)
+                      setSelectedRequestId(request.id || request.supabaseId)
                     }
                   >
                     مشاهده درخواست
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     type="button"
-                    className="support-requests__neutral-action"
+                    variant="ghost"
+                    size="sm"
+                    width="content"
                     onClick={() => onOpenOpportunity(request.opportunityId)}
                   >
                     مشاهده موقعیت
-                  </button>
+                  </Button>
                 </div>
-              </article>
+              </DashboardListItem>
             );
           })}
 
           {requests.length === 0 && (
-            <div className="support-requests__empty-reply">
-              هنوز درخواست همکاری ثبت نشده است. از بخش موقعیت‌های تجاری وارد یک
-              موقعیت شوید و روی دکمه درخواست همکاری بزنید.
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function SupportRequestsPanel() {
-  const supportRoleName = "همکار تجاری";
-  const [requests, setRequests] = useState(() =>
-    getCurrentUserSupportTickets(supportRoleName),
-  );
-  const [mode, setMode] = useState("list");
-  const [selectedRequestId, setSelectedRequestId] = useState(null);
-  const [requestTitle, setRequestTitle] = useState("");
-  const [requestMessage, setRequestMessage] = useState("");
-
-  const refreshRequests = () => {
-    setRequests(getCurrentUserSupportTickets(supportRoleName));
-  };
-
-  const selectedRequest = requests.find(
-    (request) => String(request.id) === String(selectedRequestId),
-  );
-
-  const openNewRequest = () => {
-    setMode("new");
-    setSelectedRequestId(null);
-    setRequestTitle("");
-    setRequestMessage("");
-    refreshRequests();
-  };
-
-  const openList = () => {
-    setMode("list");
-    setSelectedRequestId(null);
-    setRequestTitle("");
-    setRequestMessage("");
-    refreshRequests();
-  };
-
-  const openRequest = (requestId) => {
-    setSelectedRequestId(requestId);
-    setMode("view");
-    refreshRequests();
-  };
-
-  const deleteRequest = (requestId) => {
-    const targetRequest = requests.find(
-      (request) => String(request.id) === String(requestId),
-    );
-
-    if (!targetRequest || targetRequest.seenBySupport) {
-      return;
-    }
-
-    const confirmed = window.confirm("آیا از حذف این درخواست مطمئن هستید؟");
-
-    if (!confirmed) {
-      return;
-    }
-
-    deleteSupportTicket(requestId);
-    refreshRequests();
-  };
-
-  const submitRequest = (event) => {
-    event.preventDefault();
-
-    if (!requestMessage.trim()) {
-      return;
-    }
-
-    addSupportTicket(
-      {
-        title: requestTitle.trim() || "درخواست جدید",
-        message: requestMessage.trim(),
-      },
-      supportRoleName,
-    );
-
-    openList();
-  };
-
-  if (mode === "new") {
-    return (
-      <section className="support-requests">
-        <div className="support-requests__panel">
-          <div className="support-requests__panel-header">
-            <div>
-              <span>درخواست جدید</span>
-              <h3>ثبت درخواست پشتیبانی</h3>
-              <p>
-                درخواست شما برای کمیته/دبیرخانه ثبت می‌شود و پاسخ آن در همین بخش
-                و در پیام‌ها نمایش داده خواهد شد.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="support-requests__neutral-button"
-              onClick={openList}
-            >
-              بازگشت به درخواست‌ها
-            </button>
-          </div>
-
-          <form className="support-requests__form" onSubmit={submitRequest}>
-            <label>
-              <span>عنوان درخواست</span>
-              <input
-                type="text"
-                value={requestTitle}
-                onChange={(event) => setRequestTitle(event.target.value)}
-                placeholder="مثلاً مشکل در بارگذاری فایل"
-              />
-            </label>
-
-            <label>
-              <span>متن درخواست</span>
-              <textarea
-                value={requestMessage}
-                onChange={(event) => setRequestMessage(event.target.value)}
-                placeholder="متن درخواست خود را وارد کنید..."
-              />
-            </label>
-
-            <div className="support-requests__form-actions">
-              <button
-                type="button"
-                className="support-requests__neutral-button"
-                onClick={openList}
-              >
-                انصراف
-              </button>
-
-              <button type="submit" disabled={!requestMessage.trim()}>
-                ثبت درخواست
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-    );
-  }
-
-  if (mode === "view" && selectedRequest) {
-    const hasReply = Boolean(
-      selectedRequest.supportReply || selectedRequest.reply,
-    );
-    const canDelete = !selectedRequest.seenBySupport;
-
-    return (
-      <section className="support-requests">
-        <div className="support-requests__panel">
-          <div className="support-requests__panel-header">
-            <div>
-              <span>جزئیات درخواست</span>
-              <h3>{selectedRequest.title}</h3>
-              <p>ارسال شده در {selectedRequest.sentAt}</p>
-            </div>
-
-            <button
-              type="button"
-              className="support-requests__neutral-button"
-              onClick={openList}
-            >
-              بازگشت به درخواست‌ها
-            </button>
-          </div>
-
-          <div className="support-requests__detail-grid support-requests__detail-grid--compact">
-            <div>
-              <span>زمان ارسال</span>
-              <strong>{selectedRequest.sentAt}</strong>
-            </div>
-
-            <div>
-              <span>زمان پاسخ</span>
-              <strong>
-                {hasReply ? selectedRequest.repliedAt : "هنوز پاسخ ثبت نشده"}
-              </strong>
-            </div>
-          </div>
-
-          <div className="support-requests__conversation">
-            <article className="support-requests__message support-requests__message--user">
-              <span>پیام شما</span>
-              <p>{selectedRequest.message}</p>
-            </article>
-
-            {hasReply ? (
-              <article className="support-requests__message support-requests__message--support">
-                <span>پاسخ کمیته/دبیرخانه</span>
-                <p>{selectedRequest.supportReply || selectedRequest.reply}</p>
-              </article>
-            ) : (
-              <article className="support-requests__empty-reply">
-                هنوز پاسخی برای این درخواست ثبت نشده است.
-              </article>
-            )}
-          </div>
-
-          {canDelete && (
-            <div className="support-requests__detail-actions">
-              <button
-                type="button"
-                className="support-requests__delete-button"
-                onClick={() => {
-                  deleteRequest(selectedRequest.id);
-                  openList();
-                }}
-              >
-                حذف درخواست
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="support-requests">
-      <div className="support-requests__panel">
-        <div className="support-requests__panel-header">
-          <div>
-            <span>درخواست‌ها</span>
-            <h3>درخواست‌ها و پشتیبانی</h3>
-            <p>
-              درخواست‌های شما، وضعیت پیگیری و پاسخ‌های کمیته/دبیرخانه در این بخش
-              نمایش داده می‌شود.
-            </p>
-          </div>
-
-          <button type="button" onClick={openNewRequest}>
-            ثبت درخواست جدید
-          </button>
-        </div>
-
-        <div className="support-requests__list">
-          {requests.map((request) => {
-            const hasReply = Boolean(request.supportReply || request.reply);
-            const canDelete = !request.seenBySupport;
-
-            return (
-              <article className="support-requests__card" key={request.id}>
-                <div className="support-requests__card-main">
-                  <div className="support-requests__card-title">
-                    <h4>{request.title}</h4>
-                    {hasReply && (
-                      <span className="support-requests__reply-badge">
-                        پاسخ دریافت شده
-                      </span>
-                    )}
-                    {!hasReply && (
-                      <span className="support-requests__waiting-badge">
-                        {request.status || "در انتظار پیگیری"}
-                      </span>
-                    )}
-                  </div>
-
-                  <p>{request.message}</p>
-
-                  <div className="support-requests__meta">
-                    <span>ارسال: {request.sentAt}</span>
-                    <span>
-                      پاسخ: {hasReply ? request.repliedAt : "در انتظار پاسخ"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="support-requests__actions">
-                  <button type="button" onClick={() => openRequest(request.id)}>
-                    مشاهده
-                  </button>
-
-                  {canDelete && (
-                    <button
-                      type="button"
-                      className="support-requests__delete-button"
-                      onClick={() => deleteRequest(request.id)}
-                    >
-                      حذف
-                    </button>
-                  )}
-                </div>
-              </article>
-            );
-          })}
-
-          {requests.length === 0 && (
-            <div className="support-requests__empty-reply">
-              هنوز درخواستی ثبت نشده است.
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function MessagesPanel() {
-  const [messages, setMessages] = useState(() =>
-    getNotificationsForCurrentUser(),
-  );
-  const [filter, setFilter] = useState("all");
-  const [selectedMessageId, setSelectedMessageId] = useState(null);
-
-  const refreshMessages = () => {
-    setMessages(getNotificationsForCurrentUser());
-  };
-
-  const selectedMessage = messages.find(
-    (message) => String(message.id) === String(selectedMessageId),
-  );
-
-  const unreadCount = messages.filter((message) => !message.isRead).length;
-  const importantCount = messages.filter(
-    (message) => message.isImportant,
-  ).length;
-
-  const filteredMessages = messages.filter((message) => {
-    if (filter === "unread") return !message.isRead;
-    if (filter === "important") return message.isImportant;
-    return true;
-  });
-
-  const markAllAsRead = () => {
-    markAllNotificationsAsReadForCurrentUser();
-    refreshMessages();
-  };
-
-  const deleteAllMessages = () => {
-    if (!window.confirm("آیا از حذف همه پیام‌ها مطمئن هستید؟")) return;
-    deleteAllNotificationsForCurrentUser();
-    setSelectedMessageId(null);
-    refreshMessages();
-  };
-
-  const openMessage = (messageId) => {
-    markNotificationAsRead(messageId);
-    setSelectedMessageId(messageId);
-    refreshMessages();
-  };
-
-  const removeMessage = (messageId) => {
-    deleteNotification(messageId);
-    if (String(selectedMessageId) === String(messageId)) {
-      setSelectedMessageId(null);
-    }
-    refreshMessages();
-  };
-
-  if (selectedMessage) {
-    return (
-      <section className="messages-panel">
-        <div className="messages-panel__panel">
-          <div className="messages-panel__panel-header">
-            <div>
-              <span>جزئیات پیام</span>
-              <h3>{selectedMessage.title}</h3>
-              <p>
-                {selectedMessage.category} / {selectedMessage.sentAt}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="messages-panel__back-button"
-              onClick={() => {
-                setSelectedMessageId(null);
-                refreshMessages();
-              }}
-            >
-              بازگشت
-            </button>
-          </div>
-
-          <article className="messages-panel__detail-card">
-            {selectedMessage.isImportant && (
-              <span className="messages-panel__important-badge">مهم</span>
-            )}
-            <p>{selectedMessage.body}</p>
-          </article>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="messages-panel">
-      <div className="messages-panel__panel">
-        <div className="messages-panel__panel-header">
-          <div>
-            <span>پیام‌ها و اعلانات</span>
-            <h3>اعلان‌های سامانه</h3>
-            <p>
-              اعلان‌های مربوط به درخواست‌ها، پاسخ‌ها، وظایف و فعالیت‌های جدید
-              اینجا نمایش داده می‌شود.
-            </p>
-          </div>
-
-          <div className="messages-panel__header-actions">
-            <button type="button" onClick={markAllAsRead}>
-              خواندن همه
-            </button>
-            <button
-              type="button"
-              className="messages-panel__delete-all-button"
-              onClick={deleteAllMessages}
-              disabled={messages.length === 0}
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
-        <div className="messages-panel__filters">
-          <button
-            type="button"
-            className={filter === "all" ? "messages-panel__filter--active" : ""}
-            onClick={() => setFilter("all")}
-          >
-            همه پیام‌ها
-            <span className="messages-panel__filter-count">
-              {messages.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            className={
-              filter === "unread" ? "messages-panel__filter--active" : ""
-            }
-            onClick={() => setFilter("unread")}
-          >
-            خوانده‌نشده
-            <span className="messages-panel__filter-count">{unreadCount}</span>
-          </button>
-
-          <button
-            type="button"
-            className={
-              filter === "important" ? "messages-panel__filter--active" : ""
-            }
-            onClick={() => setFilter("important")}
-          >
-            مهم
-            <span className="messages-panel__filter-count">
-              {importantCount}
-            </span>
-          </button>
-        </div>
-
-        <div className="messages-panel__list">
-          {filteredMessages.map((message) => (
-            <article
-              className={`messages-panel__card ${
-                message.isRead ? "messages-panel__card--read" : ""
-              }`}
-              key={message.id}
-            >
-              <div className="messages-panel__card-main">
-                <div className="messages-panel__title-row">
-                  <h4>{message.title}</h4>
-                  {!message.isRead && (
-                    <span className="messages-panel__unread-badge">جدید</span>
-                  )}
-                  {message.isImportant && (
-                    <span className="messages-panel__important-badge">مهم</span>
-                  )}
-                </div>
-
-                <p>{message.body}</p>
-
-                <div className="messages-panel__meta">
-                  <span>{message.category}</span>
-                  <span>{message.sentAt}</span>
-                </div>
-              </div>
-
-              <div className="messages-panel__card-actions messages-panel__actions">
-                <button
-                  type="button"
-                  className="messages-panel__view-button"
-                  onClick={() => openMessage(message.id)}
-                >
-                  مشاهده
-                </button>
-                <button
-                  type="button"
-                  className="messages-panel__delete-message-button messages-panel__remove-button messages-panel__remove-message"
-                  onClick={() => removeMessage(message.id)}
-                  aria-label="حذف پیام"
-                >
-                  ×
-                </button>
-              </div>
-            </article>
-          ))}
-
-          {filteredMessages.length === 0 && (
-            <div className="messages-panel__empty">
-              پیامی برای نمایش وجود ندارد.
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FaqPanel() {
-  const categories = [
-    "همه",
-    ...new Set(FAQ_ITEMS.map((item) => item.category)),
-  ];
-
-  const [activeCategory, setActiveCategory] = useState("همه");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [openQuestionId, setOpenQuestionId] = useState(
-    FAQ_ITEMS[0]?.id || null,
-  );
-
-  const filteredItems = FAQ_ITEMS.filter((item) => {
-    const matchesCategory =
-      activeCategory === "همه" || item.category === activeCategory;
-
-    const matchesSearch =
-      item.question.includes(searchTerm) || item.answer.includes(searchTerm);
-
-    return matchesCategory && matchesSearch;
-  });
-
-  const toggleQuestion = (questionId) => {
-    setOpenQuestionId((currentId) =>
-      currentId === questionId ? null : questionId,
-    );
-  };
-
-  return (
-    <section className="faq-panel">
-      <div className="faq-panel__panel">
-        <div className="faq-panel__panel-header">
-          <div>
-            <span>سوالات متداول</span>
-            <h3>راهنمای سریع همکاری تجاری</h3>
-            <p>
-              پاسخ سوالات پرتکرار درباره موقعیت‌های تجاری، علاقه‌مندی‌ها،
-              درخواست‌ها و پیام‌های سامانه.
-            </p>
-          </div>
-        </div>
-
-        <div className="faq-panel__tools">
-          <label>
-            <span>جست‌وجو در سوالات</span>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="عبارت موردنظر را وارد کنید..."
+            <DashboardEmptyState
+              title="هنوز درخواست همکاری ثبت نشده است"
+              description="از بخش موقعیت‌های تجاری وارد یک موقعیت شوید و درخواست همکاری ثبت کنید."
             />
-          </label>
-
-          <div className="faq-panel__categories">
-            {categories.map((category) => (
-              <button
-                type="button"
-                key={category}
-                className={
-                  activeCategory === category
-                    ? "faq-panel__category--active"
-                    : ""
-                }
-                onClick={() => setActiveCategory(category)}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="faq-panel__list">
-          {filteredItems.map((item) => {
-            const isOpen = openQuestionId === item.id;
-
-            return (
-              <article
-                className={`faq-panel__item ${isOpen ? "faq-panel__item--open" : ""}`}
-                key={item.id}
-              >
-                <button type="button" onClick={() => toggleQuestion(item.id)}>
-                  <span>{item.category}</span>
-                  <strong>{item.question}</strong>
-                  <i>{isOpen ? "−" : "+"}</i>
-                </button>
-
-                {isOpen && <p>{item.answer}</p>}
-              </article>
-            );
-          })}
-
-          {filteredItems.length === 0 && (
-            <div className="faq-panel__empty">
-              سوالی با این عبارت یا دسته‌بندی پیدا نشد.
-            </div>
           )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProfilePanel({ profile, onEdit }) {
-  return (
-    <section className="profile-panel">
-      <div className="profile-panel__card">
-        <div className="profile-panel__hero-card">
-          {profile.avatarPreview ? (
-            <img
-              className="profile-panel__avatar profile-panel__avatar--large"
-              src={profile.avatarPreview}
-              alt={profile.fullName || "پروفایل کاربر"}
-            />
-          ) : (
-            <div className="profile-panel__avatar profile-panel__avatar--large">
-              {profile.avatarLetter}
-            </div>
-          )}
-
-          <div>
-            <span>پروفایل کاربری</span>
-            <h3>{profile.fullName}</h3>
-            <p>{profile.role}</p>
-          </div>
-
-          <button type="button" onClick={onEdit}>
-            ویرایش پروفایل
-          </button>
-        </div>
-
-        <div className="profile-panel__info-grid">
-          <article>
-            <span>نام و نام خانوادگی</span>
-            <strong>
-              {profile.fullName ||
-                `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
-            </strong>
-          </article>
-
-          <article>
-            <span>شماره موبایل</span>
-            <strong>{profile.mobile}</strong>
-          </article>
-
-          <article>
-            <span>ایمیل</span>
-            <strong>{profile.email}</strong>
-          </article>
-
-          <article>
-            <span>سطح کاربری</span>
-            <strong>{profile.role}</strong>
-          </article>
-
-          <article>
-            <span>سابقه عضویت</span>
-            <strong>
-              {profile.memberSince} ({profile.membershipDuration})
-            </strong>
-          </article>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProfileEditPanel({ profile, onSave, onCancel }) {
-  const [formData, setFormData] = useState(profile);
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-  const [message, setMessage] = useState("");
-
-  const updateField = (field, value) => {
-    setFormData((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  };
-
-  const updatePasswordField = (field, value) => {
-    setPasswordData((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  };
-
-  const handleAvatarChange = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      updateField("avatarPreview", String(reader.result || ""));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const saveProfile = (event) => {
-    event.preventDefault();
-
-    const fullName =
-      formData.fullName ||
-      `${formData.firstName || ""} ${formData.lastName || ""}`.trim();
-
-    const updatedProfile = {
-      ...formData,
-      fullName,
-      avatarLetter:
-        formData.firstName?.[0] ||
-        formData.fullName?.[0] ||
-        profile.avatarLetter,
-    };
-
-    try {
-      const savedProfile = onSave(updatedProfile, passwordData);
-      setFormData(savedProfile || updatedProfile);
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-      setMessage(
-        passwordData.newPassword
-          ? "اطلاعات پروفایل و رمز عبور با موفقیت ذخیره شد."
-          : "اطلاعات پروفایل با موفقیت ذخیره شد.",
-      );
-    } catch (error) {
-      setMessage(error?.message || "ذخیره تغییرات با خطا روبه‌رو شد.");
-    }
-  };
-
-  return (
-    <section className="profile-panel">
-      <form className="profile-panel__edit-card" onSubmit={saveProfile}>
-        <div className="profile-panel__edit-header">
-          <div>
-            <span>ویرایش پروفایل</span>
-            <h3>اطلاعات حساب کاربری</h3>
-          </div>
-
-          <button type="button" onClick={onCancel}>
-            بازگشت به پروفایل
-          </button>
-        </div>
-
-        <div className="profile-panel__avatar-edit">
-          {formData.avatarPreview ? (
-            <img
-              className="profile-panel__avatar profile-panel__avatar--normal"
-              src={formData.avatarPreview}
-              alt={formData.fullName || "تصویر پروفایل"}
-            />
-          ) : (
-            <div className="profile-panel__avatar profile-panel__avatar--normal">
-              {formData.avatarLetter}
-            </div>
-          )}
-
-          <div>
-            <span>تصویر پروفایل</span>
-            <label>
-              انتخاب تصویر
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarChange}
-              />
-            </label>
-          </div>
-        </div>
-
-        <div className="profile-panel__form-grid">
-          <label>
-            <span>نام</span>
-            <input
-              type="text"
-              value={formData.firstName}
-              onChange={(event) => updateField("firstName", event.target.value)}
-            />
-          </label>
-
-          <label>
-            <span>نام خانوادگی</span>
-            <input
-              type="text"
-              value={formData.lastName}
-              onChange={(event) => updateField("lastName", event.target.value)}
-            />
-          </label>
-
-          <label>
-            <span>شماره موبایل</span>
-            <input
-              type="text"
-              value={formData.mobile}
-              onChange={(event) => updateField("mobile", event.target.value)}
-            />
-          </label>
-
-          <label>
-            <span>ایمیل</span>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(event) => updateField("email", event.target.value)}
-            />
-          </label>
-        </div>
-
-        <div className="profile-panel__password-box">
-          <div>
-            <span>تغییر رمز عبور</span>
-            <p>برای تغییر رمز، رمز فعلی و رمز جدید را وارد کنید.</p>
-          </div>
-
-          <div className="profile-panel__form-grid">
-            <label>
-              <span>رمز عبور فعلی</span>
-              <input
-                type="password"
-                value={passwordData.currentPassword}
-                onChange={(event) =>
-                  updatePasswordField("currentPassword", event.target.value)
-                }
-              />
-            </label>
-
-            <label>
-              <span>رمز عبور جدید</span>
-              <input
-                type="password"
-                value={passwordData.newPassword}
-                onChange={(event) =>
-                  updatePasswordField("newPassword", event.target.value)
-                }
-              />
-            </label>
-
-            <label>
-              <span>تکرار رمز عبور جدید</span>
-              <input
-                type="password"
-                value={passwordData.confirmPassword}
-                onChange={(event) =>
-                  updatePasswordField("confirmPassword", event.target.value)
-                }
-              />
-            </label>
-          </div>
-        </div>
-
-        <div className="profile-panel__form-actions">
-          <button type="button" onClick={onCancel}>
-            انصراف
-          </button>
-
-          <button type="submit">ذخیره تغییرات</button>
-        </div>
-
-        {message && <p className="profile-panel__message">{message}</p>}
-      </form>
+        </DashboardList>
+      </DashboardPanel>
     </section>
   );
 }
@@ -2818,11 +1925,12 @@ function GenericDashboardContent({ currentSection }) {
           </p>
 
           <div className="innovator-dashboard__hero-buttons">
-            <button type="button">{currentSection.actionLabel}</button>
-
-            <button type="button" className="innovator-dashboard__ghost-btn">
+            <Button type="button" variant="secondary" size="md">
+              {currentSection.actionLabel}
+            </Button>
+            <Button type="button" variant="outline" size="md">
               سفارشی‌سازی داشبورد
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -2831,12 +1939,10 @@ function GenericDashboardContent({ currentSection }) {
             <span>کاربر فعال</span>
             <strong>همکار تجاری</strong>
           </div>
-
           <div className="innovator-dashboard__hero-block">
             <span>آخرین ورود</span>
             <strong>امروز</strong>
           </div>
-
           <div className="innovator-dashboard__hero-block">
             <span>دسترسی فعلی</span>
             <strong>{currentSection.title}</strong>
@@ -2845,19 +1951,23 @@ function GenericDashboardContent({ currentSection }) {
       </section>
 
       <section className="innovator-dashboard__content-grid">
-        <div className="innovator-dashboard__panel innovator-dashboard__panel--wide">
+        <DashboardPanel className="innovator-dashboard__panel innovator-dashboard__panel--wide" padding="md">
           <div className="innovator-dashboard__panel-header">
             <div>
               <span>بخش فعال</span>
               <h3>{currentSection.primaryTitle}</h3>
             </div>
-
-            <button type="button">مشاهده همه</button>
+            <Button type="button" variant="outline" size="sm" width="content">
+              مشاهده همه
+            </Button>
           </div>
 
           <div className="innovator-dashboard__feature-list">
             {currentSection.primaryItems.map((item) => (
-              <article
+              <DashboardPanel
+                as="article"
+                variant="subtle"
+                padding="sm"
                 key={item.title}
                 className="innovator-dashboard__feature-item"
               >
@@ -2865,21 +1975,14 @@ function GenericDashboardContent({ currentSection }) {
                   <h4>{item.title}</h4>
                   <p>{item.meta}</p>
                 </div>
-
-                <span className="innovator-dashboard__feature-status">
-                  {item.status}
-                </span>
-              </article>
+                <DashboardStatusBadge status={item.status} />
+              </DashboardPanel>
             ))}
           </div>
-
-          <div className="innovator-dashboard__placeholder-note">
-            جزئیات کامل این بخش در مرحله بعدی تکمیل می‌شود.
-          </div>
-        </div>
+        </DashboardPanel>
 
         <div className="innovator-dashboard__stack">
-          <div className="innovator-dashboard__panel">
+          <DashboardPanel className="innovator-dashboard__panel" padding="md">
             <div className="innovator-dashboard__panel-header">
               <div>
                 <span>میان‌برها</span>
@@ -2890,11 +1993,18 @@ function GenericDashboardContent({ currentSection }) {
             <ul className="innovator-dashboard__quick-list">
               {currentSection.sideItems.map((item) => (
                 <li key={item}>
-                  <button type="button">{item}</button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    fullWidth
+                  >
+                    {item}
+                  </Button>
                 </li>
               ))}
             </ul>
-          </div>
+          </DashboardPanel>
         </div>
       </section>
     </>
@@ -2919,7 +2029,6 @@ function BusinessDashboardPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const notificationMenuRef = useRef(null);
   const [recentMessages, setRecentMessages] = useState(() =>
     getNotificationsForCurrentUser().slice(0, 3),
   );
@@ -2942,8 +2051,6 @@ function BusinessDashboardPage() {
   const [collaborationRequests, setCollaborationRequests] = useState(
     loadStoredCollaborationRequests,
   );
-  const [selectedCollaborationRequestId, setSelectedCollaborationRequestId] =
-    useState("");
 
   const allBusinessOpportunities = useMemo(
     () => getAllBusinessOpportunities(),
@@ -2998,26 +2105,6 @@ function BusinessDashboardPage() {
     (item) => !item.isRead,
   ).length;
 
-  useEffect(() => {
-    if (!isNotificationOpen) {
-      return undefined;
-    }
-
-    const closeOnOutsideClick = (event) => {
-      if (
-        notificationMenuRef.current &&
-        !notificationMenuRef.current.contains(event.target)
-      ) {
-        setIsNotificationOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", closeOnOutsideClick);
-
-    return () => {
-      document.removeEventListener("mousedown", closeOnOutsideClick);
-    };
-  }, [isNotificationOpen]);
   const requestedOpportunityIds = collaborationRequests.map(
     (request) => request.opportunityId,
   );
@@ -3200,10 +2287,6 @@ function BusinessDashboardPage() {
     const hasSubItems = Boolean(item.subItems?.length);
     const isSameOpenMenu = openMenuId === item.id;
 
-    if (item.id !== "requests") {
-      setSelectedCollaborationRequestId("");
-    }
-
     setActiveSection(item.id);
     resetCurrentContent();
 
@@ -3227,10 +2310,6 @@ function BusinessDashboardPage() {
     setActiveSection(parentId);
     setOpenMenuId(parentId);
     setActiveSubItem(subItemId);
-
-    if (subItemId === "collaboration-requests") {
-      setSelectedCollaborationRequestId("");
-    }
 
     resetCurrentContent();
   };
@@ -3267,7 +2346,6 @@ function BusinessDashboardPage() {
 
     if (message.sourceType === "business-collaboration-request") {
       setCollaborationRequests(loadStoredCollaborationRequests());
-      setSelectedCollaborationRequestId("");
       setActiveSection("requests");
       setActiveSubItem("collaboration-requests");
       setOpenMenuId("requests");
@@ -3318,350 +2396,109 @@ function BusinessDashboardPage() {
   }
 
   return (
-    <main
-      className={`innovator-dashboard business-dashboard ${
-        isSidebarCollapsed ? "innovator-dashboard--collapsed" : ""
-      }`}
+    <DashboardShell
+      collapsed={isSidebarCollapsed}
+      onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
+      logoSrc={universityLogo}
+      navItems={NAV_ITEMS}
+      activeSection={activeSection}
+      activeSubItem={activeSubItem}
+      openMenuId={openMenuId}
+      onNavClick={handleNavClick}
+      onSubNavClick={handleSubNavClick}
+      title={currentSection.title || "داشبورد"}
+      className="business-dashboard"
+      topbarActions={
+        <>
+          <DashboardNotificationMenu
+            open={isNotificationOpen}
+            onOpenChange={setIsNotificationOpen}
+            unreadCount={unreadMessagesCount}
+            messages={recentMessages}
+            onOpenMessages={openMessagesCenter}
+            onMarkAllRead={markAllRecentMessagesAsRead}
+            onMarkRead={markMessageAsRead}
+            onOpenMessage={openNotificationTarget}
+            onBeforeOpen={() => setIsProfileMenuOpen(false)}
+          />
+          <DashboardProfileMenu
+            profile={userProfile}
+            open={isProfileMenuOpen}
+            onOpenChange={setIsProfileMenuOpen}
+            onOpenProfile={() => openInternalPage("profile")}
+            onEditProfile={() => openInternalPage("edit-profile")}
+            onLogout={handleLogout}
+            onBeforeOpen={() => setIsNotificationOpen(false)}
+          />
+        </>
+      }
     >
-      <aside className="innovator-dashboard__sidebar">
-        <div className="innovator-dashboard__sidebar-top">
-          <div className="innovator-dashboard__sidebar-head">
-            <button
-              type="button"
-              className="innovator-dashboard__menu-button"
-              onClick={() => setIsSidebarCollapsed((current) => !current)}
-              aria-label="باز و بسته کردن منوی داشبورد"
-            >
-              <MenuIcon />
-            </button>
-
-            <Link to="/" className="innovator-dashboard__brand">
-              <img src={universityLogo} alt="لوگوی دانشگاه تهران" />
-
-              <div className="innovator-dashboard__brand-text">
-                <strong>هاتف</strong>
-              </div>
-            </Link>
-          </div>
-
-          <nav className="innovator-dashboard__nav">
-            {NAV_ITEMS.map((item) => {
-              const isActive = activeSection === item.id;
-              const hasSubItems = Boolean(item.subItems?.length);
-              const isOpen = openMenuId === item.id;
-
-              return (
-                <div className="innovator-dashboard__nav-group" key={item.id}>
-                  <button
-                    type="button"
-                    className={`innovator-dashboard__nav-item ${
-                      isActive ? "innovator-dashboard__nav-item--active" : ""
-                    }`}
-                    onClick={() => handleNavClick(item)}
-                    title={isSidebarCollapsed ? item.label : undefined}
-                  >
-                    <span className="innovator-dashboard__nav-icon">
-                      {item.icon}
-                    </span>
-
-                    <span className="innovator-dashboard__nav-text">
-                      {item.label}
-                    </span>
-
-                    {hasSubItems && !isSidebarCollapsed && (
-                      <span className="innovator-dashboard__nav-chevron">
-                        <ChevronIcon isOpen={isOpen} />
-                      </span>
-                    )}
-                  </button>
-
-                  {hasSubItems && !isSidebarCollapsed && (
-                    <div
-                      className={`innovator-dashboard__subnav ${
-                        isOpen ? "innovator-dashboard__subnav--open" : ""
-                      }`}
-                    >
-                      {item.subItems.map((subItem) => (
-                        <button
-                          type="button"
-                          key={subItem.id}
-                          className={`innovator-dashboard__subnav-item ${
-                            activeSubItem === subItem.id
-                              ? "innovator-dashboard__subnav-item--active"
-                              : ""
-                          }`}
-                          onClick={() => handleSubNavClick(item.id, subItem.id)}
-                        >
-                          {subItem.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
-        </div>
-      </aside>
-
-      <section className="innovator-dashboard__main">
-        <header className="innovator-dashboard__topbar">
-          <div className="innovator-dashboard__topbar-title">
-            <DashboardDateTime />
-
-            <h1>{currentSection.title || "پروفایل"}</h1>
-          </div>
-
-          <div className="innovator-dashboard__topbar-actions">
-            <div
-              className="innovator-dashboard__notification-menu"
-              ref={notificationMenuRef}
-            >
-              <button
-                type="button"
-                className="innovator-dashboard__notification-trigger"
-                onClick={() => {
-                  setIsNotificationOpen((current) => !current);
-                  setIsProfileMenuOpen(false);
-                }}
-                aria-label="نمایش پیام‌های اخیر"
-              >
-                <BellIcon />
-
-                {unreadMessagesCount > 0 && <span>{unreadMessagesCount}</span>}
-              </button>
-
-              {isNotificationOpen && (
-                <div className="innovator-dashboard__notification-dropdown">
-                  <div className="innovator-dashboard__notification-header">
-                    <strong>پیام‌های اخیر</strong>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={openMessagesCenter}
-                        title="رفتن به پیام‌ها و اعلانات"
-                        style={{
-                          width: "30px",
-                          height: "30px",
-                          border: "0",
-                          borderRadius: "999px",
-                          background: "#e8f8ff",
-                          cursor: "pointer",
-                        }}
-                      >
-                        📨
-                      </button>
-                      <button
-                        type="button"
-                        onClick={markAllRecentMessagesAsRead}
-                        disabled={unreadMessagesCount === 0}
-                        style={{
-                          height: "30px",
-                          border: "0",
-                          borderRadius: "999px",
-                          padding: "0 10px",
-                          color: unreadMessagesCount ? "#0e7ca8" : "#64748b",
-                          background: unreadMessagesCount
-                            ? "#e8f8ff"
-                            : "#e9edf2",
-                          fontFamily: "inherit",
-                          fontSize: "10px",
-                          fontWeight: 900,
-                          cursor: unreadMessagesCount ? "pointer" : "default",
-                        }}
-                      >
-                        خواندن همه
-                      </button>
-                    </div>
-                    <small>{unreadMessagesCount} خوانده‌نشده</small>
-                  </div>
-
-                  <div className="innovator-dashboard__notification-list">
-                    {recentMessages.map((message) => (
-                      <article
-                        key={message.id}
-                        className={`innovator-dashboard__notification-item ${
-                          message.isRead
-                            ? "innovator-dashboard__notification-item--read"
-                            : ""
-                        }`}
-                        onClick={() => openNotificationTarget(message)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            openNotificationTarget(message);
-                          }
-                        }}
-                        style={{
-                          cursor: "pointer",
-                          border: message.isRead
-                            ? "1px solid #bbf7d0"
-                            : "1px solid transparent",
-                          background: message.isRead ? "#f0fdf4" : undefined,
-                          opacity: message.isRead ? 1 : undefined,
-                        }}
-                      >
-                        <div>
-                          <h4>{message.title}</h4>
-                          <p>{message.sentAt}</p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={(event) =>
-                            markMessageAsRead(message.id, event)
-                          }
-                          disabled={message.isRead}
-                          style={
-                            message.isRead
-                              ? { color: "#166534", background: "#dcfce7" }
-                              : undefined
-                          }
-                        >
-                          {message.isRead ? "خوانده شد" : "خواندن"}
-                        </button>
-                      </article>
-                    ))}
-
-                    {recentMessages.length === 0 && (
-                      <article className="innovator-dashboard__notification-item">
-                        <div>
-                          <h4>اعلان جدیدی ندارید</h4>
-                          <p>همه چیز خوانده شده است.</p>
-                        </div>
-                      </article>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="innovator-dashboard__profile-menu">
-              <button
-                type="button"
-                className="innovator-dashboard__profile-trigger"
-                onClick={() => {
-                  setIsProfileMenuOpen((current) => !current);
-                  setIsNotificationOpen(false);
-                }}
-                aria-expanded={isProfileMenuOpen}
-              >
-                <span className="innovator-dashboard__profile-text">
-                  <strong>{userProfile.fullName}</strong>
-                  <small>نوع کاربر: {userProfile.role}</small>
-                </span>
-
-                {userProfile.avatarPreview ? (
-                  <img
-                    className="innovator-dashboard__top-avatar"
-                    src={userProfile.avatarPreview}
-                    alt={userProfile.fullName || "پروفایل کاربر"}
-                  />
-                ) : (
-                  <span className="innovator-dashboard__top-avatar">
-                    {userProfile.avatarLetter ||
-                      userProfile.fullName?.[0] ||
-                      "ه"}
-                  </span>
-                )}
-
-                <span className="innovator-dashboard__profile-caret">▾</span>
-              </button>
-
-              {isProfileMenuOpen && (
-                <div className="innovator-dashboard__profile-dropdown">
-                  <button
-                    type="button"
-                    onClick={() => openInternalPage("profile")}
-                  >
-                    پروفایل
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openInternalPage("edit-profile")}
-                  >
-                    ویرایش پروفایل
-                  </button>
-                  <button
-                    type="button"
-                    className="innovator-dashboard__profile-logout"
-                    onClick={handleLogout}
-                  >
-                    خروج
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {shouldShowDashboard ? (
-          <DashboardHomePanel
-            key={`dashboard-${contentResetKey}`}
-            collaborationRequestsCount={collaborationRequests.length}
-            collaborationRequests={collaborationRequests}
-            favoritesCount={favoriteIds.length}
-            opportunities={allBusinessOpportunities}
-            onOpenOpportunity={openOpportunityInNewTab}
-          />
-        ) : shouldShowOpportunities ? (
-          <OpportunitiesPanel
-            key={`opportunities-${contentResetKey}`}
-            favoriteIds={favoriteIds}
-            opportunities={allBusinessOpportunities}
-            onToggleFavorite={toggleFavorite}
-            onOpenOpportunity={openOpportunityInNewTab}
-          />
-        ) : shouldShowFavorites ? (
-          <FavoritesPanel
-            key={`favorites-${contentResetKey}`}
-            favoriteIds={favoriteIds}
-            opportunities={allBusinessOpportunities}
-            onToggleFavorite={toggleFavorite}
-            onOpenOpportunity={openOpportunityInNewTab}
-          />
-        ) : shouldShowCollaborationRequests ? (
-          <CollaborationRequestsPanel
-            key={`collaboration-requests-${contentResetKey}`}
-            requests={collaborationRequests}
-            selectedRequestId={selectedCollaborationRequestId}
-            onSelectRequest={setSelectedCollaborationRequestId}
-            onOpenOpportunity={openOpportunityInNewTab}
-          />
-        ) : shouldShowSupportTickets ? (
-          <SupportRequestsPanel key={`support-tickets-${contentResetKey}`} />
-        ) : shouldShowMessages ? (
-          <MessagesPanel key={`messages-${contentResetKey}`} />
-        ) : shouldShowFaq ? (
-          <FaqPanel key={`faq-${contentResetKey}`} />
-        ) : shouldShowProfile ? (
-          <ProfilePanel
-            key={`profile-${contentResetKey}`}
-            profile={userProfile}
-            onEdit={() => openInternalPage("edit-profile")}
-          />
-        ) : shouldShowEditProfile ? (
-          <ProfileEditPanel
-            key={`edit-profile-${contentResetKey}`}
-            profile={userProfile}
-            onSave={saveUserProfile}
-            onCancel={() => openInternalPage("profile")}
-          />
-        ) : (
-          <GenericDashboardContent
-            key={`${activeSection}-${activeSubItem}-${contentResetKey}`}
-            currentSection={currentSection}
-          />
-        )}
-      </section>
-    </main>
+      {shouldShowDashboard ? (
+        <DashboardHomePanel
+          key={`dashboard-${contentResetKey}`}
+          collaborationRequestsCount={collaborationRequests.length}
+          collaborationRequests={collaborationRequests}
+          favoritesCount={favoriteIds.length}
+          opportunities={allBusinessOpportunities}
+          onOpenOpportunity={openOpportunityInNewTab}
+        />
+      ) : shouldShowOpportunities ? (
+        <OpportunitiesPanel
+          key={`opportunities-${contentResetKey}`}
+          favoriteIds={favoriteIds}
+          opportunities={allBusinessOpportunities}
+          onToggleFavorite={toggleFavorite}
+          onOpenOpportunity={openOpportunityInNewTab}
+        />
+      ) : shouldShowFavorites ? (
+        <FavoritesPanel
+          key={`favorites-${contentResetKey}`}
+          favoriteIds={favoriteIds}
+          opportunities={allBusinessOpportunities}
+          onToggleFavorite={toggleFavorite}
+          onOpenOpportunity={openOpportunityInNewTab}
+        />
+      ) : shouldShowCollaborationRequests ? (
+        <CollaborationRequestsPanel
+          key={`collaboration-requests-${contentResetKey}`}
+          requests={collaborationRequests}
+          onOpenOpportunity={openOpportunityInNewTab}
+        />
+      ) : shouldShowSupportTickets ? (
+        <DashboardSupportRequests
+          key={`support-tickets-${contentResetKey}`}
+          supportRoleName="همکار تجاری"
+        />
+      ) : shouldShowMessages ? (
+        <DashboardMessages key={`messages-${contentResetKey}`} />
+      ) : shouldShowFaq ? (
+        <DashboardFAQ
+          key={`faq-${contentResetKey}`}
+          items={FAQ_ITEMS}
+          eyebrow="سوالات متداول"
+          title="راهنمای سریع همکاری تجاری"
+          description="پاسخ سوالات پرتکرار درباره موقعیت‌های تجاری، علاقه‌مندی‌ها، درخواست‌ها و پیام‌های سامانه."
+        />
+      ) : shouldShowProfile ? (
+        <DashboardProfileView
+          key={`profile-${contentResetKey}`}
+          profile={userProfile}
+          onEdit={() => openInternalPage("edit-profile")}
+        />
+      ) : shouldShowEditProfile ? (
+        <DashboardProfileEdit
+          key={`edit-profile-${contentResetKey}`}
+          profile={userProfile}
+          onSave={saveUserProfile}
+          onCancel={() => openInternalPage("profile")}
+        />
+      ) : (
+        <GenericDashboardContent
+          key={`${activeSection}-${activeSubItem}-${contentResetKey}`}
+          currentSection={currentSection}
+        />
+      )}
+    </DashboardShell>
   );
 }
 

@@ -1,7 +1,10 @@
 /* Canonical support-request feature composition. Visual primitives remain shared. */
 .support-requests { display:grid; gap:18px; }
 .support-requests__panel-header { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:20px; }
-.support-requests__panel-header span { display:block; margin-bottom:7px; color:var(--dashboard-ref-text-muted); font-size:12px; font-weight:700; }
+
+/* Scope heading eyebrow only; never target the internal spans of Shared Button. */
+.support-requests__panel-header > div > span { display:block; margin-bottom:7px; color:var(--dashboard-ref-text-muted); font-size:12px; font-weight:700; }
+
 .support-requests__panel-header h3 { margin:0 0 8px; color:var(--dashboard-ref-text-strong); font-size:22px; font-weight:900; }
 .support-requests__panel-header p { margin:0; color:var(--dashboard-ref-body); font-size:13px; line-height:1.9; }
 .support-requests__list { display:grid; gap:12px; }

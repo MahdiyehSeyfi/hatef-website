@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 import bannerImage from "../../assets/images/banner.png";
@@ -107,8 +107,33 @@ import {
   saveCurrentDashboardProfile,
 } from "../../services/userProfileService";
 
+import Button from "../../components/ui/Button/Button";
+import Input from "../../components/ui/Input/Input";
+import Select from "../../components/ui/Select/Select";
+import Textarea from "../../components/ui/Textarea/Textarea";
+import {
+  DashboardEmptyState,
+  DashboardFAQ,
+  DashboardMessages,
+  DashboardNotificationMenu,
+  DashboardPanel as SharedDashboardPanel,
+  DashboardProfileEdit,
+  DashboardProfileMenu,
+  DashboardProfileView,
+  DashboardReviewFolderBadge,
+  DashboardReviewFolderCard,
+  DashboardShell,
+  DashboardStatCard,
+  DashboardStatusBadge,
+} from "../../components/dashboard";
+import DashboardFilterBar from "../../components/dashboard/DashboardFilterBar/DashboardFilterBar";
+import DashboardList, {
+  DashboardListItem,
+} from "../../components/dashboard/DashboardList/DashboardList";
+
 import "./InnovatorDashboardPage.css";
 import "./CommitteeSecretariatDashboardPage.css";
+import "../../components/dashboard/DashboardChrome/DashboardChrome.css";
 
 function mergeCommitteePersonalWorkspace(plans) {
   return plans.map((plan) => {
@@ -585,6 +610,8 @@ const INITIAL_PROFILE = {
   email: "secretariat@example.com",
   role: "عضو کمیته و دبیرخانه",
   unit: "دبیرخانه برنامه هاتف",
+  memberSince: "۱۴۰۴",
+  membershipDuration: "۱ سال",
   avatarLetter: "م",
 };
 
@@ -1267,14 +1294,7 @@ function getReviewerParticipationStats(reviewer, reviewerIndex, plans) {
 
 function AcceptedTaskStatusBadge({ status }) {
   const cleanStatus = status || "در انتظار بررسی فناور";
-
-  return (
-    <span
-      className={`accepted-projects__status accepted-projects__status--${getAcceptedTaskStatusClass(cleanStatus)}`}
-    >
-      {cleanStatus}
-    </span>
-  );
+  return <DashboardStatusBadge status={cleanStatus} />;
 }
 
 function splitAcceptedTaskDeadline(deadline = "") {
@@ -1813,61 +1833,6 @@ const MANAGEMENT_ITEMS = [
   },
 ];
 
-function MenuIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M4 7h16M4 12h16M4 17h16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M10 21h4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function ChevronIcon({ isOpen }) {
-  return (
-    <svg
-      className={isOpen ? "innovator-dashboard__nav-chevron--open" : ""}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
-      <path
-        d="M8 10l4 4 4-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function BackIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1880,38 +1845,6 @@ function BackIcon() {
         strokeLinejoin="round"
       />
     </svg>
-  );
-}
-
-function DashboardDateTime() {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setNow(new Date());
-    }, 60000);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const dateText = now.toLocaleDateString("fa-IR-u-ca-persian", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  const timeText = now.toLocaleTimeString("fa-IR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  return (
-    <div className="innovator-dashboard__date-time">
-      <span>تاریخ امروز</span>
-      <strong>{dateText}</strong>
-      <small>ساعت {timeText}</small>
-    </div>
   );
 }
 
@@ -1939,18 +1872,10 @@ function getRequestStatusClass(status) {
 }
 
 function RequestStatusBadge({ status }) {
-  return (
-    <span
-      className={`committee-dashboard__request-status committee-dashboard__request-status--${getRequestStatusClass(
-        status,
-      )}`}
-    >
-      {status}
-    </span>
-  );
+  return <DashboardStatusBadge status={status} />;
 }
 
-function DashboardPanel({
+function CommitteeDashboardHome({
   requests,
   calls,
   plans,
@@ -2065,14 +1990,12 @@ function DashboardPanel({
     <section className="committee-dashboard__dashboard">
       <div className="innovator-dashboard__summary-grid">
         {stats.map((item) => (
-          <article
+          <DashboardStatCard
             key={item.label}
-            className="innovator-dashboard__summary-card"
-          >
-            <span>{item.label}</span>
-            <strong>{toPersianDigits(item.value)}</strong>
-            <p>{item.hint}</p>
-          </article>
+            label={item.label}
+            value={toPersianDigits(item.value)}
+            hint={item.hint}
+          />
         ))}
       </div>
 
@@ -2103,7 +2026,7 @@ function DashboardPanel({
 
       <div className="innovator-dashboard__content-grid">
         <div className="innovator-dashboard__stack">
-          <section className="innovator-dashboard__panel innovator-dashboard__panel--wide">
+          <SharedDashboardPanel className="innovator-dashboard__panel innovator-dashboard__panel--wide" padding="md">
             <header className="innovator-dashboard__panel-header">
               <div>
                 <span>میزکار</span>
@@ -2111,9 +2034,10 @@ function DashboardPanel({
               </div>
             </header>
 
-            <div className="committee-dashboard__workbench">
+            <DashboardList className="committee-dashboard__workbench">
               {workbenchItems.map((item) => (
-                <article
+                <DashboardListItem
+                  as="article"
                   className="innovator-dashboard__feature-item"
                   key={item.title}
                 >
@@ -2124,10 +2048,10 @@ function DashboardPanel({
                   <span className="innovator-dashboard__feature-status">
                     {item.status}
                   </span>
-                </article>
+                </DashboardListItem>
               ))}
-            </div>
-          </section>
+            </DashboardList>
+          </SharedDashboardPanel>
         </div>
 
         <div className="innovator-dashboard__stack">
@@ -2139,15 +2063,15 @@ function DashboardPanel({
               </div>
             </header>
 
-            <ul className="committee-dashboard__calendar-list">
+            <DashboardList as="ul" className="committee-dashboard__calendar-list">
               {calendarItems.map((item) => (
-                <li key={item.id}>
+                <DashboardListItem as="li" key={item.id}>
                   <strong>{item.title}</strong>
                   <span>{item.date}</span>
                   <small>{item.type}</small>
-                </li>
+                </DashboardListItem>
               ))}
-            </ul>
+            </DashboardList>
           </section>
 
           <section className="innovator-dashboard__panel">
@@ -2388,10 +2312,16 @@ function ReceivedRequestsPanel({ mode, requests, setRequests }) {
             </p>
           </div>
 
-          <button type="button" onClick={closeDetail}>
-            <BackIcon />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            width="content"
+            leadingIcon={<BackIcon />}
+            onClick={closeDetail}
+          >
             بازگشت
-          </button>
+          </Button>
         </div>
 
         <div className="committee-dashboard__request-detail-grid">
@@ -2443,20 +2373,23 @@ function ReceivedRequestsPanel({ mode, requests, setRequests }) {
             <div className="committee-dashboard__reply-box">
               <label>
                 <span>پاسخ دبیرخانه</span>
-                <textarea
+                <Textarea
                   value={replyText}
                   onChange={(event) => setReplyText(event.target.value)}
                   placeholder="پاسخ نهایی را برای کاربر بنویسید..."
                 />
               </label>
 
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
+                width="content"
                 disabled={!replyText.trim()}
                 onClick={submitReply}
               >
                 ارسال پاسخ
-              </button>
+              </Button>
             </div>
           )}
       </section>
@@ -2478,10 +2411,10 @@ function ReceivedRequestsPanel({ mode, requests, setRequests }) {
         </div>
       </div>
 
-      <div className="committee-dashboard__requests-toolbar">
+      <DashboardFilterBar className="committee-dashboard__requests-toolbar">
         <label>
           <span>جستجو</span>
-          <input
+          <Input
             type="text"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
@@ -2491,7 +2424,7 @@ function ReceivedRequestsPanel({ mode, requests, setRequests }) {
 
         <label>
           <span>سطح کاربری</span>
-          <select
+          <Select
             value={levelFilter}
             onChange={(event) => setLevelFilter(event.target.value)}
           >
@@ -2500,13 +2433,14 @@ function ReceivedRequestsPanel({ mode, requests, setRequests }) {
                 {level === "all" ? "همه کاربران" : level}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
-      </div>
+      </DashboardFilterBar>
 
-      <div className="committee-dashboard__requests-list">
+      <DashboardList className="committee-dashboard__requests-list">
         {filteredRequests.map((request) => (
-          <article
+          <DashboardListItem
+            as="article"
             className="committee-dashboard__request-card"
             key={request.id}
           >
@@ -2528,477 +2462,29 @@ function ReceivedRequestsPanel({ mode, requests, setRequests }) {
 
             <RequestStatusBadge status={request.status} />
 
-            <button type="button" onClick={() => openRequest(request.id)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              width="standard"
+              onClick={() => openRequest(request.id)}
+            >
               {isContactFormRequest(request)
                 ? "مشاهده"
                 : mode === "history"
                   ? "مشاهده پاسخ"
                   : "مشاهده و پاسخ"}
-            </button>
-          </article>
+            </Button>
+          </DashboardListItem>
         ))}
 
         {filteredRequests.length === 0 && (
-          <div className="committee-dashboard__empty-state">
-            موردی برای نمایش وجود ندارد.
-          </div>
+          <DashboardEmptyState
+            title="موردی برای نمایش وجود ندارد"
+            description="با تغییر جستجو یا فیلتر، موارد مرتبط در این بخش نمایش داده می‌شوند."
+          />
         )}
-      </div>
-    </section>
-  );
-}
-
-function MessagesPanel() {
-  const [messages, setMessages] = useState(() => getCommitteeNotifications());
-  const [filter, setFilter] = useState("all");
-  const [selectedMessageId, setSelectedMessageId] = useState(null);
-
-  const refreshMessages = () => {
-    setMessages(getCommitteeNotifications());
-  };
-
-  const selectedMessage = messages.find(
-    (message) => String(message.id) === String(selectedMessageId),
-  );
-
-  const filteredMessages = messages.filter((message) => {
-    if (filter === "unread") return !message.isRead;
-    if (filter === "important") return message.isImportant;
-    return true;
-  });
-
-  const markAllAsRead = () => {
-    markAllCommitteeNotificationsAsRead();
-    refreshMessages();
-  };
-
-  const deleteAllMessages = () => {
-    if (!window.confirm("آیا از حذف همه پیام‌ها مطمئن هستید؟")) return;
-    deleteAllCommitteeNotifications();
-    setSelectedMessageId(null);
-    refreshMessages();
-  };
-
-  const openMessage = (messageId) => {
-    markNotificationAsRead(messageId);
-    setSelectedMessageId(messageId);
-    refreshMessages();
-  };
-
-  const deleteMessage = (messageId) => {
-    deleteNotification(messageId);
-    if (String(selectedMessageId) === String(messageId)) {
-      setSelectedMessageId(null);
-    }
-    refreshMessages();
-  };
-
-  if (selectedMessage) {
-    return (
-      <section className="messages-panel">
-        <div className="messages-panel__card messages-panel__detail-card">
-          <div className="messages-panel__detail-header">
-            <div>
-              <span>{selectedMessage.category}</span>
-              <h3>{selectedMessage.title}</h3>
-              <small>{selectedMessage.sentAt}</small>
-            </div>
-            <button
-              type="button"
-              className="messages-panel__neutral-button"
-              onClick={() => {
-                setSelectedMessageId(null);
-                refreshMessages();
-              }}
-            >
-              بازگشت
-            </button>
-          </div>
-          <p className="messages-panel__detail-body">{selectedMessage.body}</p>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="messages-panel">
-      <div className="messages-panel__card">
-        <header className="messages-panel__header">
-          <div>
-            <span>پیام‌ها و اعلانات</span>
-            <h3>اعلان‌های دبیرخانه</h3>
-            <p>
-              فعالیت‌های جدید کاربران، درخواست‌های پشتیبانی و پاسخ‌های ثبت‌شده
-              در این بخش قابل پیگیری است.
-            </p>
-          </div>
-          <div className="messages-panel__header-actions">
-            <button
-              type="button"
-              className="messages-panel__neutral-button"
-              onClick={markAllAsRead}
-            >
-              خواندن همه
-            </button>
-            <button
-              type="button"
-              className="messages-panel__delete-all"
-              onClick={deleteAllMessages}
-              disabled={messages.length === 0}
-            >
-              حذف همه
-            </button>
-          </div>
-        </header>
-
-        <div className="messages-panel__filters">
-          <button
-            type="button"
-            className={filter === "all" ? "messages-panel__filter--active" : ""}
-            onClick={() => setFilter("all")}
-          >
-            همه <strong>{messages.length}</strong>
-          </button>
-          <button
-            type="button"
-            className={
-              filter === "unread" ? "messages-panel__filter--active" : ""
-            }
-            onClick={() => setFilter("unread")}
-          >
-            خوانده‌نشده{" "}
-            <strong>
-              {messages.filter((message) => !message.isRead).length}
-            </strong>
-          </button>
-          <button
-            type="button"
-            className={
-              filter === "important" ? "messages-panel__filter--active" : ""
-            }
-            onClick={() => setFilter("important")}
-          >
-            مهم{" "}
-            <strong>
-              {messages.filter((message) => message.isImportant).length}
-            </strong>
-          </button>
-        </div>
-
-        <div className="messages-panel__list">
-          {filteredMessages.map((message) => (
-            <article
-              key={message.id}
-              className={`messages-panel__message ${
-                message.isRead ? "messages-panel__message--read" : ""
-              }`}
-            >
-              <div>
-                <span>{message.category}</span>
-                <h4>{message.title}</h4>
-                <p>{message.body}</p>
-                <small>{message.sentAt}</small>
-              </div>
-              <div className="messages-panel__card-actions">
-                <button type="button" onClick={() => openMessage(message.id)}>
-                  مشاهده
-                </button>
-                <button
-                  type="button"
-                  className="messages-panel__remove-message"
-                  onClick={() => deleteMessage(message.id)}
-                >
-                  حذف
-                </button>
-              </div>
-            </article>
-          ))}
-
-          {filteredMessages.length === 0 && (
-            <div className="messages-panel__empty">
-              پیامی برای نمایش وجود ندارد.
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FaqPanel() {
-  const [openQuestionId, setOpenQuestionId] = useState(
-    FAQ_ITEMS[0]?.id || null,
-  );
-  const [categoryFilter, setCategoryFilter] = useState("all");
-
-  const categories = [
-    "all",
-    ...new Set(FAQ_ITEMS.map((item) => item.category)),
-  ];
-
-  const filteredQuestions = FAQ_ITEMS.filter(
-    (item) => categoryFilter === "all" || item.category === categoryFilter,
-  );
-
-  return (
-    <section className="faq-panel">
-      <div className="faq-panel__header">
-        <span>سوالات متداول</span>
-        <h3>راهنمای داشبورد دبیرخانه</h3>
-      </div>
-
-      <div className="faq-panel__filters">
-        {categories.map((category) => (
-          <button
-            type="button"
-            key={category}
-            className={
-              categoryFilter === category ? "faq-panel__filter--active" : ""
-            }
-            onClick={() => setCategoryFilter(category)}
-          >
-            {category === "all" ? "همه" : category}
-          </button>
-        ))}
-      </div>
-
-      <div className="faq-panel__list">
-        {filteredQuestions.map((item) => {
-          const isOpen = openQuestionId === item.id;
-
-          return (
-            <article
-              className={`faq-panel__item ${isOpen ? "faq-panel__item--open" : ""}`}
-              key={item.id}
-            >
-              <button
-                type="button"
-                onClick={() => setOpenQuestionId(isOpen ? null : item.id)}
-                aria-expanded={isOpen}
-              >
-                <span>{item.question}</span>
-                <i aria-hidden="true">{isOpen ? "−" : "+"}</i>
-              </button>
-
-              <div className="faq-panel__answer">
-                <p>{item.answer}</p>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function ProfilePanel({ profile, onEdit }) {
-  return (
-    <section className="profile-panel">
-      <div className="profile-panel__card">
-        <button type="button" onClick={onEdit}>
-          ویرایش پروفایل
-        </button>
-
-        <div className="profile-panel__head">
-          {profile.avatarPreview ? (
-            <img
-              className="profile-panel__avatar profile-panel__avatar--large"
-              src={profile.avatarPreview}
-              alt={profile.fullName || "پروفایل کاربر"}
-            />
-          ) : (
-            <span className="profile-panel__avatar profile-panel__avatar--large">
-              {profile.avatarLetter}
-            </span>
-          )}
-          <h3>
-            {profile.fullName ||
-              `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
-          </h3>
-          <p>{profile.role}</p>
-        </div>
-
-        <div className="profile-panel__grid">
-          <article>
-            <span>نام و نام خانوادگی</span>
-            <strong>
-              {profile.fullName ||
-                `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
-            </strong>
-          </article>
-          <article>
-            <span>شماره موبایل</span>
-            <strong>{profile.mobile}</strong>
-          </article>
-          <article>
-            <span>ایمیل</span>
-            <strong>{profile.email}</strong>
-          </article>
-          <article>
-            <span>سطح کاربری</span>
-            <strong>{profile.role}</strong>
-          </article>
-          <article>
-            <span>واحد سازمانی</span>
-            <strong>{profile.unit}</strong>
-          </article>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function EditProfilePanel({ profile, onSave, onCancel }) {
-  const [formData, setFormData] = useState(profile);
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    repeatPassword: "",
-  });
-  const [message, setMessage] = useState("");
-
-  const updateField = (field, value) => {
-    setFormData((currentData) => ({ ...currentData, [field]: value }));
-  };
-
-  const updatePasswordField = (field, value) => {
-    setPasswordData((currentData) => ({ ...currentData, [field]: value }));
-  };
-
-  const submitProfile = (event) => {
-    event.preventDefault();
-
-    try {
-      const savedProfile = onSave(formData, {
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword,
-        confirmPassword: passwordData.repeatPassword,
-      });
-      setFormData(savedProfile || formData);
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        repeatPassword: "",
-      });
-      setMessage(
-        passwordData.newPassword
-          ? "اطلاعات پروفایل و رمز عبور با موفقیت ذخیره شد."
-          : "تغییرات پروفایل با موفقیت ذخیره شد.",
-      );
-    } catch (error) {
-      setMessage(error?.message || "ذخیره تغییرات با خطا روبه‌رو شد.");
-    }
-  };
-
-  return (
-    <section className="profile-panel profile-panel--edit">
-      <div className="profile-panel__card profile-panel__card--edit">
-        <div className="profile-panel__edit-header">
-          <div>
-            <span>ویرایش پروفایل</span>
-            <h3>اطلاعات حساب کاربری</h3>
-          </div>
-
-          <button type="button" onClick={onCancel}>
-            بازگشت
-          </button>
-        </div>
-
-        <form onSubmit={submitProfile}>
-          <div className="profile-panel__form-grid">
-            <label>
-              <span>نام</span>
-              <input
-                type="text"
-                value={formData.firstName}
-                onChange={(event) =>
-                  updateField("firstName", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>نام خانوادگی</span>
-              <input
-                type="text"
-                value={formData.lastName}
-                onChange={(event) =>
-                  updateField("lastName", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>شماره موبایل</span>
-              <input
-                type="text"
-                value={formData.mobile}
-                onChange={(event) => updateField("mobile", event.target.value)}
-              />
-            </label>
-            <label>
-              <span>ایمیل</span>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(event) => updateField("email", event.target.value)}
-              />
-            </label>
-            <label>
-              <span>واحد سازمانی</span>
-              <input
-                type="text"
-                value={formData.unit}
-                onChange={(event) => updateField("unit", event.target.value)}
-              />
-            </label>
-          </div>
-
-          <div className="profile-panel__password-box">
-            <span>تغییر رمز عبور</span>
-            <p>برای تغییر رمز، رمز فعلی و رمز جدید را وارد کنید.</p>
-            <div className="profile-panel__form-grid">
-              <label>
-                <span>رمز فعلی</span>
-                <input
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(event) =>
-                    updatePasswordField("currentPassword", event.target.value)
-                  }
-                />
-              </label>
-              <label>
-                <span>رمز جدید</span>
-                <input
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(event) =>
-                    updatePasswordField("newPassword", event.target.value)
-                  }
-                />
-              </label>
-              <label>
-                <span>تکرار رمز جدید</span>
-                <input
-                  type="password"
-                  value={passwordData.repeatPassword}
-                  onChange={(event) =>
-                    updatePasswordField("repeatPassword", event.target.value)
-                  }
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="profile-panel__form-actions">
-            <button type="button" onClick={onCancel}>
-              انصراف
-            </button>
-            <button type="submit">ذخیره تغییرات</button>
-          </div>
-
-          {message && <p className="profile-panel__message">{message}</p>}
-        </form>
-      </div>
+      </DashboardList>
     </section>
   );
 }
@@ -3259,15 +2745,8 @@ function openCallPreview(call) {
 }
 
 function CallStatusBadge({ status }) {
-  return (
-    <span
-      className={`committee-call__status committee-call__status--${getCallStatusClass(status)}`}
-    >
-      {status}
-    </span>
-  );
+  return <DashboardStatusBadge status={status} />;
 }
-
 function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
   const [step, setStep] = useState(0);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
@@ -3434,9 +2913,9 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
           </p>
         </div>
         {editingCall && (
-          <button type="button" onClick={onCancelEdit}>
+          <Button variant="outline" size="sm" width="content" type="button" onClick={onCancelEdit}>
             انصراف از ویرایش
-          </button>
+          </Button>
         )}
       </div>
 
@@ -3446,7 +2925,7 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
 
       <div className="committee-call-builder__steps">
         {CALL_STEPS.map((title, index) => (
-          <button
+          <Button variant="outline" size="sm" width="content"
             type="button"
             key={title}
             className={
@@ -3456,7 +2935,7 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
           >
             <span>{toPersianDigits(index + 1)}</span>
             {title}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -3493,7 +2972,7 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
         <div className="committee-call-builder__grid">
           <label className="committee-call-builder__field committee-call-builder__field--full">
             <span>عنوان فراخوان</span>
-            <input
+            <Input
               value={form.title}
               onChange={(event) => updateField("title", event.target.value)}
               placeholder="مثلاً فراخوان اولین دوره هدایت اعتبارات توسعه فناوری"
@@ -3501,7 +2980,7 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
           </label>
           <label className="committee-call-builder__field">
             <span>شماره فراخوان</span>
-            <input
+            <Input
               value={form.number}
               onChange={(event) => updateField("number", event.target.value)}
               placeholder="مثلاً ۲"
@@ -3509,7 +2988,7 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
           </label>
           <label className="committee-call-builder__field">
             <span>مهلت ارسال طرح</span>
-            <input
+            <Input
               value={form.deadline}
               onChange={(event) => updateField("deadline", event.target.value)}
               placeholder="1405/05/05"
@@ -3517,7 +2996,7 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
           </label>
           <label className="committee-call-builder__field committee-call-builder__field--full">
             <span>محوریت فراخوان</span>
-            <input
+            <Input
               value={form.category}
               onChange={(event) => updateField("category", event.target.value)}
               placeholder="مثلاً با محوریت هوش مصنوعی"
@@ -3525,7 +3004,7 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
           </label>
           <label className="committee-call-builder__field committee-call-builder__field--full">
             <span>متن توضیح بخش هیرو</span>
-            <textarea
+            <Textarea
               value={form.heroDescription}
               onChange={(event) =>
                 updateField("heroDescription", event.target.value)
@@ -3559,7 +3038,7 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
 
           <label className="committee-call-builder__field committee-call-builder__field--full">
             <span>تیتر بخش توضیحات بیشتر</span>
-            <input
+            <Input
               value={form.moreTitle}
               onChange={(event) => updateField("moreTitle", event.target.value)}
               placeholder="مثلاً محورهای پژوهشی سال جاری"
@@ -3569,7 +3048,7 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
           <div className="committee-call-builder__field committee-call-builder__field--full committee-rich-editor">
             <span>توضیحات بیشتر فراخوان</span>
             <div className="committee-rich-editor__toolbar">
-              <button
+              <Button variant="outline" size="sm" width="content"
                 type="button"
                 onClick={() =>
                   updateField(
@@ -3579,8 +3058,8 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
                 }
               >
                 تیتر
-              </button>
-              <button
+              </Button>
+              <Button variant="outline" size="sm" width="content"
                 type="button"
                 onClick={() =>
                   updateField(
@@ -3590,9 +3069,9 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
                 }
               >
                 بولد
-              </button>
+              </Button>
             </div>
-            <textarea
+            <Textarea
               value={form.moreDescription}
               onChange={(event) =>
                 updateField("moreDescription", event.target.value)
@@ -3614,13 +3093,13 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
               <span>سوالات متداول</span>
               <h4>تا ۱۰ سوال متداول قابل افزودن است.</h4>
             </div>
-            <button
+            <Button variant="outline" size="sm" width="content"
               type="button"
               onClick={addFaq}
               disabled={form.faqs.length >= 10}
             >
               افزودن سوال
-            </button>
+            </Button>
           </div>
           {form.faqs.map((faq, index) => (
             <article
@@ -3629,17 +3108,17 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
             >
               <div className="committee-call-builder__repeat-title">
                 <strong>سوال {toPersianDigits(index + 1)}</strong>
-                <button
+                <Button variant="outline" size="sm" width="content"
                   type="button"
                   onClick={() => removeFaq(faq.id)}
                   disabled={form.faqs.length <= 1}
                 >
                   حذف
-                </button>
+                </Button>
               </div>
               <label className="committee-call-builder__field">
                 <span>عنوان سوال</span>
-                <input
+                <Input
                   value={faq.question}
                   onChange={(event) =>
                     updateFaq(faq.id, "question", event.target.value)
@@ -3648,7 +3127,7 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
               </label>
               <label className="committee-call-builder__field">
                 <span>پاسخ</span>
-                <textarea
+                <Textarea
                   value={faq.answer}
                   onChange={(event) =>
                     updateFaq(faq.id, "answer", event.target.value)
@@ -3674,42 +3153,42 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
             </div>
           </article>
           <div className="committee-call-builder__review-actions">
-            <button
+            <Button variant="outline" size="sm" width="content"
               type="button"
               onClick={() => openCallPreview(previewCall)}
               disabled={isUploadingBanner}
             >
               پیش‌نمایش
-            </button>
-            <button
+            </Button>
+            <Button variant="outline" size="sm" width="content"
               type="button"
               className="committee-call-builder__draft"
               onClick={() => saveAs("پیش‌نویس")}
               disabled={isUploadingBanner}
             >
               {isUploadingBanner ? "در حال آپلود..." : "ذخیره پیش‌نویس"}
-            </button>
-            <button
+            </Button>
+            <Button variant="secondary" size="sm" width="content"
               type="button"
               className="committee-call-builder__publish"
               onClick={() => saveAs("منتشر شده")}
               disabled={isUploadingBanner}
             >
               {isUploadingBanner ? "در حال آپلود..." : "انتشار نهایی"}
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       <div className="committee-call-builder__actions">
-        <button
+        <Button variant="outline" size="sm" width="content"
           type="button"
           onClick={() => setStep((currentStep) => Math.max(0, currentStep - 1))}
           disabled={step === 0 || isUploadingBanner}
         >
           مرحله قبل
-        </button>
-        <button
+        </Button>
+        <Button variant="outline" size="sm" width="content"
           type="button"
           onClick={() =>
             setStep((currentStep) =>
@@ -3721,7 +3200,7 @@ function CallBuilderPanel({ editingCall, onSaveCall, onCancelEdit, notice }) {
           }
         >
           مرحله بعد
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -3733,7 +3212,7 @@ function DateRangeFilter({ fromDate, toDate, setFromDate, setToDate }) {
 
   return (
     <div className="committee-call-filter">
-      <button
+      <Button variant="outline" size="sm" width="content"
         type="button"
         className="committee-call-filter__trigger"
         onClick={() => setIsOpen((current) => !current)}
@@ -3741,9 +3220,9 @@ function DateRangeFilter({ fromDate, toDate, setFromDate, setToDate }) {
         {hasFilter
           ? `${toPersianDigits(fromDate || "...")} تا ${toPersianDigits(toDate || "...")}`
           : "فیلتر بازه زمانی"}
-      </button>
+      </Button>
       {hasFilter && (
-        <button
+        <Button variant="outline" size="sm" width="content"
           type="button"
           className="committee-call-filter__clear"
           onClick={() => {
@@ -3753,13 +3232,13 @@ function DateRangeFilter({ fromDate, toDate, setFromDate, setToDate }) {
           }}
         >
           حذف فیلتر
-        </button>
+        </Button>
       )}
       {isOpen && (
         <div className="committee-call-filter__popover">
           <label>
             <span>تاریخ شروع</span>
-            <input
+            <Input
               value={fromDate}
               onChange={(event) => setFromDate(event.target.value)}
               placeholder="1405/01/01"
@@ -3767,15 +3246,15 @@ function DateRangeFilter({ fromDate, toDate, setFromDate, setToDate }) {
           </label>
           <label>
             <span>تاریخ پایان</span>
-            <input
+            <Input
               value={toDate}
               onChange={(event) => setToDate(event.target.value)}
               placeholder="1405/12/29"
             />
           </label>
-          <button type="button" onClick={() => setIsOpen(false)}>
+          <Button variant="outline" size="sm" width="content" type="button" onClick={() => setIsOpen(false)}>
             اعمال فیلتر
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -3844,14 +3323,14 @@ function CallListPanel({
       <div className="committee-calls-list__toolbar">
         <div className="committee-calls-list__status-filters">
           {allowedStatuses.map((status) => (
-            <button
+            <Button variant="outline" size="sm" width="content"
               type="button"
               key={status}
               className={statusFilter === status ? "is-active" : ""}
               onClick={() => setStatusFilter(status)}
             >
               {status === "all" ? "همه" : status}
-            </button>
+            </Button>
           ))}
         </div>
         <DateRangeFilter
@@ -3862,9 +3341,9 @@ function CallListPanel({
         />
       </div>
 
-      <div className="committee-calls-list__items">
+      <DashboardList className="committee-calls-list__items">
         {filteredCalls.map((call) => (
-          <article className="committee-call-card" key={call.id}>
+          <DashboardListItem as="article" className="committee-call-card" key={call.id}>
             <div className="committee-call-card__media">
               <img src={call.bannerPreview || bannerImage} alt={call.title} />
             </div>
@@ -3886,36 +3365,36 @@ function CallListPanel({
               </div>
             </div>
             <div className="committee-call-card__actions">
-              <button type="button" onClick={() => openCallPreview(call)}>
+              <Button variant="outline" size="sm" width="content" type="button" onClick={() => openCallPreview(call)}>
                 پیش‌نمایش
-              </button>
+              </Button>
               {mode !== "history" && (
-                <button type="button" onClick={() => onEditCall(call)}>
+                <Button variant="outline" size="sm" width="content" type="button" onClick={() => onEditCall(call)}>
                   ویرایش
-                </button>
+                </Button>
               )}
               {mode !== "history" && call.status === "پیش‌نویس" && (
-                <button
+                <Button variant="secondary" size="sm" width="content"
                   type="button"
                   className="committee-call-card__publish"
                   onClick={() => onPublishCall(call.id)}
                 >
                   انتشار نهایی
-                </button>
+                </Button>
               )}
               {mode !== "history" && (
-                <button
+                <Button variant="danger-soft" size="sm" width="content"
                   type="button"
                   className="committee-call-card__delete"
                   onClick={() => onDeleteCall(call.id)}
                 >
                   حذف
-                </button>
+                </Button>
               )}
             </div>
-          </article>
+          </DashboardListItem>
         ))}
-      </div>
+      </DashboardList>
     </section>
   );
 }
@@ -3925,26 +3404,11 @@ function normalizePlanReviewStatus(status) {
 }
 
 function PlanReviewStatusBadge({ status }) {
-  const normalizedStatus = normalizePlanReviewStatus(status);
-  return (
-    <span
-      className={`committee-plan__status committee-plan__status--${getPlanReviewStatusClass(normalizedStatus)}`}
-    >
-      {normalizedStatus}
-    </span>
-  );
+  return <DashboardStatusBadge status={status || "در انتظار بررسی"} />;
 }
-
 function FinalPlanStatusBadge({ status }) {
-  return (
-    <span
-      className={`committee-plan__final-status committee-plan__final-status--${getFinalPlanStatusClass(status)}`}
-    >
-      {status || "تعیین نشده"}
-    </span>
-  );
+  return <DashboardStatusBadge status={status || "در انتظار تعیین تکلیف"} />;
 }
-
 function getCurrentPlanStatusLabel(status) {
   if (status === "all") return "همه";
   if (status === "waiting") return "بررسی نشده‌ها";
@@ -3991,48 +3455,36 @@ function getFinalPlanStatusCount(plans, status) {
 }
 
 function PlanFolderBoard({ plans, folderFilter, setFolderFilter }) {
+  const folderToneMap = {
+    priority: "warning",
+    improvement: "danger",
+    review: "info",
+  };
+
   return (
-    <div className="committee-plans__folders-board">
-      <button
-        type="button"
-        className={
-          folderFilter === "all"
-            ? "committee-plans__folder-card committee-plans__folder-card--active"
-            : "committee-plans__folder-card"
-        }
+    <div className="committee-plans__folders-board dashboard-review-folders-board">
+      <DashboardReviewFolderCard
+        title="همه طرح‌ها"
+        count={toPersianDigits(plans.length)}
+        selected={folderFilter === "all"}
         onClick={() => setFolderFilter("all")}
-      >
-        <span>📁</span>
-        <strong>همه طرح‌ها</strong>
-        <b>{toPersianDigits(plans.length)}</b>
-        <small>نمایش همه پرونده‌ها</small>
-      </button>
+      />
       {PLAN_FOLDERS.map((folder) => (
-        <button
-          type="button"
+        <DashboardReviewFolderCard
           key={folder.id}
-          className={
-            folderFilter === folder.id
-              ? `committee-plans__folder-card committee-plans__folder-card--${folder.tone} committee-plans__folder-card--active`
-              : `committee-plans__folder-card committee-plans__folder-card--${folder.tone}`
-          }
+          title={folder.label}
+          count={toPersianDigits(
+            plans.filter((plan) => plan.folders.includes(folder.id)).length,
+          )}
+          tone={folderToneMap[folder.tone] || "brand"}
+          selected={folderFilter === folder.id}
+          onClick={() => setFolderFilter(folder.id)}
           onDoubleClick={() => setFolderFilter(folder.id)}
-          title="برای ورود به پوشه دوبار کلیک کنید"
-        >
-          <span>📂</span>
-          <strong>{folder.label}</strong>
-          <b>
-            {toPersianDigits(
-              plans.filter((plan) => plan.folders.includes(folder.id)).length,
-            )}
-          </b>
-          <small>برای ورود به پوشه دوبار کلیک کنید</small>
-        </button>
+        />
       ))}
     </div>
   );
 }
-
 function CommitteePlanList({
   plans,
   mode,
@@ -4115,10 +3567,10 @@ function CommitteePlanList({
         />
       )}
 
-      <div className="committee-plans__toolbar">
+      <DashboardFilterBar className="committee-plans__toolbar">
         <label className="committee-plans__search">
           <span>جستجو</span>
-          <input
+          <Input
             value={searchTerm}
             onChange={(event) => {
               setSearchTerm(event.target.value);
@@ -4139,8 +3591,11 @@ function CommitteePlanList({
                 : getFinalPlanStatusCount(plans, status);
 
               return (
-                <button
+                <Button
                   type="button"
+                  variant={statusFilter === status ? "secondary" : "outline"}
+                  size="sm"
+                  width="content"
                   key={status}
                   className={statusFilter === status ? "is-active" : ""}
                   onClick={() => {
@@ -4154,7 +3609,7 @@ function CommitteePlanList({
                       : getFinalPlanStatusLabel(status)}
                   </span>
                   <strong>{toPersianDigits(count)}</strong>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -4162,7 +3617,7 @@ function CommitteePlanList({
 
         <label className="committee-plans__page-size">
           <span>تعداد نمایش</span>
-          <select
+          <Select
             value={itemsPerPage}
             onChange={(event) => {
               setItemsPerPage(Number(event.target.value));
@@ -4173,11 +3628,11 @@ function CommitteePlanList({
             <option value={20}>۲۰ عدد</option>
             <option value={50}>۵۰ عدد</option>
             <option value={100}>۱۰۰ عدد</option>
-          </select>
+          </Select>
         </label>
-      </div>
+      </DashboardFilterBar>
 
-      <div className="committee-plans__list">
+      <DashboardList className="committee-plans__list">
         {currentPagePlans.map((plan) => {
           const hasFeedback = isCurrentMode
             ? Boolean(plan.committeeReviewFeedback)
@@ -4188,7 +3643,8 @@ function CommitteePlanList({
               "بررسی شده";
 
           return (
-            <article
+            <DashboardListItem
+              as="article"
               className={`committee-plan-card ${hasFeedback ? "committee-plan-card--has-feedback" : ""} ${isReviewed ? "committee-plan-card--reviewed" : ""}`}
               key={plan.id}
             >
@@ -4220,22 +3676,22 @@ function CommitteePlanList({
                 {isCurrentMode && plan.folders.length > 0 && (
                   <div className="committee-plan-card__folders">
                     {plan.folders.map((folderId) => (
-                      <span
+                      <DashboardReviewFolderBadge
                         key={folderId}
-                        className={`committee-plan-card__folder committee-plan-card__folder--${getPlanFolderTone(folderId)}`}
-                      >
-                        <strong>در فولدر:</strong>
-                        <span>{getPlanFolderLabel(folderId)}</span>
-                        {folderFilter === folderId && onToggleFolder && (
-                          <button
-                            type="button"
-                            onClick={() => onToggleFolder(plan.id, folderId)}
-                            aria-label={`حذف از پوشه ${getPlanFolderLabel(folderId)}`}
-                          >
-                            ×
-                          </button>
-                        )}
-                      </span>
+                        label={getPlanFolderLabel(folderId)}
+                        tone={
+                          getPlanFolderTone(folderId) === "priority"
+                            ? "warning"
+                            : getPlanFolderTone(folderId) === "improvement"
+                              ? "danger"
+                              : "info"
+                        }
+                        onRemove={
+                          folderFilter === folderId && onToggleFolder
+                            ? () => onToggleFolder(plan.id, folderId)
+                            : undefined
+                        }
+                      />
                     ))}
                   </div>
                 )}
@@ -4249,7 +3705,7 @@ function CommitteePlanList({
 
               <div className="committee-plan-card__actions">
                 {isFinalMode ? (
-                  <button
+                  <Button variant="outline" size="sm" width="content"
                     type="button"
                     onClick={() =>
                       onOpenDecision(plan.id, {
@@ -4260,21 +3716,21 @@ function CommitteePlanList({
                     }
                   >
                     تعیین وضعیت
-                  </button>
+                  </Button>
                 ) : (
-                  <button type="button" onClick={() => onOpenPlan(plan.id)}>
+                  <Button variant="outline" size="sm" width="content" type="button" onClick={() => onOpenPlan(plan.id)}>
                     {isCurrentMode
                       ? hasFeedback
                         ? "مشاهده / ویرایش بازخورد"
                         : "مشاهده و ثبت بازخورد"
                       : "مشاهده پرونده"}
-                  </button>
+                  </Button>
                 )}
               </div>
-            </article>
+            </DashboardListItem>
           );
         })}
-      </div>
+      </DashboardList>
 
       <div className="committee-plans__pagination">
         <span>
@@ -4282,18 +3738,18 @@ function CommitteePlanList({
           {toPersianDigits(filteredPlans.length)} مورد
         </span>
         <div>
-          <button
+          <Button variant="outline" size="sm" width="content"
             type="button"
             disabled={safeCurrentPage === 1}
             onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
           >
             قبلی
-          </button>
+          </Button>
           <strong>
             صفحه {toPersianDigits(safeCurrentPage)} از{" "}
             {toPersianDigits(totalPages)}
           </strong>
-          <button
+          <Button variant="outline" size="sm" width="content"
             type="button"
             disabled={safeCurrentPage === totalPages}
             onClick={() =>
@@ -4301,7 +3757,7 @@ function CommitteePlanList({
             }
           >
             بعدی
-          </button>
+          </Button>
         </div>
       </div>
     </>
@@ -4388,9 +3844,9 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
             <h3>{plan.title}</h3>
             <p>شناسه طرح: {plan.trackingId}</p>
           </div>
-          <button type="button" onClick={onBack}>
+          <Button variant="outline" size="sm" width="content" type="button" onClick={onBack}>
             بازگشت به لیست
-          </button>
+          </Button>
         </div>
 
         <div className="committee-plans__detail-grid">
@@ -4544,9 +4000,9 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
           <h3>{plan.title}</h3>
           <p>شناسه طرح: {plan.trackingId}</p>
         </div>
-        <button type="button" onClick={onBack}>
+        <Button variant="outline" size="sm" width="content" type="button" onClick={onBack}>
           بازگشت به لیست
-        </button>
+        </Button>
       </div>
 
       <div className="committee-plans__detail-grid">
@@ -4599,7 +4055,7 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
                 {PLAN_FOLDERS.map((folder) => {
                   const isActive = plan.folders.includes(folder.id);
                   return (
-                    <button
+                    <Button variant="outline" size="sm" width="content"
                       type="button"
                       key={folder.id}
                       className={
@@ -4612,7 +4068,7 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
                       {isActive
                         ? `حذف از ${folder.label}`
                         : `افزودن به ${folder.label}`}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -4654,7 +4110,7 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
 
           <label>
             <span>متن بازخورد</span>
-            <textarea
+            <Textarea
               value={feedbackText}
               readOnly={readOnly}
               onChange={(event) => setFeedbackText(event.target.value)}
@@ -4669,7 +4125,7 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
           <div className="committee-plans__feedback-fields">
             <label>
               <span>پیشنهاد این کاربر</span>
-              <select
+              <Select
                 value={recommendation}
                 disabled={readOnly}
                 onChange={(event) => setRecommendation(event.target.value)}
@@ -4678,11 +4134,11 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
                 <option>نیازمند اصلاح</option>
                 <option>دارای اولویت</option>
                 <option>عدم پیشنهاد برای ادامه</option>
-              </select>
+              </Select>
             </label>
             <label>
               <span>امتیاز</span>
-              <input
+              <Input
                 type="number"
                 min="0"
                 max="100"
@@ -4707,15 +4163,15 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
           {!readOnly && (
             <div className="committee-plans__feedback-actions">
               {plan.committeeReviewFeedback && (
-                <button
+                <Button variant="danger-soft" size="sm" width="content"
                   type="button"
                   className="committee-plans__delete-feedback"
                   onClick={deleteFeedback}
                 >
                   حذف بازخورد
-                </button>
+                </Button>
               )}
-              <button
+              <Button variant="secondary" size="sm" width="content"
                 type="button"
                 className="committee-plans__save-decision"
                 onClick={saveFeedback}
@@ -4724,7 +4180,7 @@ function PlanDetailView({ plan, setPlans, onBack, readOnly = false }) {
                 {plan.committeeReviewFeedback
                   ? "ذخیره ویرایش بازخورد"
                   : "ذخیره بازخورد"}
-              </button>
+              </Button>
             </div>
           )}
           {readOnly && (
@@ -4972,9 +4428,9 @@ function FinalDecisionPanel({
             <h3>{selectedPlan.title}</h3>
             <p>شناسه طرح: {selectedPlan.trackingId}</p>
           </div>
-          <button type="button" onClick={closeDecision}>
+          <Button variant="outline" size="sm" width="content" type="button" onClick={closeDecision}>
             بازگشت به لیست
-          </button>
+          </Button>
         </div>
 
         {notice && (
@@ -5048,7 +4504,7 @@ function FinalDecisionPanel({
             </div>
             <label>
               <span>متن بازخورد</span>
-              <textarea
+              <Textarea
                 value={feedbackText}
                 onChange={(event) => setFeedbackText(event.target.value)}
                 placeholder="جمع‌بندی دبیرخانه و کمیته راهبری درباره طرح را وارد کنید..."
@@ -5056,14 +4512,14 @@ function FinalDecisionPanel({
             </label>
             <label>
               <span>اعلام وضعیت نهایی</span>
-              <select
+              <Select
                 value={finalStatus}
                 onChange={(event) => setFinalStatus(event.target.value)}
               >
                 {FINAL_PLAN_STATUSES.map((status) => (
                   <option key={status}>{status}</option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <div className="committee-plans__business-share">
@@ -5095,15 +4551,15 @@ function FinalDecisionPanel({
               </label>
             </div>
             <div className="committee-plans__decision-actions">
-              <button
+              <Button variant="secondary" size="sm" width="content"
                 type="button"
                 className="committee-plans__save-decision"
                 onClick={saveDecision}
                 disabled={!feedbackText.trim()}
               >
                 ذخیره وضعیت نهایی
-              </button>
-              <button
+              </Button>
+              <Button variant="outline" size="sm" width="content"
                 type="button"
                 className="committee-plans__next-plan-button"
                 disabled={!nextPlanId}
@@ -5113,7 +4569,7 @@ function FinalDecisionPanel({
                 }
               >
                 {nextPlanId ? nextButtonLabel : `${nextButtonLabel} وجود ندارد`}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -5132,7 +4588,7 @@ function FinalDecisionPanel({
             کنید.
           </p>
         </div>
-        <button
+        <Button variant="outline" size="sm" width="content"
           type="button"
           className={
             resultsPublished
@@ -5152,7 +4608,7 @@ function FinalDecisionPanel({
           {resultsPublished
             ? "همگام‌سازی معرفی‌ها"
             : "انتشار نتایج برای فناوران"}
-        </button>
+        </Button>
       </div>
 
       {!allPlansFinalized && (
@@ -5396,9 +4852,9 @@ function AcceptedPlansPanel({ plans }) {
             <h3>{selectedTask.title}</h3>
             <p>{selectedPlan.title}</p>
           </div>
-          <button type="button" onClick={() => setSelectedTaskId(null)}>
+          <Button variant="outline" size="sm" width="content" type="button" onClick={() => setSelectedTaskId(null)}>
             بازگشت به وظایف
-          </button>
+          </Button>
         </div>
 
         {notice && (
@@ -5436,18 +4892,18 @@ function AcceptedPlansPanel({ plans }) {
                   وجود دارد.
                 </p>
               </div>
-              <button
+              <Button variant="secondary" size="sm" width="content"
                 type="button"
                 onClick={saveTaskMeta}
                 disabled={!taskEdit.managerMessage.trim()}
               >
-                ذخیره تغییرات وظیفه
-              </button>
+                  ذخیره تغییرات وظیفه
+                </Button>
             </div>
             <div className="accepted-projects__form-grid">
               <label>
                 <span>تاریخ ددلاین</span>
-                <input
+                <Input
                   value={taskEdit.deadlineDate}
                   onChange={(event) =>
                     setTaskEdit((current) => ({
@@ -5460,7 +4916,7 @@ function AcceptedPlansPanel({ plans }) {
               </label>
               <label>
                 <span>ساعت ددلاین</span>
-                <input
+                <Input
                   value={taskEdit.deadlineTime}
                   onChange={(event) =>
                     setTaskEdit((current) => ({
@@ -5473,7 +4929,7 @@ function AcceptedPlansPanel({ plans }) {
               </label>
               <label className="accepted-projects__form-full">
                 <span>پیام مدیر برای فناور</span>
-                <textarea
+                <Textarea
                   value={taskEdit.managerMessage}
                   onChange={(event) =>
                     setTaskEdit((current) => ({
@@ -5552,7 +5008,7 @@ function AcceptedPlansPanel({ plans }) {
 
           <label>
             <span>متن بازخورد جدید</span>
-            <textarea
+            <Textarea
               value={taskFeedback}
               disabled={!canReview}
               onChange={(event) => setTaskFeedback(event.target.value)}
@@ -5565,23 +5021,23 @@ function AcceptedPlansPanel({ plans }) {
           </label>
           <label>
             <span>وضعیت نهایی وظیفه</span>
-            <select
+            <Select
               value={taskDecision}
               disabled={!canReview}
               onChange={(event) => setTaskDecision(event.target.value)}
             >
               <option>نیازمند اصلاح</option>
               <option>پایان یافته</option>
-            </select>
+            </Select>
           </label>
-          <button
+          <Button variant="secondary" size="sm" width="content"
             type="button"
             className="committee-plans__save-decision"
             disabled={!canReview || !taskFeedback.trim()}
             onClick={saveTaskReview}
           >
             ثبت بازخورد و وضعیت وظیفه
-          </button>
+          </Button>
         </div>
       </section>
     );
@@ -5597,9 +5053,9 @@ function AcceptedPlansPanel({ plans }) {
             <h3>{selectedPlan.title}</h3>
             <p>تعریف وظیفه برای فناور و بررسی پاسخ‌های ارسالی</p>
           </div>
-          <button type="button" onClick={closePlan}>
-            بازگشت به طرح‌های قبول‌شده
-          </button>
+          <Button variant="secondary" size="sm" width="content" type="button" onClick={closePlan}>
+                  بازگشت به طرح‌های قبول‌شده
+                </Button>
         </div>
 
         {notice && (
@@ -5634,9 +5090,10 @@ function AcceptedPlansPanel({ plans }) {
                 بررسی کنید.
               </p>
             </div>
-            <button type="button" onClick={() => setIsCreatingTask(true)}>
+            <Button variant="secondary" size="sm" width="content" type="button" onClick={() =>
+                  setIsCreatingTask(true)}>
               ساخت وظیفه جدید
-            </button>
+                </Button>
           </div>
         ) : (
           <form
@@ -5648,14 +5105,14 @@ function AcceptedPlansPanel({ plans }) {
                 <h4>ساخت وظیفه جدید</h4>
                 <p>تیتر، ددلاین و پیام وظیفه برای فناور ثبت می‌شود.</p>
               </div>
-              <button type="button" onClick={() => setIsCreatingTask(false)}>
+              <Button variant="outline" size="sm" width="content" type="button" onClick={() => setIsCreatingTask(false)}>
                 انصراف
-              </button>
+              </Button>
             </div>
             <div className="accepted-projects__form-grid">
               <label>
                 <span>تیتر وظیفه</span>
-                <input
+                <Input
                   value={newTask.title}
                   onChange={(event) =>
                     setNewTask((current) => ({
@@ -5667,7 +5124,7 @@ function AcceptedPlansPanel({ plans }) {
               </label>
               <label>
                 <span>تاریخ ددلاین</span>
-                <input
+                <Input
                   value={newTask.deadlineDate}
                   onChange={(event) =>
                     setNewTask((current) => ({
@@ -5680,7 +5137,7 @@ function AcceptedPlansPanel({ plans }) {
               </label>
               <label>
                 <span>ساعت ددلاین</span>
-                <input
+                <Input
                   value={newTask.deadlineTime}
                   onChange={(event) =>
                     setNewTask((current) => ({
@@ -5693,7 +5150,7 @@ function AcceptedPlansPanel({ plans }) {
               </label>
               <label className="accepted-projects__form-full">
                 <span>پیام وظیفه</span>
-                <textarea
+                <Textarea
                   value={newTask.managerMessage}
                   onChange={(event) =>
                     setNewTask((current) => ({
@@ -5704,13 +5161,13 @@ function AcceptedPlansPanel({ plans }) {
                 />
               </label>
             </div>
-            <button
+            <Button variant="secondary" size="sm" width="content"
               type="submit"
               className="committee-plans__save-decision"
               disabled={!newTask.title.trim() || !newTask.managerMessage.trim()}
             >
               ثبت وظیفه
-            </button>
+            </Button>
           </form>
         )}
 
@@ -5744,11 +5201,11 @@ function AcceptedPlansPanel({ plans }) {
                       />
                     </span>
                   </div>
-                  <button type="button" onClick={() => openTask(task.id)}>
+                  <Button variant="outline" size="sm" width="content" type="button" onClick={() => openTask(task.id)}>
                     {taskStatus === "پاسخ داده شده"
                       ? "بررسی پاسخ"
                       : "مشاهده وظیفه"}
-                  </button>
+                  </Button>
                 </article>
               );
             })
@@ -5801,12 +5258,12 @@ function AcceptedPlansPanel({ plans }) {
                 </div>
                 <FinalPlanStatusBadge status={plan.finalStatus} />
                 <div className="committee-plan-card__actions">
-                  <button type="button" onClick={() => openPlanView(plan.id)}>
+                  <Button variant="outline" size="sm" width="content" type="button" onClick={() => openPlanView(plan.id)}>
                     مشاهده پرونده
-                  </button>
-                  <button type="button" onClick={() => openPlan(plan.id)}>
+                  </Button>
+                  <Button variant="outline" size="sm" width="content" type="button" onClick={() => openPlan(plan.id)}>
                     ورود به طرح
-                  </button>
+                  </Button>
                 </div>
               </article>
             );
@@ -6035,9 +5492,9 @@ function IntroducedPlansPanel() {
               بررسی اطلاعات تکمیل‌شده توسط فناور و تعیین انتشار نهایی یا اصلاح.
             </p>
           </div>
-          <button type="button" onClick={closeRequest}>
+          <Button variant="outline" size="sm" width="content" type="button" onClick={closeRequest}>
             بازگشت به لیست
-          </button>
+          </Button>
         </div>
 
         <div className="introduced-plans__detail-grid">
@@ -6145,7 +5602,7 @@ function IntroducedPlansPanel() {
 
         <label className="introduced-plans__feedback-field">
           <span>بازخورد اصلاحی کمیته</span>
-          <textarea
+          <Textarea
             value={feedback}
             onChange={(event) => setFeedback(event.target.value)}
             placeholder="اگر اطلاعات نیازمند اصلاح است، بازخورد را اینجا بنویسید..."
@@ -6153,19 +5610,19 @@ function IntroducedPlansPanel() {
         </label>
 
         <div className="introduced-plans__actions">
-          <button type="button" onClick={() => openPreview(selectedRequest)}>
+          <Button variant="outline" size="sm" width="content" type="button" onClick={() => openPreview(selectedRequest)}>
             پیش‌نمایش
-          </button>
-          <button
+          </Button>
+          <Button variant="outline" size="sm" width="content"
             type="button"
             onClick={sendRevision}
             disabled={!feedback.trim()}
           >
             نیازمند اصلاح
-          </button>
-          <button type="button" onClick={publishRequest} disabled={!canPublish}>
-            {isPublished ? "ذخیره تغییرات انتشار" : "تایید و انتشار"}
-          </button>
+          </Button>
+          <Button variant="secondary" size="sm" width="content" type="button" onClick={publishRequest} disabled={!canPublish}>
+                  {isPublished ? "ذخیره تغییرات انتشار" : "تایید و انتشار"}
+                </Button>
         </div>
 
         {notice && <p className="committee-dashboard__notice">{notice}</p>}
@@ -6187,7 +5644,7 @@ function IntroducedPlansPanel() {
       </div>
 
       <div className="introduced-plans__filters">
-        <button
+        <Button variant="outline" size="sm" width="content"
           type="button"
           className={
             activeFilter === "all" ? "introduced-plans__filter--active" : ""
@@ -6195,8 +5652,8 @@ function IntroducedPlansPanel() {
           onClick={() => setActiveFilter("all")}
         >
           همه ({toPersianDigits(counts.all)})
-        </button>
-        <button
+        </Button>
+        <Button variant="outline" size="sm" width="content"
           type="button"
           className={
             activeFilter === "successful"
@@ -6206,8 +5663,8 @@ function IntroducedPlansPanel() {
           onClick={() => setActiveFilter("successful")}
         >
           پروژه‌های موفق ({toPersianDigits(counts.successful)})
-        </button>
-        <button
+        </Button>
+        <Button variant="outline" size="sm" width="content"
           type="button"
           className={
             activeFilter === "commercial"
@@ -6217,7 +5674,7 @@ function IntroducedPlansPanel() {
           onClick={() => setActiveFilter("commercial")}
         >
           موقعیت‌های تجاری ({toPersianDigits(counts.commercial)})
-        </button>
+        </Button>
       </div>
 
       <div className="introduced-plans__list">
@@ -6234,9 +5691,9 @@ function IntroducedPlansPanel() {
               <span>{request.publicationType || request.destination}</span>
               <span>{request.status}</span>
               <span>{request.updatedAt || request.createdAt}</span>
-              <button type="button" onClick={() => openRequest(request)}>
+              <Button variant="outline" size="sm" width="content" type="button" onClick={() => openRequest(request)}>
                 بررسی
-              </button>
+              </Button>
             </article>
           ))
         ) : (
@@ -6325,7 +5782,7 @@ function ReviewersInfoPanel() {
         </div>
         <label className="committee-reviewers__search">
           <span>جستجوی داور</span>
-          <input
+          <Input
             type="text"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
@@ -6459,7 +5916,7 @@ function ReviewerFeedbacksPanel() {
       <div className="committee-reviewer-feedbacks__toolbar committee-reviewer-feedbacks__toolbar--with-size">
         <label>
           <span>جستجو</span>
-          <input
+          <Input
             type="text"
             value={searchTerm}
             onChange={(event) => {
@@ -6471,7 +5928,7 @@ function ReviewerFeedbacksPanel() {
         </label>
         <label>
           <span>حوزه</span>
-          <select
+          <Select
             value={fieldFilter}
             onChange={(event) => {
               setFieldFilter(event.target.value);
@@ -6484,11 +5941,11 @@ function ReviewerFeedbacksPanel() {
                 {field}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label>
           <span>تعداد نمایش</span>
-          <select
+          <Select
             value={itemsPerPage}
             onChange={(event) => {
               setItemsPerPage(Number(event.target.value));
@@ -6499,7 +5956,7 @@ function ReviewerFeedbacksPanel() {
             <option value={20}>۲۰ عدد</option>
             <option value={50}>۵۰ عدد</option>
             <option value={100}>۱۰۰ عدد</option>
-          </select>
+          </Select>
         </label>
       </div>
 
@@ -6552,18 +6009,18 @@ function ReviewerFeedbacksPanel() {
           {toPersianDigits(filteredPlans.length)} مورد
         </span>
         <div>
-          <button
+          <Button variant="outline" size="sm" width="content"
             type="button"
             disabled={safeCurrentPage === 1}
             onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
           >
             قبلی
-          </button>
+          </Button>
           <strong>
             صفحه {toPersianDigits(safeCurrentPage)} از{" "}
             {toPersianDigits(totalPages)}
           </strong>
-          <button
+          <Button variant="outline" size="sm" width="content"
             type="button"
             disabled={safeCurrentPage === totalPages}
             onClick={() =>
@@ -6571,7 +6028,7 @@ function ReviewerFeedbacksPanel() {
             }
           >
             بعدی
-          </button>
+          </Button>
         </div>
       </div>
     </section>
@@ -6625,7 +6082,7 @@ function BusinessPartnersInfoPanel() {
         </div>
         <label className="committee-business-partners__search">
           <span>جستجوی همکار</span>
-          <input
+          <Input
             type="text"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
@@ -6916,9 +6373,9 @@ function BusinessCollaborationRequestsPanel() {
               دبیرخانه را ثبت کنید.
             </p>
           </div>
-          <button type="button" onClick={closeRequest}>
+          <Button variant="outline" size="sm" width="content" type="button" onClick={closeRequest}>
             بازگشت به درخواست‌ها
-          </button>
+          </Button>
         </div>
 
         {notice && (
@@ -7003,7 +6460,7 @@ function BusinessCollaborationRequestsPanel() {
           <>
             <label className="committee-business-requests__reply-box">
               <span>ثبت پیام برای این درخواست</span>
-              <textarea
+              <Textarea
                 value={replyText}
                 onChange={(event) => setReplyText(event.target.value)}
                 placeholder="پاسخ یا پیام دبیرخانه برای همکار تجاری را بنویسید..."
@@ -7012,7 +6469,7 @@ function BusinessCollaborationRequestsPanel() {
 
             <label className="committee-business-requests__reply-box">
               <span>نوع پاسخ</span>
-              <select
+              <Select
                 value={replyDecision}
                 onChange={(event) => setReplyDecision(event.target.value)}
                 style={{
@@ -7028,11 +6485,11 @@ function BusinessCollaborationRequestsPanel() {
                 <option value="needs-info">
                   نیازمند تکمیل اطلاعات توسط همکار تجاری
                 </option>
-              </select>
+              </Select>
             </label>
 
             <div className="committee-business-requests__actions">
-              <button
+              <Button variant="outline" size="sm" width="content"
                 type="button"
                 onClick={saveReply}
                 disabled={!replyText.trim()}
@@ -7040,7 +6497,7 @@ function BusinessCollaborationRequestsPanel() {
                 {replyDecision === "needs-info"
                   ? "ارسال پیام تکمیل اطلاعات"
                   : "ثبت پاسخ نهایی"}
-              </button>
+              </Button>
             </div>
           </>
         ) : (
@@ -7069,7 +6526,7 @@ function BusinessCollaborationRequestsPanel() {
       <div className="committee-business-requests__toolbar">
         <label>
           <span>جستجو</span>
-          <input
+          <Input
             type="text"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
@@ -7077,50 +6534,50 @@ function BusinessCollaborationRequestsPanel() {
           />
         </label>
         <div className="committee-business-requests__filters">
-          <button
+          <Button variant="outline" size="sm" width="content"
             type="button"
             className={statusFilter === "active" ? "is-active" : ""}
             onClick={() => setStatusFilter("active")}
           >
             جاری <strong>{toPersianDigits(statusCounts.active)}</strong>
-          </button>
-          <button
+          </Button>
+          <Button variant="outline" size="sm" width="content"
             type="button"
             className={statusFilter === "history" ? "is-active" : ""}
             onClick={() => setStatusFilter("history")}
           >
             تاریخچه <strong>{toPersianDigits(statusCounts.history)}</strong>
-          </button>
-          <button
+          </Button>
+          <Button variant="outline" size="sm" width="content"
             type="button"
             className={statusFilter === "waiting" ? "is-active" : ""}
             onClick={() => setStatusFilter("waiting")}
           >
             در انتظار <strong>{toPersianDigits(statusCounts.waiting)}</strong>
-          </button>
-          <button
+          </Button>
+          <Button variant="outline" size="sm" width="content"
             type="button"
             className={statusFilter === "tracking" ? "is-active" : ""}
             onClick={() => setStatusFilter("tracking")}
           >
             در حال پیگیری{" "}
             <strong>{toPersianDigits(statusCounts.tracking)}</strong>
-          </button>
-          <button
+          </Button>
+          <Button variant="outline" size="sm" width="content"
             type="button"
             className={statusFilter === "needsInfo" ? "is-active" : ""}
             onClick={() => setStatusFilter("needsInfo")}
           >
             نیازمند تکمیل{" "}
             <strong>{toPersianDigits(statusCounts.needsInfo)}</strong>
-          </button>
-          <button
+          </Button>
+          <Button variant="outline" size="sm" width="content"
             type="button"
             className={statusFilter === "all" ? "is-active" : ""}
             onClick={() => setStatusFilter("all")}
           >
             همه <strong>{toPersianDigits(statusCounts.all)}</strong>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -7167,9 +6624,10 @@ function BusinessCollaborationRequestsPanel() {
                 </div>
               </div>
               <div className="committee-business-requests__card-actions">
-                <button type="button" onClick={() => openRequest(request.id)}>
+                <Button variant="secondary" size="sm" width="content" type="button" onClick={() =>
+                  openRequest(request.id)}>
                   {isFinal ? "مشاهده تاریخچه" : "مشاهده و پاسخ"}
-                </button>
+                </Button>
               </div>
             </article>
           );
@@ -7186,25 +6644,11 @@ function BusinessCollaborationRequestsPanel() {
 }
 
 function ActivityModerationStatusBadge({ status }) {
-  return (
-    <span
-      className={`committee-events__status committee-events__status--${getActivityModerationStatusClass(status)}`}
-    >
-      {status}
-    </span>
-  );
+  return <DashboardStatusBadge status={status || "در انتظار بررسی"} />;
 }
-
 function ExecutionOrderStatusBadge({ status }) {
-  return (
-    <span
-      className={`committee-events__status committee-events__status--${getExecutionOrderStatusClass(status)}`}
-    >
-      {status}
-    </span>
-  );
+  return <DashboardStatusBadge status={status || "در انتظار پذیرش"} />;
 }
-
 function InstructorsInfoPanel() {
   const totals = INSTRUCTOR_USERS.reduce(
     (summary, instructor) => ({
@@ -7497,13 +6941,13 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
               {getActivityField(selectedActivity)}
             </p>
           </div>
-          <button
+          <Button variant="outline" size="sm" width="content"
             type="button"
             className="committee-events__ghost-button"
             onClick={closeDetail}
           >
             بازگشت به لیست
-          </button>
+          </Button>
         </div>
 
         {notice && (
@@ -7553,13 +6997,13 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
             </span>
             <p>{selectedActivity.summary || "توضیحی ثبت نشده است."}</p>
             {canPreview && (
-              <button
+              <Button variant="outline" size="sm" width="content"
                 type="button"
                 className="committee-events__preview-open"
                 onClick={() => openActivityPreview(selectedActivity)}
               >
                 👁 مشاهده پیش‌نمایش
-              </button>
+              </Button>
             )}
             {(selectedActivity.statusFeedback ||
               selectedActivity.managerFeedback) && (
@@ -7577,7 +7021,7 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
             <div className="committee-events__decision-card">
               <label>
                 <span>بازخورد برای اصلاح یا رد دوره/رویداد</span>
-                <textarea
+                <Textarea
                   value={feedbackText}
                   onChange={(event) => setFeedbackText(event.target.value)}
                   placeholder="اگر قصد اصلاح یا رد دارید، دلیل و توضیحات موردنظر را وارد کنید..."
@@ -7585,29 +7029,29 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
               </label>
 
               <div className="committee-events__actions">
-                <button
+                <Button variant="secondary" size="sm" width="content"
                   type="button"
                   className="committee-events__success-button"
                   onClick={() => publishActivity(selectedActivity.id)}
                 >
                   انتشار نهایی
-                </button>
-                <button
+                </Button>
+                <Button variant="outline" size="sm" width="content"
                   type="button"
                   className="committee-events__warning-button"
                   onClick={() => requestRevisionActivity(selectedActivity.id)}
                   disabled={!feedbackText.trim()}
                 >
                   نیازمند اصلاح
-                </button>
-                <button
+                </Button>
+                <Button variant="danger-soft" size="sm" width="content"
                   type="button"
                   className="committee-events__danger-button"
                   onClick={() => rejectActivity(selectedActivity.id)}
                   disabled={!feedbackText.trim()}
                 >
                   رد و ارسال بازخورد
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -7636,38 +7080,38 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
       )}
 
       <div className="committee-events__tabs committee-events__tabs--three">
-        <button
+        <Button variant="outline" size="sm" width="content"
           type="button"
           className={tab === "pending" ? "is-active" : ""}
           onClick={() => setTab("pending")}
         >
           در انتظار بررسی{" "}
           <strong>{toPersianDigits(pendingActivities.length)}</strong>
-        </button>
-        <button
+        </Button>
+        <Button variant="outline" size="sm" width="content"
           type="button"
           className={tab === "revision" ? "is-active" : ""}
           onClick={() => setTab("revision")}
         >
           نیازمند اصلاح{" "}
           <strong>{toPersianDigits(revisionActivities.length)}</strong>
-        </button>
-        <button
+        </Button>
+        <Button variant="outline" size="sm" width="content"
           type="button"
           className={tab === "rejected" ? "is-active" : ""}
           onClick={() => setTab("rejected")}
         >
           رد شده‌ها{" "}
           <strong>{toPersianDigits(rejectedActivities.length)}</strong>
-        </button>
-        <button
+        </Button>
+        <Button variant="outline" size="sm" width="content"
           type="button"
           className={tab === "published" ? "is-active" : ""}
           onClick={() => setTab("published")}
         >
           منتشر شده‌ها{" "}
           <strong>{toPersianDigits(publishedActivities.length)}</strong>
-        </button>
+        </Button>
       </div>
 
       <div className="committee-events__activity-list">
@@ -7709,7 +7153,7 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
               <div className="committee-events__activity-actions">
                 <ActivityModerationStatusBadge status={activity.status} />
                 {!isRejected && (
-                  <button
+                  <Button variant="outline" size="sm" width="content"
                     type="button"
                     className="committee-events__preview-button"
                     onClick={() => openActivityPreview(activity)}
@@ -7717,11 +7161,11 @@ function CommitteeActivitiesPanel({ activities, setActivities }) {
                     aria-label="پیش‌نمایش دوره یا رویداد"
                   >
                     👁
-                  </button>
+                  </Button>
                 )}
-                <button type="button" onClick={() => openActivity(activity)}>
+                <Button variant="outline" size="sm" width="content" type="button" onClick={() => openActivity(activity)}>
                   {isPending ? "بررسی و تصمیم" : "مشاهده جزئیات"}
-                </button>
+                </Button>
               </div>
             </article>
           );
@@ -7802,13 +7246,13 @@ function ExecutionOrdersManagementPanel({ orders, setOrders }) {
             </p>
           </div>
 
-          <button
+          <Button variant="outline" size="sm" width="content"
             type="button"
             className="committee-events__order-toggle"
             onClick={() => setIsFormOpen((current) => !current)}
           >
             {isFormOpen ? "بستن فرم" : "ساخت سفارش جدید"}
-          </button>
+          </Button>
         </div>
 
         {notice && (
@@ -7824,7 +7268,7 @@ function ExecutionOrdersManagementPanel({ orders, setOrders }) {
           >
             <label>
               <span>تیتر سفارش</span>
-              <input
+              <Input
                 value={form.title}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -7837,7 +7281,7 @@ function ExecutionOrdersManagementPanel({ orders, setOrders }) {
             </label>
             <label>
               <span>موضوع دوره یا رویداد</span>
-              <input
+              <Input
                 value={form.subject}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -7850,7 +7294,7 @@ function ExecutionOrdersManagementPanel({ orders, setOrders }) {
             </label>
             <label>
               <span>تاریخ ددلاین ساخت</span>
-              <input
+              <Input
                 value={form.deadlineDate}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -7863,7 +7307,7 @@ function ExecutionOrdersManagementPanel({ orders, setOrders }) {
             </label>
             <label>
               <span>ساعت ددلاین</span>
-              <input
+              <Input
                 value={form.deadlineTime}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -7876,7 +7320,7 @@ function ExecutionOrdersManagementPanel({ orders, setOrders }) {
             </label>
             <label className="committee-events__field-full">
               <span>توضیح مختصر</span>
-              <textarea
+              <Textarea
                 value={form.summary}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -7888,7 +7332,9 @@ function ExecutionOrdersManagementPanel({ orders, setOrders }) {
               />
             </label>
             <div className="committee-events__form-actions">
-              <button type="submit">ثبت سفارش اجرا</button>
+              <Button variant="secondary" size="sm" width="content" type="submit">
+                  ثبت سفارش اجرا
+                </Button>
             </div>
           </form>
         )}
@@ -8510,7 +7956,7 @@ function NewsBuilderPanel({
         <div className="committee-dashboard__form-grid">
           <label>
             <span>عنوان خبر</span>
-            <input
+            <Input
               type="text"
               value={formData.title}
               onChange={(event) => updateField("title", event.target.value)}
@@ -8520,7 +7966,7 @@ function NewsBuilderPanel({
 
           <label>
             <span>موضوع خبر</span>
-            <select
+            <Select
               value={formData.category}
               onChange={(event) => updateField("category", event.target.value)}
             >
@@ -8529,7 +7975,7 @@ function NewsBuilderPanel({
                   {categoryOption}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
 
           <label className="committee-dashboard__form-field--wide">
@@ -8541,7 +7987,7 @@ function NewsBuilderPanel({
                 accept="image/*"
                 onChange={handleImageUpload}
               />
-              <input
+              <Input
                 type="text"
                 value={formData.image}
                 onChange={(event) => updateField("image", event.target.value)}
@@ -8555,7 +8001,7 @@ function NewsBuilderPanel({
                     ? `تصویر انتخاب‌شده: ${imageUploadName}`
                     : "تصویر برای این خبر ثبت شده است."}
                 </small>
-                <button
+                <Button variant="danger-soft" size="sm" width="content"
                   type="button"
                   className="committee-news-builder__remove-image"
                   onClick={clearNewsImage}
@@ -8563,7 +8009,7 @@ function NewsBuilderPanel({
                   aria-label="حذف تصویر خبر"
                 >
                   ✕ حذف تصویر
-                </button>
+                </Button>
               </div>
             )}
           </label>
@@ -8584,7 +8030,7 @@ function NewsBuilderPanel({
 
           <label className="committee-dashboard__form-field--wide">
             <span>خلاصه خبر</span>
-            <textarea
+            <Textarea
               rows={3}
               value={formData.summary}
               onChange={(event) => updateField("summary", event.target.value)}
@@ -8595,45 +8041,46 @@ function NewsBuilderPanel({
           <div className="committee-dashboard__form-field--wide committee-news-editor">
             <span>متن کامل خبر</span>
             <div className="committee-news-editor__toolbar">
-              <button
+              <Button variant="outline" size="sm" width="content"
                 type="button"
                 onClick={() => runEditorCommand("formatBlock", "p")}
               >
                 متن
-              </button>
-              <button
+              </Button>
+              <Button variant="outline" size="sm" width="content"
                 type="button"
                 onClick={() => runEditorCommand("formatBlock", "h2")}
               >
                 تیتر اصلی
-              </button>
-              <button
+              </Button>
+              <Button variant="outline" size="sm" width="content"
                 type="button"
                 onClick={() => runEditorCommand("formatBlock", "h3")}
               >
                 تیتر فرعی
-              </button>
-              <button type="button" onClick={() => runEditorCommand("bold")}>
+              </Button>
+              <Button variant="outline" size="sm" width="content" type="button" onClick={() => runEditorCommand("bold")}>
                 Bold
-              </button>
-              <button
+              </Button>
+              <Button variant="outline" size="sm" width="content"
                 type="button"
                 onClick={() => runEditorCommand("underline")}
               >
                 Underline
-              </button>
-              <button
+              </Button>
+              <Button variant="outline" size="sm" width="content"
                 type="button"
                 onClick={() => runEditorCommand("createLink")}
               >
                 لینک‌دهی
-              </button>
-              <button
+              </Button>
+              <Button variant="danger-soft" size="sm" width="content"
                 type="button"
-                onClick={() => runEditorCommand("removeFormat")}
+                onClick={() =>
+                  runEditorCommand("removeFormat")}
               >
                 حذف فرمت
-              </button>
+                </Button>
             </div>
             <div
               ref={editorRef}
@@ -8655,17 +8102,19 @@ function NewsBuilderPanel({
       </div>
 
       <div className="committee-dashboard__form-actions committee-news-builder__actions">
-        <button type="button" onClick={previewNews}>
+        <Button variant="outline" size="sm" width="content" type="button" onClick={previewNews}>
           پیش‌نمایش
-        </button>
-        <button type="button" onClick={() => submitNews(false)}>
+        </Button>
+        <Button variant="secondary" size="sm" width="content" type="button" onClick={() =>
+                  submitNews(false)}>
           {isEditingNews ? "ذخیره تغییرات" : "ذخیره پیش‌نویس"}
-        </button>
-        <button type="button" onClick={() => submitNews(true)}>
+                </Button>
+        <Button variant="secondary" size="sm" width="content" type="button" onClick={() =>
+                  submitNews(true)}>
           {isEditingNews ? "ذخیره و انتشار" : "ثبت و انتشار"}
-        </button>
+                </Button>
         {isEditingNews && (
-          <button
+          <Button variant="outline" size="sm" width="content"
             type="button"
             className="committee-news-builder__cancel-edit"
             onClick={() => {
@@ -8674,7 +8123,7 @@ function NewsBuilderPanel({
             }}
           >
             انصراف از ویرایش
-          </button>
+          </Button>
         )}
       </div>
     </section>
@@ -8773,7 +8222,7 @@ function NewsHistoryPanel({
               </div>
 
               <div className="committee-news-history__actions">
-                <button
+                <Button variant="outline" size="sm" width="content"
                   type="button"
                   className="committee-news-history__icon-button"
                   onClick={() => openNewsItemPreviewInNewTab(newsItem)}
@@ -8781,24 +8230,26 @@ function NewsHistoryPanel({
                   aria-label={`پیش‌نمایش ${newsItem.title}`}
                 >
                   👁
-                </button>
-                <button type="button" onClick={() => onEditNews(newsItem)}>
+                </Button>
+                <Button variant="outline" size="sm" width="content" type="button" onClick={() => onEditNews(newsItem)}>
                   ویرایش
-                </button>
+                </Button>
                 {newsItem.status !== "منتشر شده" && (
-                  <button
+                  <Button variant="secondary" size="sm" width="content"
                     type="button"
-                    onClick={() => onPublishNews(newsItem.id)}
+                    onClick={() =>
+                  onPublishNews(newsItem.id)}
                   >
                     انتشار
-                  </button>
+                </Button>
                 )}
                 {newsItem.status === "منتشر شده" && (
                   <Link to={`/news/${newsItem.id}`}>مشاهده</Link>
                 )}
-                <button type="button" onClick={() => onDeleteNews(newsItem.id)}>
+                <Button variant="danger-soft" size="sm" width="content" type="button" onClick={() =>
+                  onDeleteNews(newsItem.id)}>
                   حذف
-                </button>
+                </Button>
               </div>
             </article>
           ))}
@@ -8844,7 +8295,6 @@ function CommitteeSecretariatDashboardPage() {
   const [expandedMenus, setExpandedMenus] = useState(() => []);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const notificationMenuRef = useRef(null);
   const [committeeRecentMessages, setCommitteeRecentMessages] = useState(() =>
     getCommitteeNotifications().slice(0, 3),
   );
@@ -8941,31 +8391,17 @@ function CommitteeSecretariatDashboardPage() {
 
   const activeSectionData =
     SECTION_DATA[activeSection] || SECTION_DATA.dashboard;
+  const activeNavSection =
+    NAV_ITEMS.find(
+      (item) =>
+        item.id === activeSection ||
+        item.subItems?.some((subItem) => subItem.id === activeSection),
+    )?.id || activeSection;
   const committeeDashboardStats = useMemo(
     () => getCommitteeDashboardStats(),
     [],
   );
 
-  useEffect(() => {
-    if (!isNotificationOpen) {
-      return undefined;
-    }
-
-    const closeOnOutsideClick = (event) => {
-      if (
-        notificationMenuRef.current &&
-        !notificationMenuRef.current.contains(event.target)
-      ) {
-        setIsNotificationOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", closeOnOutsideClick);
-
-    return () => {
-      document.removeEventListener("mousedown", closeOnOutsideClick);
-    };
-  }, [isNotificationOpen]);
 
   const refreshCommitteeMessages = () => {
     setCommitteeRecentMessages(getCommitteeNotifications().slice(0, 3));
@@ -9095,7 +8531,7 @@ function CommitteeSecretariatDashboardPage() {
   const renderContent = () => {
     if (activeSection === "dashboard") {
       return (
-        <DashboardPanel
+        <CommitteeDashboardHome
           requests={requests}
           calls={calls}
           plans={plans}
@@ -9364,31 +8800,43 @@ function CommitteeSecretariatDashboardPage() {
     }
 
     if (activeSection === "messages") {
-      return <MessagesPanel />;
+      return (
+        <DashboardMessages
+          getMessages={getCommitteeNotifications}
+          markAllRead={markAllCommitteeNotificationsAsRead}
+          deleteAll={deleteAllCommitteeNotifications}
+          markRead={markNotificationAsRead}
+          deleteOne={deleteNotification}
+          eyebrow="پیام‌ها و اعلانات"
+          title="اعلان‌های دبیرخانه"
+          description="فعالیت‌های جدید کاربران، درخواست‌های پشتیبانی و پاسخ‌های ثبت‌شده در این بخش قابل پیگیری است."
+        />
+      );
     }
 
     if (activeSection === "faq") {
-      return <FaqPanel />;
+      return <DashboardFAQ items={FAQ_ITEMS} />;
     }
 
     if (activeSection === "profile") {
       return (
-        <ProfilePanel
+        <DashboardProfileView
           profile={profile}
-          onEdit={() => setActiveSection("edit-profile")}
+          onEdit={() => openCommitteeSection("edit-profile")}
         />
       );
     }
 
     if (activeSection === "edit-profile") {
       return (
-        <EditProfilePanel
+        <DashboardProfileEdit
           profile={profile}
-          onSave={(newProfile) => {
-            saveCommitteeProfile(newProfile);
-            setActiveSection("profile");
+          onSave={(newProfile, passwordData) => {
+            const saved = saveCommitteeProfile(newProfile, passwordData);
+            openCommitteeSection("profile");
+            return saved;
           }}
-          onCancel={() => setActiveSection("profile")}
+          onCancel={() => openCommitteeSection("profile")}
         />
       );
     }
@@ -9397,308 +8845,46 @@ function CommitteeSecretariatDashboardPage() {
   };
 
   return (
-    <div
-      className={`innovator-dashboard committee-dashboard ${
-        isCollapsed ? "innovator-dashboard--collapsed" : ""
-      }`}
+    <DashboardShell
+      collapsed={isCollapsed}
+      onToggleSidebar={() => setIsCollapsed((currentValue) => !currentValue)}
+      logoSrc={universityLogo}
+      brandTitle="سامانه هاتف"
+      navItems={NAV_ITEMS}
+      activeSection={activeNavSection}
+      activeSubItem={activeSection}
+      openMenuId={expandedMenus[0] || ""}
+      onNavClick={handleNavigation}
+      onSubNavClick={handleSubNavigation}
+      title={activeSectionData.title}
+      className="committee-dashboard"
+      topbarActions={
+        <>
+          <DashboardNotificationMenu
+            open={isNotificationOpen}
+            onOpenChange={setIsNotificationOpen}
+            unreadCount={unreadNotificationCount}
+            messages={committeeRecentMessages}
+            onOpenMessages={openCommitteeMessagesCenter}
+            onMarkAllRead={markAllCommitteeMessagesAsRead}
+            onMarkRead={markCommitteeMessageAsRead}
+            onOpenMessage={openCommitteeNotificationTarget}
+            onBeforeOpen={() => setIsProfileMenuOpen(false)}
+          />
+          <DashboardProfileMenu
+            profile={profile}
+            open={isProfileMenuOpen}
+            onOpenChange={setIsProfileMenuOpen}
+            onOpenProfile={() => openCommitteeSection("profile")}
+            onEditProfile={() => openCommitteeSection("edit-profile")}
+            onLogout={() => navigate("/auth")}
+            onBeforeOpen={() => setIsNotificationOpen(false)}
+          />
+        </>
+      }
     >
-      <aside className="innovator-dashboard__sidebar">
-        <div className="innovator-dashboard__sidebar-top">
-          <div className="innovator-dashboard__sidebar-head">
-            <button
-              type="button"
-              className="innovator-dashboard__menu-button"
-              onClick={() => setIsCollapsed((currentValue) => !currentValue)}
-              aria-label="باز و بسته کردن منو"
-            >
-              <MenuIcon />
-            </button>
-
-            <Link to="/" className="innovator-dashboard__brand">
-              <img src={universityLogo} alt="لوگوی دانشگاه تهران" />
-              <span className="innovator-dashboard__brand-text">
-                <strong>سامانه هاتف</strong>
-              </span>
-            </Link>
-          </div>
-
-          <nav className="innovator-dashboard__nav" aria-label="منوی داشبورد">
-            {NAV_ITEMS.map((item) => {
-              const isOpen = expandedMenus.includes(item.id);
-              const hasSubItems = Boolean(item.subItems?.length);
-              const isActive =
-                activeSection === item.id ||
-                item.subItems?.some((subItem) => subItem.id === activeSection);
-
-              return (
-                <div className="innovator-dashboard__nav-group" key={item.id}>
-                  <button
-                    type="button"
-                    className={`innovator-dashboard__nav-item ${
-                      isActive ? "innovator-dashboard__nav-item--active" : ""
-                    }`}
-                    onClick={() => handleNavigation(item)}
-                    title={item.label}
-                  >
-                    <span className="innovator-dashboard__nav-icon">
-                      {item.icon}
-                    </span>
-                    <span className="innovator-dashboard__nav-text">
-                      {item.label}
-                    </span>
-                    {hasSubItems && (
-                      <span className="innovator-dashboard__nav-chevron">
-                        <ChevronIcon isOpen={isOpen} />
-                      </span>
-                    )}
-                  </button>
-
-                  {hasSubItems && (
-                    <div
-                      className={`innovator-dashboard__subnav ${
-                        isOpen ? "innovator-dashboard__subnav--open" : ""
-                      }`}
-                    >
-                      {item.subItems.map((subItem) => (
-                        <button
-                          type="button"
-                          key={subItem.id}
-                          className={`innovator-dashboard__subnav-item ${
-                            activeSection === subItem.id
-                              ? "innovator-dashboard__subnav-item--active"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            handleSubNavigation(item.id, subItem.id)
-                          }
-                        >
-                          {subItem.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
-        </div>
-      </aside>
-
-      <main className="innovator-dashboard__main">
-        <header className="innovator-dashboard__topbar">
-          <div className="innovator-dashboard__topbar-title">
-            <div className="innovator-dashboard__breadcrumb">
-              <span>داشبورد</span>
-              <i>/</i>
-              <strong>{activeSectionData.title}</strong>
-            </div>
-
-            <h1>{activeSectionData.title}</h1>
-            <p>{activeSectionData.description}</p>
-          </div>
-
-          <div className="innovator-dashboard__topbar-actions">
-            <DashboardDateTime />
-
-            <div
-              className="innovator-dashboard__notification-menu"
-              ref={notificationMenuRef}
-            >
-              <button
-                type="button"
-                className="innovator-dashboard__notification-trigger"
-                onClick={() => {
-                  setIsNotificationOpen((currentValue) => !currentValue);
-                  setIsProfileMenuOpen(false);
-                }}
-                aria-label="اعلان‌ها"
-              >
-                <BellIcon />
-                {unreadNotificationCount > 0 && (
-                  <span>{unreadNotificationCount}</span>
-                )}
-              </button>
-
-              {isNotificationOpen && (
-                <div className="innovator-dashboard__notification-dropdown">
-                  <div className="innovator-dashboard__notification-header">
-                    <strong>اعلان‌های جدید</strong>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={openCommitteeMessagesCenter}
-                        title="رفتن به پیام‌ها و اعلانات"
-                        style={{
-                          width: "30px",
-                          height: "30px",
-                          border: "0",
-                          borderRadius: "999px",
-                          background: "#e8f8ff",
-                          cursor: "pointer",
-                        }}
-                      >
-                        📨
-                      </button>
-                      <button
-                        type="button"
-                        onClick={markAllCommitteeMessagesAsRead}
-                        disabled={unreadNotificationCount === 0}
-                        style={{
-                          height: "30px",
-                          border: "0",
-                          borderRadius: "999px",
-                          padding: "0 10px",
-                          color: unreadNotificationCount
-                            ? "#0e7ca8"
-                            : "#64748b",
-                          background: unreadNotificationCount
-                            ? "#e8f8ff"
-                            : "#e9edf2",
-                          fontFamily: "inherit",
-                          fontSize: "10px",
-                          fontWeight: 900,
-                          cursor: unreadNotificationCount
-                            ? "pointer"
-                            : "default",
-                        }}
-                      >
-                        خواندن همه
-                      </button>
-                    </div>
-                    <small>{unreadNotificationCount} خوانده‌نشده</small>
-                  </div>
-
-                  <div className="innovator-dashboard__notification-list">
-                    {committeeRecentMessages.map((message) => (
-                      <article
-                        className={`innovator-dashboard__notification-item ${
-                          message.isRead
-                            ? "innovator-dashboard__notification-item--read"
-                            : ""
-                        }`}
-                        key={message.id}
-                        onClick={() => openCommitteeNotificationTarget(message)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            openCommitteeNotificationTarget(message);
-                          }
-                        }}
-                        style={{
-                          cursor: "pointer",
-                          border: message.isRead
-                            ? "1px solid #bbf7d0"
-                            : "1px solid transparent",
-                          background: message.isRead ? "#f0fdf4" : undefined,
-                          opacity: message.isRead ? 1 : undefined,
-                        }}
-                      >
-                        <div>
-                          <h4>{message.title}</h4>
-                          <p>{message.sentAt}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(event) =>
-                            markCommitteeMessageAsRead(message.id, event)
-                          }
-                          disabled={message.isRead}
-                          style={
-                            message.isRead
-                              ? { color: "#166534", background: "#dcfce7" }
-                              : undefined
-                          }
-                        >
-                          {message.isRead ? "خوانده شد" : "خواندن"}
-                        </button>
-                      </article>
-                    ))}
-
-                    {committeeRecentMessages.length === 0 && (
-                      <article className="innovator-dashboard__notification-item">
-                        <div>
-                          <h4>اعلان جدیدی ندارید</h4>
-                          <p>همه چیز خوانده شده است.</p>
-                        </div>
-                      </article>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="innovator-dashboard__profile-menu">
-              <button
-                type="button"
-                className="innovator-dashboard__profile-trigger"
-                onClick={() =>
-                  setIsProfileMenuOpen((currentValue) => !currentValue)
-                }
-              >
-                <span className="innovator-dashboard__profile-text">
-                  <strong>
-                    {profile.fullName ||
-                      `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
-                  </strong>
-                  <small>{profile.role}</small>
-                </span>
-                {profile.avatarPreview ? (
-                  <img
-                    className="innovator-dashboard__top-avatar"
-                    src={profile.avatarPreview}
-                    alt={profile.fullName || "پروفایل کاربر"}
-                  />
-                ) : (
-                  <span className="innovator-dashboard__top-avatar">
-                    {profile.avatarLetter || profile.fullName?.[0] || "ک"}
-                  </span>
-                )}
-                <span className="innovator-dashboard__profile-caret">⌄</span>
-              </button>
-
-              {isProfileMenuOpen && (
-                <div className="innovator-dashboard__profile-dropdown">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveSection("profile");
-                      setIsProfileMenuOpen(false);
-                    }}
-                  >
-                    مشاهده پروفایل
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveSection("edit-profile");
-                      setIsProfileMenuOpen(false);
-                    }}
-                  >
-                    ویرایش پروفایل
-                  </button>
-                  <button
-                    type="button"
-                    className="innovator-dashboard__profile-logout"
-                    onClick={() => navigate("/auth")}
-                  >
-                    خروج
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {renderContent()}
-      </main>
-    </div>
+      {renderContent()}
+    </DashboardShell>
   );
 }
 

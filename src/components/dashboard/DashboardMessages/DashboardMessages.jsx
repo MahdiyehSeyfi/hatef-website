@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 import {
   deleteAllNotificationsForCurrentUser,
   deleteNotification,
@@ -15,25 +14,30 @@ import DashboardStatusBadge from "../DashboardStatusBadge/DashboardStatusBadge";
 import DashboardTabs from "../DashboardTabs/DashboardTabs";
 import "./DashboardMessages.css";
 
-function DashboardMessages() {
-  const [messages, setMessages] = useState(() =>
-    getNotificationsForCurrentUser(),
-  );
+function DashboardMessages({
+  getMessages = getNotificationsForCurrentUser,
+  markAllRead = markAllNotificationsAsReadForCurrentUser,
+  deleteAll = deleteAllNotificationsForCurrentUser,
+  markRead = markNotificationAsRead,
+  deleteOne = deleteNotification,
+  eyebrow = "پیام‌ها و اعلانات",
+  title = "اعلان‌های سامانه",
+  description =
+    "اعلان‌های مربوط به درخواست‌ها، پاسخ‌ها، وظایف و فعالیت‌های جدید اینجا نمایش داده می‌شود.",
+}) {
+  const [messages, setMessages] = useState(() => getMessages());
   const [filter, setFilter] = useState("all");
   const [selectedMessageId, setSelectedMessageId] = useState(null);
 
   const refreshMessages = () => {
-    setMessages(getNotificationsForCurrentUser());
+    setMessages(getMessages());
   };
 
   const selectedMessage = messages.find(
     (message) => String(message.id) === String(selectedMessageId),
   );
-
   const unreadCount = messages.filter((message) => !message.isRead).length;
-  const importantCount = messages.filter(
-    (message) => message.isImportant,
-  ).length;
+  const importantCount = messages.filter((message) => message.isImportant).length;
 
   const filteredMessages = messages.filter((message) => {
     if (filter === "unread") return !message.isRead;
@@ -41,26 +45,26 @@ function DashboardMessages() {
     return true;
   });
 
-  const markAllAsRead = () => {
-    markAllNotificationsAsReadForCurrentUser();
+  const handleMarkAllAsRead = () => {
+    markAllRead();
     refreshMessages();
   };
 
-  const deleteAllMessages = () => {
+  const handleDeleteAll = () => {
     if (!window.confirm("آیا از حذف همه پیام‌ها مطمئن هستید؟")) return;
-    deleteAllNotificationsForCurrentUser();
+    deleteAll();
     setSelectedMessageId(null);
     refreshMessages();
   };
 
   const openMessage = (messageId) => {
-    markNotificationAsRead(messageId);
+    markRead(messageId);
     setSelectedMessageId(messageId);
     refreshMessages();
   };
 
   const removeMessage = (messageId) => {
-    deleteNotification(messageId);
+    deleteOne(messageId);
     if (String(selectedMessageId) === String(messageId)) {
       setSelectedMessageId(null);
     }
@@ -79,7 +83,6 @@ function DashboardMessages() {
                 {selectedMessage.category} / {selectedMessage.sentAt}
               </p>
             </div>
-
             <Button
               type="button"
               variant="outline"
@@ -93,8 +96,12 @@ function DashboardMessages() {
               بازگشت
             </Button>
           </div>
-
-          <DashboardPanel as="article" className="messages-panel__detail-card" variant="subtle" padding="md">
+          <DashboardPanel
+            as="article"
+            className="messages-panel__detail-card"
+            variant="subtle"
+            padding="md"
+          >
             {selectedMessage.isImportant && (
               <DashboardStatusBadge tone="warning" status="مهم" />
             )}
@@ -110,23 +117,25 @@ function DashboardMessages() {
       <DashboardPanel as="div" className="messages-panel__panel" padding="md">
         <div className="messages-panel__panel-header">
           <div>
-            <span>پیام‌ها و اعلانات</span>
-            <h3>اعلان‌های سامانه</h3>
-            <p>
-              اعلان‌های مربوط به درخواست‌ها، پاسخ‌ها، وظایف و فعالیت‌های جدید
-              اینجا نمایش داده می‌شود.
-            </p>
+            <span>{eyebrow}</span>
+            <h3>{title}</h3>
+            <p>{description}</p>
           </div>
-
           <div className="messages-panel__header-actions">
-            <Button type="button" variant="ghost" size="sm" width="content" onClick={markAllAsRead}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              width="content"
+              onClick={handleMarkAllAsRead}
+            >
               خواندن همه
             </Button>
             <IconButton
               type="button"
               variant="ghost"
               size="md"
-              onClick={deleteAllMessages}
+              onClick={handleDeleteAll}
               disabled={messages.length === 0}
               aria-label="حذف همه پیام‌ها"
             >
@@ -161,22 +170,17 @@ function DashboardMessages() {
               <div className="messages-panel__card-main">
                 <div className="messages-panel__title-row">
                   <h4>{message.title}</h4>
-                  {!message.isRead && (
-                    <DashboardStatusBadge status="جدید" />
-                  )}
+                  {!message.isRead && <DashboardStatusBadge status="جدید" />}
                   {message.isImportant && (
                     <DashboardStatusBadge tone="warning" status="مهم" />
                   )}
                 </div>
-
                 <p>{message.body}</p>
-
                 <div className="messages-panel__meta">
                   <span>{message.category}</span>
                   <span>{message.sentAt}</span>
                 </div>
               </div>
-
               <div className="messages-panel__card-actions messages-panel__actions">
                 <Button
                   type="button"
@@ -199,7 +203,6 @@ function DashboardMessages() {
               </div>
             </DashboardPanel>
           ))}
-
           {filteredMessages.length === 0 && (
             <DashboardEmptyState
               title="پیامی برای نمایش وجود ندارد"

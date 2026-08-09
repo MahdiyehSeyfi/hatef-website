@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 import bannerImage from "../../assets/images/banner.png";
@@ -20,17 +20,10 @@ import {
   sendActivityParticipantNotice,
 } from "../../services/activityParticipantNoticeService";
 import {
-  addSupportTicket,
-  deleteSupportTicket,
-  getCurrentUserSupportTickets,
-} from "../../services/supportService";
-import {
   acceptExecutionOrder as acceptExecutionOrderInService,
   getInstructorExecutionOrders,
 } from "../../services/executionOrderService";
 import {
-  deleteAllNotificationsForCurrentUser,
-  deleteNotification,
   getNotificationsForCurrentUser,
   markAllNotificationsAsReadForCurrentUser,
   markNotificationAsRead,
@@ -48,18 +41,20 @@ import Select from "../../components/ui/Select/Select";
 import Textarea from "../../components/ui/Textarea/Textarea";
 import {
   DashboardChoiceCard,
-  DashboardDisclosure,
   DashboardEmptyState,
+  DashboardFAQ,
+  DashboardMessages,
   DashboardNotice,
-  DashboardNotificationTrigger,
-  DashboardPagination,
+  DashboardNotificationMenu,
   DashboardPanel as SharedDashboardPanel,
-  DashboardProfileTrigger,
-  DashboardSidebarNav,
+  DashboardProfileEdit,
+  DashboardProfileMenu,
+  DashboardProfileView,
+  DashboardShell,
   DashboardStatCard,
   DashboardStatusBadge,
+  DashboardSupportRequests,
   DashboardTabs,
-  DashboardToolbar,
 } from "../../components/dashboard";
 
 import "./InnovatorDashboardPage.css";
@@ -366,65 +361,6 @@ const INITIAL_ACTIVITIES = [
   },
 ];
 
-const INITIAL_MESSAGES = [
-  {
-    id: 1,
-    title: "سفارش اجرای جدید برای شما ثبت شد.",
-    category: "پیام سامانه",
-    time: "امروز",
-    sentAt: "1405/03/28 - ساعت 09:15",
-    isRead: false,
-    isImportant: true,
-    body: "یک سفارش اجرای جدید برای طراحی یا برگزاری برنامه آموزشی در پنل شما ثبت شده است. برای بررسی، به بخش سفارش‌های اجرا مراجعه کنید.",
-  },
-  {
-    id: 2,
-    title: "وضعیت یکی از دوره‌ها به منتشر شده تغییر کرد.",
-    category: "اطلاعیه انتشار",
-    time: "دیروز",
-    sentAt: "1405/03/27 - ساعت 14:20",
-    isRead: false,
-    isImportant: false,
-    body: "دوره شما پس از بررسی دبیرخانه منتشر شده و اکنون امکان مشاهده مدیریت ثبت‌نام‌کنندگان برای آن فعال است.",
-  },
-  {
-    id: 3,
-    title: "یادآوری شروع رویداد تخصصی",
-    category: "یادآوری",
-    time: "۳ روز پیش",
-    sentAt: "1405/03/25 - ساعت 11:00",
-    isRead: true,
-    isImportant: false,
-    body: "رویداد تخصصی ارتباط دانشگاه و صنعت طبق برنامه اعلام‌شده برگزار خواهد شد. لطفاً اطلاعات شرکت‌کنندگان را بررسی کنید.",
-  },
-];
-
-const INITIAL_SUPPORT_REQUESTS = [
-  {
-    id: 1,
-    title: "درخواست بررسی وضعیت انتشار دوره",
-    message:
-      "دوره‌ای که ثبت کرده‌ام هنوز در انتظار تایید است. لطفاً وضعیت بررسی را اعلام کنید.",
-    sentAt: "1405/03/20 - ساعت 10:30",
-    status: "پاسخ داده شده",
-    seenBySupport: true,
-    supportReply:
-      "درخواست شما بررسی شد. نتیجه پس از تکمیل بررسی دبیرخانه اعلام می‌شود.",
-    repliedAt: "1405/03/21 - ساعت 09:10",
-  },
-  {
-    id: 2,
-    title: "مشکل در پیش‌نمایش رویداد",
-    message:
-      "در هنگام باز کردن پیش‌نمایش رویداد، بخشی از اطلاعات نمایش داده نمی‌شود.",
-    sentAt: "1405/03/22 - ساعت 14:15",
-    status: "در انتظار پیگیری",
-    seenBySupport: false,
-    supportReply: "",
-    repliedAt: "",
-  },
-];
-
 const FAQ_ITEMS = [
   {
     id: 1,
@@ -556,42 +492,6 @@ const WIZARD_STEPS = [
   { id: "team", title: "تیم و مزایا" },
   { id: "review", title: "مرور نهایی" },
 ];
-
-function MenuIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M4 7h16M4 12h16M4 17h16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M18 9a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M10 21a2 2 0 0 0 4 0"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 function ChevronIcon({ isOpen }) {
   return (
@@ -755,25 +655,6 @@ function UsersIcon() {
         strokeLinecap="round"
       />
     </svg>
-  );
-}
-
-function DashboardDateTime() {
-  const [dateTime, setDateTime] = useState(() => new Date());
-  useState(() => {
-    const timer = window.setInterval(() => setDateTime(new Date()), 60_000);
-    return () => window.clearInterval(timer);
-  });
-
-  return (
-    <p>
-      {dateTime.toLocaleDateString("fa-IR", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })}
-    </p>
   );
 }
 
@@ -1802,7 +1683,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
                     />
                     <Button
                       type="button"
-                      variant="danger"
+                      variant="danger-soft"
                       size="sm"
                       width="content"
                       onClick={() => removeListItem("audiences", index, 1)}
@@ -2484,7 +2365,7 @@ function CreateEventPanel({ onSubmitActivity }) {
                     />
                     <Button
                       type="button"
-                      variant="danger"
+                      variant="danger-soft"
                       size="sm"
                       width="content"
                       onClick={() => removeListItem("audiences", index, 1)}
@@ -2753,7 +2634,7 @@ function RepeatSection({
               <strong>{toPersianNumber(index + 1)}</strong>
               <Button
                 type="button"
-                variant="danger"
+                variant="danger-soft"
                 size="sm"
                 width="content"
                 disabled={items.length <= minCount}
@@ -3701,805 +3582,6 @@ function ParticipantNotificationsPanel({ mode, activities }) {
   );
 }
 
-function MessagesPanel({ onOpenTarget = () => {} }) {
-  const [messages, setMessages] = useState(() =>
-    getNotificationsForCurrentUser(),
-  );
-  const [selectedMessageId, setSelectedMessageId] = useState(null);
-  const [filter, setFilter] = useState("all");
-
-  useEffect(() => {
-    setMessages(getNotificationsForCurrentUser());
-  }, []);
-
-  const refreshMessages = () => setMessages(getNotificationsForCurrentUser());
-
-  const getMessageBucket = (message) => {
-    const sourceType = String(message.sourceType || "");
-    const category = String(message.category || "");
-
-    if (sourceType === "support-ticket" || category.includes("پشتیبانی")) {
-      return "support";
-    }
-
-    if (sourceType === "execution-order" || category.includes("سفارش")) {
-      return "orders";
-    }
-
-    if (
-      sourceType === "activity-participant-notice" ||
-      sourceType === "activity-registration" ||
-      sourceType === "instructor-activity" ||
-      category.includes("دوره") ||
-      category.includes("رویداد")
-    ) {
-      return "activities";
-    }
-
-    return "system";
-  };
-
-  const getMessageIcon = (message) => {
-    const bucket = getMessageBucket(message);
-
-    if (bucket === "support") return "🎧";
-    if (bucket === "orders") return "📌";
-    if (bucket === "activities") return "🎓";
-    return "🔔";
-  };
-
-  const getMessageTargetLabel = (message) => {
-    const bucket = getMessageBucket(message);
-
-    if (bucket === "support") return "رفتن به درخواست‌ها و پشتیبانی";
-    if (bucket === "orders") return "رفتن به سفارش‌های اجرا";
-    if (bucket === "activities") return "رفتن به دوره‌ها و رویدادها";
-    return "مشاهده در مرکز پیام";
-  };
-
-  const selectedMessage = messages.find(
-    (message) => message.id === selectedMessageId,
-  );
-
-  const unreadCount = messages.filter((message) => !message.isRead).length;
-  const importantCount = messages.filter(
-    (message) => message.isImportant,
-  ).length;
-  const supportCount = messages.filter(
-    (message) => getMessageBucket(message) === "support",
-  ).length;
-  const activityCount = messages.filter(
-    (message) => getMessageBucket(message) === "activities",
-  ).length;
-  const orderCount = messages.filter(
-    (message) => getMessageBucket(message) === "orders",
-  ).length;
-
-  const filteredMessages = messages.filter((message) => {
-    if (filter === "unread") return !message.isRead;
-    if (filter === "important") return message.isImportant;
-    if (filter === "support") return getMessageBucket(message) === "support";
-    if (filter === "activities")
-      return getMessageBucket(message) === "activities";
-    if (filter === "orders") return getMessageBucket(message) === "orders";
-    return true;
-  });
-
-  const openMessage = (messageId) => {
-    markNotificationAsRead(messageId);
-    setMessages(getNotificationsForCurrentUser());
-    setSelectedMessageId(messageId);
-  };
-
-  const closeMessage = () => setSelectedMessageId(null);
-
-  const markAllAsRead = () => {
-    setMessages(markAllNotificationsAsReadForCurrentUser());
-  };
-
-  const deleteMessage = (messageId) => {
-    deleteNotification(messageId);
-    setMessages(getNotificationsForCurrentUser());
-    if (selectedMessageId === messageId) setSelectedMessageId(null);
-  };
-
-  const deleteAllMessages = () => {
-    const confirmed = window.confirm("آیا از حذف همه پیام‌ها مطمئن هستید؟");
-    if (!confirmed) return;
-    deleteAllNotificationsForCurrentUser();
-    setMessages([]);
-    setSelectedMessageId(null);
-  };
-
-  const openMessageTarget = (message) => {
-    markNotificationAsRead(message.id);
-    refreshMessages();
-    onOpenTarget(message);
-  };
-
-  if (selectedMessage) {
-    return (
-      <section className="messages-panel">
-        <div className="messages-panel__panel">
-          <div className="messages-panel__panel-header">
-            <div>
-              <span>{selectedMessage.category}</span>
-              <h3>{selectedMessage.title}</h3>
-              <p>{selectedMessage.sentAt}</p>
-            </div>
-
-            <Button type="button" variant="outline" size="sm" width="content" onClick={closeMessage}>
-              بازگشت به پیام‌ها
-            </Button>
-          </div>
-
-          <article className="messages-panel__detail-card">
-            <div className="messages-panel__title-row">
-              <span aria-hidden="true">{getMessageIcon(selectedMessage)}</span>
-              {selectedMessage.isImportant && (
-                <span className="messages-panel__important-badge">مهم</span>
-              )}
-              <span className="messages-panel__filter-count">
-                {selectedMessage.isRead ? "خوانده‌شده" : "جدید"}
-              </span>
-            </div>
-            <p>{selectedMessage.body}</p>
-            <div className="messages-panel__card-actions">
-              <Button type="button" variant="outline" size="sm" width="content" onClick={() => openMessageTarget(selectedMessage)}>
-                {getMessageTargetLabel(selectedMessage)}
-              </Button>
-              <IconButton type="button" variant="danger" size="sm" onClick={() => deleteMessage(selectedMessage.id)} aria-label={`حذف پیام ${selectedMessage.title}`} title="حذف پیام">
-                ×
-              </IconButton>
-            </div>
-          </article>
-        </div>
-      </section>
-    );
-  }
-
-  const filterItems = [
-    { id: "all", label: "همه پیام‌ها", count: messages.length },
-    { id: "unread", label: "خوانده‌نشده", count: unreadCount },
-    { id: "important", label: "مهم", count: importantCount },
-    { id: "activities", label: "دوره‌ها و رویدادها", count: activityCount },
-    { id: "orders", label: "سفارش‌های اجرا", count: orderCount },
-    { id: "support", label: "پشتیبانی", count: supportCount },
-  ];
-
-  return (
-    <section className="messages-panel">
-      <div className="messages-panel__panel">
-        <div className="messages-panel__panel-header">
-          <div>
-            <span>پیام‌ها و اعلانات</span>
-            <h3>مرکز پیام‌های مدرس</h3>
-            <p>
-              اعلان‌های مربوط به دوره‌ها، رویدادها، ثبت‌نام‌کنندگان، سفارش‌های
-              اجرا و درخواست‌های پشتیبانی در این بخش مدیریت می‌شوند.
-            </p>
-          </div>
-
-          <div className="messages-panel__header-actions">
-            <Button type="button" variant="ghost" size="sm" width="content" onClick={refreshMessages}>
-              به‌روزرسانی
-            </Button>
-            <Button type="button" variant="ghost" size="sm" width="content" onClick={markAllAsRead} disabled={unreadCount === 0}>
-              خواندن همه
-            </Button>
-            <IconButton type="button" variant="danger" size="sm" onClick={deleteAllMessages} aria-label="حذف همه پیام‌ها" title="حذف همه پیام‌ها" disabled={messages.length === 0}>
-              🗑
-            </IconButton>
-          </div>
-        </div>
-
-        <DashboardTabs
-          value={filter}
-          onChange={setFilter}
-          items={filterItems.map((item) => ({
-            value: item.id,
-            label: item.label,
-            count: toPersianNumber(item.count),
-          }))}
-          ariaLabel="فیلتر پیام‌ها"
-          className="messages-panel__filters"
-        />
-
-        <div className="messages-panel__list">
-          {filteredMessages.map((message) => (
-            <article
-              className={`messages-panel__card ${message.isRead ? "messages-panel__card--read" : ""}`}
-              key={message.id}
-            >
-              <div className="messages-panel__card-main">
-                <div className="messages-panel__title-row">
-                  <span aria-hidden="true">{getMessageIcon(message)}</span>
-                  <h4>{message.title}</h4>
-                  {!message.isRead && (
-                    <span className="messages-panel__unread-badge">جدید</span>
-                  )}
-                  {message.isImportant && (
-                    <span className="messages-panel__important-badge">مهم</span>
-                  )}
-                </div>
-                <div className="messages-panel__meta">
-                  <span>{message.category}</span>
-                  <span>{message.sentAt}</span>
-                </div>
-              </div>
-
-              <div className="messages-panel__card-actions">
-                <Button type="button" variant="outline" size="sm" width="content" onClick={() => openMessage(message.id)}>
-                  مشاهده
-                </Button>
-                <Button type="button" variant="ghost" size="sm" width="content" onClick={() => openMessageTarget(message)}>
-                  بخش مربوطه
-                </Button>
-                <IconButton type="button" variant="danger" size="sm" onClick={() => deleteMessage(message.id)} aria-label={`حذف پیام ${message.title}`} title="حذف پیام">
-                  ×
-                </IconButton>
-              </div>
-            </article>
-          ))}
-
-          {filteredMessages.length === 0 && (
-            <div className="messages-panel__empty">
-              پیامی برای این فیلتر وجود ندارد.
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FaqPanel() {
-  const categories = [
-    "همه",
-    ...new Set(FAQ_ITEMS.map((item) => item.category)),
-  ];
-  const [activeCategory, setActiveCategory] = useState("همه");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [openQuestionId, setOpenQuestionId] = useState(
-    FAQ_ITEMS[0]?.id || null,
-  );
-
-  const filteredItems = FAQ_ITEMS.filter((item) => {
-    const matchesCategory =
-      activeCategory === "همه" || item.category === activeCategory;
-    const matchesSearch =
-      item.question.includes(searchTerm) || item.answer.includes(searchTerm);
-    return matchesCategory && matchesSearch;
-  });
-
-  const toggleQuestion = (questionId) => {
-    setOpenQuestionId((currentId) =>
-      currentId === questionId ? null : questionId,
-    );
-  };
-
-  return (
-    <section className="faq-panel">
-      <div className="faq-panel__panel">
-        <div className="faq-panel__panel-header">
-          <div>
-            <span>سوالات متداول</span>
-            <h3>راهنمای سریع استفاده از داشبورد</h3>
-            <p>
-              پاسخ سوالات پرتکرار درباره ساخت دوره، ساخت رویداد، سفارش‌ها،
-              اطلاع‌رسانی و پشتیبانی.
-            </p>
-          </div>
-        </div>
-
-        <div className="faq-panel__tools">
-          <label>
-            <span>جست‌وجو در سوالات</span>
-            <Input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="عبارت موردنظر را وارد کنید..."
-            />
-          </label>
-
-          <DashboardTabs
-            value={activeCategory}
-            onChange={setActiveCategory}
-            items={categories.map((category) => ({ value: category, label: category }))}
-            ariaLabel="دسته‌بندی سوالات متداول"
-            className="faq-panel__categories"
-          />
-        </div>
-
-        <div className="faq-panel__list">
-          {filteredItems.map((item) => {
-            const isOpen = openQuestionId === item.id;
-            return (
-              <DashboardDisclosure
-                key={item.id}
-                open={isOpen}
-                eyebrow={item.category}
-                title={item.question}
-                onToggle={() => toggleQuestion(item.id)}
-                className="faq-panel__item"
-              >
-                <p>{item.answer}</p>
-              </DashboardDisclosure>
-            );
-          })}
-
-          {filteredItems.length === 0 && (
-            <div className="faq-panel__empty">
-              سوالی با این عبارت یا دسته‌بندی پیدا نشد.
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function RequestsPanel() {
-  const [requests, setRequests] = useState(() =>
-    getCurrentUserSupportTickets("مدرس"),
-  );
-  const [mode, setMode] = useState("list");
-  const [selectedRequestId, setSelectedRequestId] = useState(null);
-  const [requestTitle, setRequestTitle] = useState("");
-  const [requestMessage, setRequestMessage] = useState("");
-
-  const refreshRequests = () => {
-    setRequests(getCurrentUserSupportTickets("مدرس"));
-  };
-
-  useEffect(() => {
-    refreshRequests();
-  }, []);
-
-  const selectedRequest = requests.find(
-    (request) => String(request.id) === String(selectedRequestId),
-  );
-
-  const openNewRequest = () => {
-    refreshRequests();
-    setMode("new");
-    setSelectedRequestId(null);
-    setRequestTitle("");
-    setRequestMessage("");
-  };
-
-  const openList = () => {
-    refreshRequests();
-    setMode("list");
-    setSelectedRequestId(null);
-    setRequestTitle("");
-    setRequestMessage("");
-  };
-
-  const openRequest = (requestId) => {
-    refreshRequests();
-    setSelectedRequestId(requestId);
-    setMode("view");
-  };
-
-  const deleteRequest = (requestId) => {
-    const targetRequest = requests.find(
-      (request) => String(request.id) === String(requestId),
-    );
-
-    if (!targetRequest || targetRequest.seenBySupport) return;
-
-    const confirmed = window.confirm("آیا از حذف این درخواست مطمئن هستید؟");
-    if (!confirmed) return;
-
-    deleteSupportTicket(requestId);
-    refreshRequests();
-
-    if (String(selectedRequestId) === String(requestId)) {
-      openList();
-    }
-  };
-
-  const submitRequest = (event) => {
-    event.preventDefault();
-    if (!requestMessage.trim()) return;
-
-    addSupportTicket(
-      {
-        title: requestTitle.trim() || "درخواست جدید مدرس",
-        message: requestMessage.trim(),
-      },
-      "مدرس",
-    );
-
-    openList();
-  };
-
-  if (mode === "new") {
-    return (
-      <section className="support-requests">
-        <div className="support-requests__panel">
-          <div className="support-requests__panel-header">
-            <div>
-              <span>درخواست جدید</span>
-              <h3>ثبت درخواست پشتیبانی</h3>
-              <p>
-                درخواست شما برای دبیرخانه ثبت می‌شود و پس از مشاهده توسط
-                پشتیبان، امکان حذف آن وجود نخواهد داشت.
-              </p>
-            </div>
-            <Button type="button" variant="outline" size="sm" width="content" onClick={openList}>
-              بازگشت به درخواست‌ها
-            </Button>
-          </div>
-
-          <form className="support-requests__form" onSubmit={submitRequest}>
-            <label>
-              <span>عنوان درخواست</span>
-              <Input
-                type="text"
-                value={requestTitle}
-                onChange={(event) => setRequestTitle(event.target.value)}
-                placeholder="مثلاً مشکل در نمایش ثبت‌نام‌کنندگان"
-              />
-            </label>
-            <label>
-              <span>متن درخواست</span>
-              <Textarea
-                value={requestMessage}
-                onChange={(event) => setRequestMessage(event.target.value)}
-                placeholder="متن درخواست خود را وارد کنید..."
-              />
-            </label>
-            <div className="support-requests__form-actions">
-              <Button type="button" variant="outline" size="sm" width="content" onClick={openList}>
-                انصراف
-              </Button>
-              <Button type="submit" variant="primary" size="md" disabled={!requestMessage.trim()}>
-                ثبت درخواست
-              </Button>
-            </div>
-          </form>
-        </div>
-      </section>
-    );
-  }
-
-  if (mode === "view" && selectedRequest) {
-    const canDelete = !selectedRequest.seenBySupport;
-    const hasReply = Boolean(
-      selectedRequest.supportReply || selectedRequest.reply,
-    );
-
-    return (
-      <section className="support-requests">
-        <div className="support-requests__panel">
-          <div className="support-requests__panel-header">
-            <div>
-              <span>جزئیات درخواست</span>
-              <h3>{selectedRequest.title}</h3>
-              <p>{selectedRequest.sentAt}</p>
-            </div>
-            <Button type="button" variant="outline" size="sm" width="content" onClick={openList}>
-              بازگشت به درخواست‌ها
-            </Button>
-          </div>
-
-          <article className="support-requests__detail-card">
-            <div className="support-requests__status-row">
-              <DashboardStatusBadge status={selectedRequest.status} />
-              {canDelete && (
-                <Button type="button" variant="danger" size="sm" width="content" onClick={() => deleteRequest(selectedRequest.id)}>
-                  حذف درخواست
-                </Button>
-              )}
-            </div>
-            <p>{selectedRequest.message}</p>
-            {hasReply ? (
-              <div className="support-requests__reply-box">
-                <strong>پاسخ پشتیبانی</strong>
-                <p>{selectedRequest.supportReply || selectedRequest.reply}</p>
-                <small>{selectedRequest.repliedAt}</small>
-              </div>
-            ) : (
-              <div className="support-requests__reply-box support-requests__reply-box--empty">
-                هنوز پاسخی برای این درخواست ثبت نشده است.
-              </div>
-            )}
-          </article>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="support-requests">
-      <div className="support-requests__panel">
-        <div className="support-requests__panel-header">
-          <div>
-            <span>درخواست‌ها و پشتیبانی</span>
-            <h3>تیکت‌های پشتیبانی</h3>
-            <p>
-              درخواست‌های پشتیبانی خود را ثبت و پاسخ‌های دبیرخانه را پیگیری
-              کنید.
-            </p>
-          </div>
-          <Button type="button" variant="primary" size="md" onClick={openNewRequest}>
-            ثبت درخواست جدید
-          </Button>
-        </div>
-
-        <div className="support-requests__list">
-          {requests.length === 0 ? (
-            <div className="support-requests__reply-box support-requests__reply-box--empty">
-              هنوز درخواستی از طرف شما ثبت نشده است.
-            </div>
-          ) : (
-            requests.map((request) => (
-              <article
-                className="support-requests__request-card"
-                key={request.id}
-              >
-                <div>
-                  <DashboardStatusBadge status={request.status} />
-                  <h4>{request.title}</h4>
-                  <p>{request.message}</p>
-                  <small>{request.sentAt}</small>
-                </div>
-                <div className="support-requests__actions">
-                  <Button type="button" variant="outline" size="sm" width="content" onClick={() => openRequest(request.id)}>
-                    مشاهده
-                  </Button>
-                  {!request.seenBySupport && (
-                    <Button type="button" variant="danger" size="sm" width="content" onClick={() => deleteRequest(request.id)}>
-                      حذف
-                    </Button>
-                  )}
-                </div>
-              </article>
-            ))
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProfileAvatar({ profile, size = "normal" }) {
-  return profile.avatarPreview ? (
-    <img
-      className={`profile-panel__avatar profile-panel__avatar--${size}`}
-      src={profile.avatarPreview}
-      alt={`${profile.firstName} ${profile.lastName}`}
-    />
-  ) : (
-    <span className={`profile-panel__avatar profile-panel__avatar--${size}`}>
-      {profile.avatarLetter || profile.firstName?.[0] || "م"}
-    </span>
-  );
-}
-
-function ProfilePanel({ profile, onEdit }) {
-  return (
-    <section className="profile-panel">
-      <div className="profile-panel__card profile-panel__hero-card">
-        <ProfileAvatar profile={profile} size="large" />
-        <div>
-          <span>پروفایل کاربری</span>
-          <h3>
-            {profile.fullName ||
-              `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
-          </h3>
-          <p>{profile.level}</p>
-        </div>
-        <Button type="button" variant="outline" size="sm" width="content" onClick={onEdit}>
-          ویرایش پروفایل
-        </Button>
-      </div>
-
-      <div className="profile-panel__info-grid">
-        <article>
-          <span>نام و نام خانوادگی</span>
-          <strong>
-            {profile.fullName ||
-              `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
-          </strong>
-        </article>
-        <article>
-          <span>شماره موبایل</span>
-          <strong>{profile.mobile}</strong>
-        </article>
-        <article>
-          <span>ایمیل</span>
-          <strong>{profile.email}</strong>
-        </article>
-        <article>
-          <span>سطح کاربری</span>
-          <strong>{profile.level}</strong>
-        </article>
-        <article>
-          <span>سابقه عضویت</span>
-          <strong>
-            عضو از سال {profile.memberSince} - به مدت{" "}
-            {profile.membershipDuration}
-          </strong>
-        </article>
-      </div>
-    </section>
-  );
-}
-
-function ProfileEditPanel({ profile, onSave, onCancel }) {
-  const [formData, setFormData] = useState(profile);
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-  const [message, setMessage] = useState("");
-
-  const updateField = (field, value) =>
-    setFormData((current) => ({ ...current, [field]: value }));
-  const updatePasswordField = (field, value) =>
-    setPasswordData((current) => ({ ...current, [field]: value }));
-
-  const handleAvatarChange = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      updateField("avatarPreview", String(reader.result || ""));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    if (
-      passwordData.newPassword &&
-      passwordData.newPassword !== passwordData.confirmPassword
-    ) {
-      setMessage("رمز عبور جدید و تکرار آن یکسان نیست.");
-      return;
-    }
-    const nextProfile = {
-      ...formData,
-      fullName:
-        formData.fullName ||
-        `${formData.firstName || ""} ${formData.lastName || ""}`.trim(),
-      avatarLetter:
-        formData.firstName?.[0] ||
-        formData.fullName?.[0] ||
-        profile.avatarLetter ||
-        "م",
-    };
-    try {
-      const savedProfile = onSave(nextProfile, passwordData);
-      setFormData(savedProfile || nextProfile);
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-      setMessage(
-        passwordData.newPassword
-          ? "اطلاعات پروفایل و رمز عبور با موفقیت ذخیره شد."
-          : "تغییرات پروفایل با موفقیت ذخیره شد.",
-      );
-    } catch (error) {
-      setMessage(error?.message || "ذخیره تغییرات با خطا روبه‌رو شد.");
-    }
-  };
-
-  return (
-    <section className="profile-panel">
-      <form className="profile-panel__edit-card" onSubmit={handleSubmit}>
-        <div className="profile-panel__edit-header">
-          <div>
-            <span>ویرایش پروفایل</span>
-            <h3>اطلاعات کاربری و رمز عبور</h3>
-          </div>
-          <Button type="button" variant="outline" size="sm" width="content" onClick={onCancel}>
-            بازگشت به پروفایل
-          </Button>
-        </div>
-
-        <div className="profile-panel__avatar-edit">
-          <ProfileAvatar profile={formData} size="large" />
-          <label>
-            <input type="file" accept="image/*" onChange={handleAvatarChange} />
-            تغییر تصویر پروفایل
-          </label>
-        </div>
-
-        <div className="profile-panel__form-grid">
-          <label>
-            <span>نام</span>
-            <Input
-              type="text"
-              value={formData.firstName}
-              onChange={(event) => updateField("firstName", event.target.value)}
-            />
-          </label>
-          <label>
-            <span>نام خانوادگی</span>
-            <Input
-              type="text"
-              value={formData.lastName}
-              onChange={(event) => updateField("lastName", event.target.value)}
-            />
-          </label>
-          <label>
-            <span>شماره موبایل</span>
-            <Input
-              type="text"
-              value={formData.mobile}
-              onChange={(event) => updateField("mobile", event.target.value)}
-            />
-          </label>
-          <label>
-            <span>ایمیل</span>
-            <Input
-              type="email"
-              value={formData.email}
-              onChange={(event) => updateField("email", event.target.value)}
-            />
-          </label>
-        </div>
-
-        <div className="profile-panel__password-box">
-          <div>
-            <span>تغییر رمز عبور</span>
-            <p>در صورت نیاز، رمز فعلی و رمز جدید را وارد کنید.</p>
-          </div>
-          <div className="profile-panel__form-grid">
-            <label>
-              <span>رمز عبور فعلی</span>
-              <Input
-                type="password"
-                value={passwordData.currentPassword}
-                onChange={(event) =>
-                  updatePasswordField("currentPassword", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>رمز عبور جدید</span>
-              <Input
-                type="password"
-                value={passwordData.newPassword}
-                onChange={(event) =>
-                  updatePasswordField("newPassword", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>تکرار رمز عبور جدید</span>
-              <Input
-                type="password"
-                value={passwordData.confirmPassword}
-                onChange={(event) =>
-                  updatePasswordField("confirmPassword", event.target.value)
-                }
-              />
-            </label>
-          </div>
-        </div>
-
-        <div className="profile-panel__form-actions">
-          <Button type="button" variant="outline" size="sm" width="content" onClick={onCancel}>
-            انصراف
-          </Button>
-          <Button type="submit" variant="primary" size="md">ذخیره تغییرات</Button>
-        </div>
-        {message && <p className="profile-panel__message">{message}</p>}
-      </form>
-    </section>
-  );
-}
-
 function PlaceholderPanel({ title, description }) {
   return (
     <section className="instructor-placeholder">
@@ -4521,8 +3603,6 @@ function PlaceholderPanel({ title, description }) {
 
 function InstructorDashboardPage() {
   const navigate = useNavigate();
-  const notificationMenuRef = useRef(null);
-  const profileMenuRef = useRef(null);
   const [activities, setActivities] = useState(() =>
     getInstructorActivities(INITIAL_ACTIVITIES),
   );
@@ -4586,27 +3666,6 @@ function InstructorDashboardPage() {
     }
   }, [activeSection]);
 
-  useEffect(() => {
-    if (!isNotificationOpen && !isProfileMenuOpen) return undefined;
-
-    const handleOutsideClick = (event) => {
-      const target = event.target;
-      const clickedInsideNotifications =
-        notificationMenuRef.current?.contains(target);
-      const clickedInsideProfile = profileMenuRef.current?.contains(target);
-
-      if (!clickedInsideNotifications) {
-        setIsNotificationOpen(false);
-      }
-
-      if (!clickedInsideProfile) {
-        setIsProfileMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [isNotificationOpen, isProfileMenuOpen]);
 
   const handleNavClick = (item) => {
     setManagedActivity(null);
@@ -4652,6 +3711,22 @@ function InstructorDashboardPage() {
     setActiveSection("messages");
     setActiveSubItem("");
     setOpenMenuId("");
+    resetCurrentContent();
+  };
+
+  const openProfile = () => {
+    setActiveSection("profile");
+    setActiveSubItem("");
+    setOpenMenuId("");
+    setIsProfileMenuOpen(false);
+    resetCurrentContent();
+  };
+
+  const openEditProfile = () => {
+    setActiveSection("edit-profile");
+    setActiveSubItem("");
+    setOpenMenuId("");
+    setIsProfileMenuOpen(false);
     resetCurrentContent();
   };
 
@@ -4816,34 +3891,39 @@ function InstructorDashboardPage() {
           }}
         />
       );
-    if (activeSection === "messages")
+    if (activeSection === "messages") {
+      return <DashboardMessages key={`messages-${contentResetKey}`} />;
+    }
+    if (activeSection === "requests") {
       return (
-        <MessagesPanel
-          key={`messages-${contentResetKey}`}
-          onOpenTarget={openNotificationTarget}
+        <DashboardSupportRequests
+          key={`requests-${contentResetKey}`}
+          supportRoleName="مدرس"
         />
       );
-    if (activeSection === "requests")
-      return <RequestsPanel key={`requests-${contentResetKey}`} />;
-    if (activeSection === "faq")
-      return <FaqPanel key={`faq-${contentResetKey}`} />;
-    if (activeSection === "profile")
+    }
+    if (activeSection === "faq") {
+      return <DashboardFAQ key={`faq-${contentResetKey}`} items={FAQ_ITEMS} />;
+    }
+    if (activeSection === "profile") {
       return (
-        <ProfilePanel
+        <DashboardProfileView
           key={`profile-${contentResetKey}`}
           profile={userProfile}
-          onEdit={() => setActiveSection("edit-profile")}
+          onEdit={openEditProfile}
         />
       );
-    if (activeSection === "edit-profile")
+    }
+    if (activeSection === "edit-profile") {
       return (
-        <ProfileEditPanel
+        <DashboardProfileEdit
           key={`edit-profile-${contentResetKey}`}
           profile={userProfile}
           onSave={saveUserProfile}
-          onCancel={() => setActiveSection("profile")}
+          onCancel={openProfile}
         />
       );
+    }
     return (
       <PlaceholderPanel
         key={`placeholder-${contentResetKey}`}
@@ -4854,222 +3934,55 @@ function InstructorDashboardPage() {
   };
 
   return (
-    <main
-      className={`innovator-dashboard instructor-dashboard ${isSidebarCollapsed ? "innovator-dashboard--collapsed" : ""}`}
-    >
-      <aside className="innovator-dashboard__sidebar">
-        <div className="innovator-dashboard__sidebar-top">
-          <div className="innovator-dashboard__sidebar-head">
-            <IconButton
-              type="button"
-              variant="inverse"
-              size="lg"
-              shape="rounded"
-              onClick={() => setIsSidebarCollapsed((current) => !current)}
-              aria-label="باز و بسته کردن منوی داشبورد"
-            >
-              <MenuIcon />
-            </IconButton>
-            <Link to="/" className="innovator-dashboard__brand">
-              <img src={universityLogo} alt="لوگوی دانشگاه تهران" />
-              <div className="innovator-dashboard__brand-text">
-                <strong>هاتف</strong>
-              </div>
-            </Link>
-          </div>
-          <DashboardSidebarNav
-            items={NAV_ITEMS}
-            activeSection={activeSection}
-            activeSubItem={activeSubItem}
-            openMenuId={openMenuId}
-            collapsed={isSidebarCollapsed}
-            onItemClick={handleNavClick}
-            onSubItemClick={handleSubNavClick}
-            className="innovator-dashboard__nav"
+    <DashboardShell
+      collapsed={isSidebarCollapsed}
+      onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
+      logoSrc={universityLogo}
+      navItems={NAV_ITEMS}
+      activeSection={activeSection}
+      activeSubItem={activeSubItem}
+      openMenuId={openMenuId}
+      onNavClick={handleNavClick}
+      onSubNavClick={handleSubNavClick}
+      title={currentSection?.title || "داشبورد"}
+      className="instructor-dashboard"
+      topbarActions={
+        <>
+          <DashboardNotificationMenu
+            open={isNotificationOpen}
+            onOpenChange={setIsNotificationOpen}
+            unreadCount={unreadMessagesCount}
+            messages={recentMessages}
+            onOpenMessages={openMessagesCenter}
+            onMarkAllRead={markAllRecentMessagesAsRead}
+            onMarkRead={markMessageAsRead}
+            onOpenMessage={openNotificationTarget}
+            onBeforeOpen={() => setIsProfileMenuOpen(false)}
           />
-        </div>
-      </aside>
-      <section className="innovator-dashboard__main">
-        <header className="innovator-dashboard__topbar">
-          <div className="innovator-dashboard__topbar-title">
-            <DashboardDateTime />
-            <h1>{currentSection?.title || "داشبورد"}</h1>
-          </div>
-          <div className="innovator-dashboard__topbar-actions">
-            <div
-              className="innovator-dashboard__notification-menu"
-              ref={notificationMenuRef}
-            >
-              <DashboardNotificationTrigger
-                unreadCount={unreadMessagesCount}
-                expanded={isNotificationOpen}
-                onClick={() => {
-                  refreshRecentMessages();
-                  setIsNotificationOpen((current) => !current);
-                  setIsProfileMenuOpen(false);
-                }}
-              >
-                <BellIcon />
-              </DashboardNotificationTrigger>
-              {isNotificationOpen && (
-                <div className="innovator-dashboard__notification-dropdown">
-                  <div className="innovator-dashboard__notification-header">
-                    <strong>پیام‌های اخیر</strong>
-                    <DashboardToolbar compact className="innovator-dashboard__notification-actions">
-                      <IconButton
-                        type="button"
-                        variant="ghost"
-                        size="md"
-                        onClick={openMessagesCenter}
-                        aria-label="رفتن به پیام‌ها و اعلانات"
-                        title="رفتن به پیام‌ها و اعلانات"
-                      >
-                        📨
-                      </IconButton>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        width="content"
-                        onClick={markAllRecentMessagesAsRead}
-                        disabled={unreadMessagesCount === 0}
-                      >
-                        خواندن همه
-                      </Button>
-                    </DashboardToolbar>
-                    <small>
-                      {toPersianNumber(unreadMessagesCount)} خوانده‌نشده
-                    </small>
-                  </div>
-                  <div className="innovator-dashboard__notification-list">
-                    {recentMessages.length > 0 ? (
-                      recentMessages.map((message) => (
-                        <article
-                          key={message.id}
-                          className={`innovator-dashboard__notification-item ${
-                            message.isRead
-                              ? "innovator-dashboard__notification-item--read"
-                              : ""
-                          }`}
-                          onClick={() => openNotificationTarget(message)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") {
-                              openNotificationTarget(message);
-                            }
-                          }}
-                        >
-                          <div>
-                            <h4>{message.title}</h4>
-                            <p>{message.sentAt || message.time}</p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            width="content"
-                            onClick={(event) =>
-                              markMessageAsRead(message.id, event)
-                            }
-                            disabled={message.isRead}
-                          >
-                            {message.isRead ? "خوانده شد" : "خواندن"}
-                          </Button>
-                        </article>
-                      ))
-                    ) : (
-                      <article className="innovator-dashboard__notification-item">
-                        <div>
-                          <h4>اعلان جدیدی ندارید</h4>
-                          <p>همه چیز خوانده شده است.</p>
-                        </div>
-                      </article>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div
-              className="innovator-dashboard__profile-menu"
-              ref={profileMenuRef}
-            >
-              <DashboardProfileTrigger
-                primary={
-                  userProfile.fullName ||
-                  `${userProfile.firstName || ""} ${userProfile.lastName || ""}`.trim()
-                }
-                secondary={`نوع کاربر: ${userProfile.level}`}
-                avatarSrc={userProfile.avatarPreview}
-                avatarAlt={userProfile.fullName || "پروفایل کاربر"}
-                fallback={
-                  userProfile.avatarLetter ||
-                  userProfile.firstName?.[0] ||
-                  userProfile.fullName?.[0] ||
-                  "م"
-                }
-                expanded={isProfileMenuOpen}
-                className="innovator-dashboard__profile-trigger"
-                onClick={() => {
-                  setIsProfileMenuOpen((current) => !current);
-                  setIsNotificationOpen(false);
-                }}
-              />
-              {isProfileMenuOpen && (
-                <div className="innovator-dashboard__profile-dropdown">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    fullWidth
-                    onClick={() => {
-                      setActiveSection("profile");
-                      setIsProfileMenuOpen(false);
-                      resetCurrentContent();
-                    }}
-                  >
-                    پروفایل
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    fullWidth
-                    onClick={() => {
-                      setActiveSection("edit-profile");
-                      setIsProfileMenuOpen(false);
-                      resetCurrentContent();
-                    }}
-                  >
-                    ویرایش پروفایل
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    fullWidth
-                    onClick={handleLogout}
-                  >
-                    خروج
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-        {successNotice &&
-          activeSection === "activities" &&
-          activeSubItem === "create-new" && (
-            <DashboardNotice
-              tone="success"
-              className="instructor-create__success instructor-create__success--top"
-            >
-              {successNotice}
-            </DashboardNotice>
-          )}
-        {renderContent()}
-      </section>
-    </main>
+          <DashboardProfileMenu
+            profile={userProfile}
+            open={isProfileMenuOpen}
+            onOpenChange={setIsProfileMenuOpen}
+            onOpenProfile={openProfile}
+            onEditProfile={openEditProfile}
+            onLogout={handleLogout}
+            onBeforeOpen={() => setIsNotificationOpen(false)}
+          />
+        </>
+      }
+    >
+      {successNotice &&
+        activeSection === "activities" &&
+        activeSubItem === "create-new" && (
+          <DashboardNotice
+            tone="success"
+            className="instructor-create__success instructor-create__success--top"
+          >
+            {successNotice}
+          </DashboardNotice>
+        )}
+      {renderContent()}
+    </DashboardShell>
   );
 }
 

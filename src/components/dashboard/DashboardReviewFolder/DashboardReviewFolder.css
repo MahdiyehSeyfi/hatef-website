@@ -1,20 +1,22 @@
-/* Shared reviewer/committee folder language. Minimal content: title + count only. */
+/* Shared Reviewer/Committee folder language.
+   The neutral card is the default. Semantic color is used for the folder icon,
+   selection and small accents instead of filling the whole card. */
 .dashboard-review-folder-card {
   --folder-color: var(--color-brand-700);
-  --folder-bg: var(--color-brand-50);
+  --folder-tint: var(--color-brand-50);
   --folder-border: var(--color-brand-100);
 
   width: 100%;
-  min-height: 92px;
-  display: flex;
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: var(--dashboard-gap-sm);
-  padding: var(--dashboard-panel-padding-sm);
-  border: var(--dashboard-divider-width) solid var(--folder-border);
-  border-radius: var(--dashboard-radius-panel);
-  color: var(--folder-color);
-  background: var(--folder-bg);
+  padding: 10px 12px;
+  border: var(--dashboard-divider-width) solid var(--dashboard-line);
+  border-radius: var(--dashboard-radius-control);
+  color: var(--dashboard-text-primary);
+  background: var(--dashboard-surface);
   box-shadow: none;
   font: inherit;
   text-align: start;
@@ -22,51 +24,105 @@
   transition: var(--interaction-transition-control);
 }
 
-.dashboard-review-folder-card strong {
-  color: inherit;
-  font-size: var(--text-body);
-  font-weight: var(--weight-black);
-  line-height: var(--line-heading);
+.dashboard-review-folder-card__icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--folder-color);
+  background: var(--folder-tint);
+  transition: var(--interaction-transition-control);
 }
 
-.dashboard-review-folder-card span {
+.dashboard-review-folder-card__svg {
+  width: 23px;
+  height: 23px;
+  display: block;
+}
+
+.dashboard-review-folder-card__content {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dashboard-gap-xs);
+}
+
+.dashboard-review-folder-card strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dashboard-text-primary);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-black);
+  line-height: var(--line-heading);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-review-folder-card__count {
   flex: 0 0 auto;
-  color: inherit;
+  display: inline-grid;
+  min-width: 30px;
+  min-height: 26px;
+  place-items: center;
+  padding-inline: var(--space-2);
+  border: 1px solid var(--dashboard-line);
+  border-radius: var(--radius-full);
+  color: var(--dashboard-text-muted);
+  background: var(--dashboard-surface-subtle);
   font-size: var(--text-caption);
   font-weight: var(--weight-bold);
-  opacity: 0.8;
 }
 
 .dashboard-review-folder-card:hover {
-  border-color: currentColor;
+  border-color: var(--folder-border);
+  background: var(--dashboard-surface-subtle);
   box-shadow: var(--dashboard-shadow-panel);
 }
 
-.dashboard-review-folder-card:focus-visible {
+/* A first click/focus visually selects the folder, like a desktop file browser.
+   Double-click behavior remains page-owned; no written instruction is shown. */
+.dashboard-review-folder-card:focus,
+.dashboard-review-folder-card.is-selected {
   outline: none;
-  box-shadow: var(--focus-ring);
+  border-color: var(--folder-color);
+  background: var(--folder-tint);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--folder-color) 18%, transparent);
 }
 
-.dashboard-review-folder-card.is-selected {
-  border-color: currentColor;
-  box-shadow: var(--interaction-selected-ring);
+.dashboard-review-folder-card:focus .dashboard-review-folder-card__icon,
+.dashboard-review-folder-card.is-selected .dashboard-review-folder-card__icon {
+  color: var(--text-inverse);
+  background: var(--folder-color);
+}
+
+.dashboard-review-folder-card:focus .dashboard-review-folder-card__count,
+.dashboard-review-folder-card.is-selected .dashboard-review-folder-card__count {
+  border-color: var(--folder-border);
+  color: var(--folder-color);
+  background: var(--dashboard-surface);
+}
+
+.dashboard-review-folder-card:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 .dashboard-review-folder-card--warning {
   --folder-color: var(--color-warning-700);
-  --folder-bg: var(--color-warning-bg);
+  --folder-tint: var(--color-warning-bg);
   --folder-border: var(--dashboard-line-warning);
 }
 
 .dashboard-review-folder-card--danger {
   --folder-color: var(--color-danger);
-  --folder-bg: var(--color-danger-bg);
+  --folder-tint: var(--color-danger-bg);
   --folder-border: var(--dashboard-line-danger);
 }
 
 .dashboard-review-folder-card--info {
   --folder-color: var(--color-info);
-  --folder-bg: var(--color-info-bg);
+  --folder-tint: var(--color-info-bg);
   --folder-border: var(--dashboard-line-accent);
 }
 

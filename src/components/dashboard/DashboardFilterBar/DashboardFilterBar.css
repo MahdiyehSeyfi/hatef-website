@@ -1,0 +1,70 @@
+/*
+ * Canonical dashboard search/filter composition.
+ * Shared Input / Select / DashboardTabs own control visuals.
+ * This file owns only layout, dimensions and spacing between filter roles.
+ */
+
+.dashboard-filter-bar,
+.reviewer-dashboard .reviewer-dashboard__toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(360px, 1fr) 150px;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: var(--dashboard-gap-md);
+}
+
+.dashboard-filter-bar__field,
+.reviewer-dashboard .reviewer-dashboard__search,
+.reviewer-dashboard .reviewer-dashboard__page-size,
+.reviewer-dashboard .reviewer-dashboard__filter-group {
+  min-width: 0;
+}
+
+.reviewer-dashboard .reviewer-dashboard__search {
+  width: 100%;
+  max-width: 320px;
+}
+
+.reviewer-dashboard .reviewer-dashboard__filter-group > div {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+/* History filters use the same ordered, compact control rhythm. */
+.reviewer-dashboard .reviewer-dashboard__history-filters {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(220px, 280px) 150px;
+  align-items: end;
+  justify-content: start;
+  gap: 12px;
+  margin-bottom: var(--dashboard-gap-md);
+}
+
+@media (max-width: 1180px) {
+  .dashboard-filter-bar,
+  .reviewer-dashboard .reviewer-dashboard__toolbar {
+    grid-template-columns: minmax(220px, 1fr) 1fr;
+  }
+
+  .reviewer-dashboard .reviewer-dashboard__page-size {
+    max-width: 180px;
+  }
+
+  .reviewer-dashboard .reviewer-dashboard__history-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-filter-bar,
+  .reviewer-dashboard .reviewer-dashboard__toolbar,
+  .reviewer-dashboard .reviewer-dashboard__history-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .reviewer-dashboard .reviewer-dashboard__search,
+  .reviewer-dashboard .reviewer-dashboard__page-size {
+    width: 100%;
+    max-width: none;
+  }
+}

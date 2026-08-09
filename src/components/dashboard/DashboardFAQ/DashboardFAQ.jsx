@@ -3,15 +3,23 @@ import { useState } from "react";
 import Input from "../../ui/Input/Input";
 import "./DashboardFAQ.css";
 
-function DashboardFAQ({ items = [] }) {
+function DashboardFAQ({
+  items = [],
+  eyebrow = "سوالات متداول",
+  title = "راهنمای سریع استفاده از داشبورد",
+  description = "پاسخ سوالات پرتکرار درباره فراخوان‌ها، طرح‌ها، وظایف، درخواست‌ها و پیام‌های سامانه.",
+}) {
   const categories = ["همه", ...new Set(items.map((item) => item.category))];
   const [activeCategory, setActiveCategory] = useState("همه");
   const [searchTerm, setSearchTerm] = useState("");
   const [openQuestionId, setOpenQuestionId] = useState(items[0]?.id || null);
 
   const filteredItems = items.filter((item) => {
-    const matchesCategory = activeCategory === "همه" || item.category === activeCategory;
-    const matchesSearch = item.question.includes(searchTerm) || item.answer.includes(searchTerm);
+    const matchesCategory =
+      activeCategory === "همه" || item.category === activeCategory;
+    const matchesSearch =
+      item.question.includes(searchTerm) || item.answer.includes(searchTerm);
+
     return matchesCategory && matchesSearch;
   });
 
@@ -20,9 +28,9 @@ function DashboardFAQ({ items = [] }) {
       <div className="faq-panel__panel dashboard-faq__panel">
         <div className="faq-panel__panel-header">
           <div>
-            <span>سوالات متداول</span>
-            <h3>راهنمای سریع استفاده از داشبورد</h3>
-            <p>پاسخ سوالات پرتکرار درباره فراخوان‌ها، طرح‌ها، وظایف، درخواست‌ها و پیام‌های سامانه.</p>
+            <span>{eyebrow}</span>
+            <h3>{title}</h3>
+            <p>{description}</p>
           </div>
         </div>
 
@@ -37,14 +45,22 @@ function DashboardFAQ({ items = [] }) {
             />
           </label>
 
-          <div className="faq-panel__categories" role="tablist" aria-label="دسته‌بندی سوالات متداول">
+          <div
+            className="faq-panel__categories"
+            role="tablist"
+            aria-label="دسته‌بندی سوالات متداول"
+          >
             {categories.map((category) => (
               <button
                 type="button"
                 role="tab"
                 aria-selected={activeCategory === category}
                 key={category}
-                className={activeCategory === category ? "faq-panel__category--active" : ""}
+                className={
+                  activeCategory === category
+                    ? "faq-panel__category--active"
+                    : ""
+                }
                 onClick={() => setActiveCategory(category)}
               >
                 {category}
@@ -56,17 +72,28 @@ function DashboardFAQ({ items = [] }) {
         <div className="faq-panel__list">
           {filteredItems.map((item) => {
             const isOpen = openQuestionId === item.id;
+
             return (
-              <article className={`faq-panel__item ${isOpen ? "faq-panel__item--open" : ""}`} key={item.id}>
+              <article
+                className={`faq-panel__item ${
+                  isOpen ? "faq-panel__item--open" : ""
+                }`}
+                key={item.id}
+              >
                 <button
                   type="button"
-                  onClick={() => setOpenQuestionId((current) => current === item.id ? null : item.id)}
+                  onClick={() =>
+                    setOpenQuestionId((current) =>
+                      current === item.id ? null : item.id,
+                    )
+                  }
                   aria-expanded={isOpen}
                 >
                   <span>{item.category}</span>
                   <strong>{item.question}</strong>
                   <i aria-hidden="true">{isOpen ? "−" : "+"}</i>
                 </button>
+
                 {isOpen ? <p>{item.answer}</p> : null}
               </article>
             );

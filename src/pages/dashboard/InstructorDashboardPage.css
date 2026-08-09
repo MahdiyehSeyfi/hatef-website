@@ -305,30 +305,6 @@
   font-weight: 800;
 }
 
-.instructor-create__field input,
-.instructor-create__field select,
-.instructor-create__field textarea {
-  width: 100%;
-  border: 1px solid #d6dee5;
-  border-radius: 16px;
-  color: #173154;
-  background: #ffffff;
-  font-family: inherit;
-  font-size: 13px;
-}
-
-.instructor-create__field input,
-.instructor-create__field select {
-  height: 46px;
-  padding: 0 14px;
-}
-
-.instructor-create__field textarea {
-  min-height: 132px;
-  resize: vertical;
-  padding: 12px 14px;
-  line-height: 1.9;
-}
 
 .instructor-create__review {
   display: grid;
@@ -590,142 +566,9 @@
   font-weight: 800;
 }
 
-.instructor-dashboard .reviewer-dashboard__profile-panel {
-  display: grid;
-}
-
-.instructor-dashboard .reviewer-dashboard__profile-card {
-  padding: 28px;
-  border: 1px solid #e4edf5;
-  border-radius: 28px;
-  background: #ffffff;
-  box-shadow: 0 16px 34px rgba(18, 48, 86, 0.05);
-}
 
 
 
-.instructor-dashboard .reviewer-dashboard__profile-head {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 20px 0 24px;
-}
-
-.instructor-dashboard .reviewer-dashboard__profile-avatar {
-  width: 70px;
-  height: 70px;
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  border-radius: 22px;
-  color: #ffffff;
-  background: var(--instructor-accent);
-  font-size: 24px;
-  font-weight: 900;
-}
-
-.instructor-dashboard .reviewer-dashboard__profile-head span,
-.instructor-dashboard .reviewer-dashboard__profile-grid span,
-.instructor-dashboard .reviewer-dashboard__profile-edit-header span,
-.instructor-dashboard .reviewer-dashboard__profile-form-grid span {
-  display: block;
-  margin-bottom: 7px;
-  color: #84a0bc;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.instructor-dashboard .reviewer-dashboard__profile-head h3,
-.instructor-dashboard .reviewer-dashboard__profile-edit-header h3 {
-  margin: 0 0 7px;
-  color: #10284b;
-  font-size: 24px;
-  font-weight: 900;
-}
-
-.instructor-dashboard .reviewer-dashboard__profile-head p {
-  margin: 0;
-  color: #52677f;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.instructor-dashboard .reviewer-dashboard__profile-grid,
-.instructor-dashboard .reviewer-dashboard__profile-form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.instructor-dashboard .reviewer-dashboard__profile-grid > div,
-.instructor-dashboard .reviewer-dashboard__profile-form-grid label {
-  display: grid;
-  gap: 8px;
-  padding: 16px;
-  border: 1px solid #e4edf5;
-  border-radius: 18px;
-  background: #f8fbfd;
-}
-
-.instructor-dashboard .reviewer-dashboard__profile-grid strong {
-  color: #10284b;
-  font-size: 13px;
-  font-weight: 900;
-  line-height: 1.8;
-}
-
-.instructor-dashboard .reviewer-dashboard__profile-form-grid input {
-  width: 100%;
-  height: 42px;
-  padding: 0 12px;
-  border: 1px solid #d6dee5;
-  border-radius: 14px;
-  color: #173154;
-  background: #ffffff;
-  font-family: inherit;
-}
-
-.instructor-dashboard .reviewer-dashboard__profile-edit-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-
-
-.instructor-dashboard .reviewer-dashboard__password-box {
-  margin-top: 18px;
-  padding: 18px;
-  border: 1px solid #e4edf5;
-  border-radius: 20px;
-  background: #fbfdff;
-}
-
-.instructor-dashboard .reviewer-dashboard__password-box h4 {
-  margin: 0 0 14px;
-  color: #10284b;
-  font-size: 16px;
-  font-weight: 900;
-}
-
-.instructor-dashboard .reviewer-dashboard__profile-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 18px;
-}
-
-
-
-/* Reuse support/messages/faq block classes with small fallback if base CSS is absent */
-.instructor-dashboard .support-requests,
-.instructor-dashboard .messages-panel,
-.instructor-dashboard .faq-panel {
-  display: grid;
-  gap: 18px;
-}
 
 @media (max-width: 1280px) {
   .instructor-dashboard .reviewer-dashboard__stats-grid,
@@ -734,9 +577,7 @@
   .instructor-create__type-grid,
   .instructor-create__form-grid,
   .instructor-create__review-card,
-  .instructor-activities__grid,
-  .instructor-dashboard .reviewer-dashboard__profile-grid,
-  .instructor-dashboard .reviewer-dashboard__profile-form-grid {
+  .instructor-activities__grid {
     grid-template-columns: 1fr;
   }
 
@@ -769,13 +610,6 @@
   line-height: 1.8;
 }
 
-.instructor-create__field textarea {
-  min-height: 152px;
-}
-
-.instructor-create__field--full textarea {
-  min-height: 176px;
-}
 
 .instructor-create__action--neutral {
   color: #17406a !important;
@@ -915,10 +749,6 @@
 
 
 
-.profile-panel__form-grid label,
-.profile-panel__grid article {
-  min-width: 0;
-}
 
 @media (max-width: 1280px) {
   .instructor-activities__filters {
@@ -1109,28 +939,6 @@
   font-weight: 800;
 }
 
-.course-builder-repeat-card__grid input,
-.course-builder-repeat-card__grid textarea {
-  width: 100%;
-  border: 1px solid #d6dee5;
-  border-radius: 14px;
-  color: #173154;
-  background: #ffffff;
-  font-family: inherit;
-  font-size: 12px;
-}
-
-.course-builder-repeat-card__grid input {
-  height: 42px;
-  padding: 0 12px;
-}
-
-.course-builder-repeat-card__grid textarea {
-  min-height: 82px;
-  padding: 10px 12px;
-  resize: vertical;
-  line-height: 1.9;
-}
 
 .instructor-activity-filters {
   display: grid;
@@ -1148,16 +956,6 @@
   font-weight: 800;
 }
 
-.instructor-activity-filters select,
-.instructor-activity-filters input {
-  height: 42px;
-  border: 1px solid #d6dee5;
-  border-radius: 14px;
-  color: #173154;
-  background: #ffffff;
-  font-family: inherit;
-  padding: 0 12px;
-}
 
 .instructor-activity-card__body {
   grid-template-rows: auto auto minmax(74px, auto) auto auto;
@@ -1306,10 +1104,6 @@
   display: block;
 }
 
-.instructor-create__field input,
-.instructor-create__field select {
-  height: 56px;
-}
 
 .instructor-create__actions--start,
 .instructor-create-choice .instructor-create__actions--start {
@@ -1374,18 +1168,6 @@
   font-weight: 800;
 }
 
-.instructor-date-filter__popover input {
-  width: 100%;
-  height: 42px;
-  padding: 0 12px;
-  border: 1px solid #dce6ef;
-  border-radius: 13px;
-  color: #173154;
-  background: #ffffff;
-  font-family: inherit;
-  font-size: 12px;
-  text-align: left;
-}
 
 
 
@@ -1632,34 +1414,6 @@
   font-weight: 800;
 }
 
-.instructor-notices__form input,
-.instructor-notices__form select,
-.instructor-notices__form textarea,
-.support-requests__form input,
-.support-requests__form textarea {
-  width: 100%;
-  border: 1px solid #d6dee5;
-  border-radius: 14px;
-  color: #173154;
-  background: #ffffff;
-  font-family: inherit;
-  font-size: 13px;
-}
-
-.instructor-notices__form input,
-.instructor-notices__form select,
-.support-requests__form input {
-  height: 44px;
-  padding: 0 13px;
-}
-
-.instructor-notices__form textarea,
-.support-requests__form textarea {
-  min-height: 136px;
-  resize: vertical;
-  padding: 12px 14px;
-  line-height: 2;
-}
 
 .instructor-notices__textarea {
   grid-column: 1 / -1;
@@ -1681,15 +1435,12 @@
 
 
 
-.instructor-notices__list,
-.support-requests__list {
+.instructor-notices__list {
   display: grid;
   gap: 12px;
 }
 
-.instructor-notices__list article,
-.support-requests__ticket-card,
-.support-requests__ticket-detail {
+.instructor-notices__list article {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
@@ -1700,8 +1451,7 @@
   background: #f9fcff;
 }
 
-.instructor-notices__list h4,
-.support-requests__ticket-card h4 {
+.instructor-notices__list h4 {
   margin: 5px 0 8px;
   color: #10284b;
   font-size: 15px;
@@ -1709,9 +1459,7 @@
   line-height: 1.7;
 }
 
-.instructor-notices__list p,
-.support-requests__ticket-card p,
-.support-requests__ticket-detail p {
+.instructor-notices__list p {
   margin: 0;
   color: #52677f;
   font-size: 12px;
@@ -1730,8 +1478,7 @@
   font-weight: 900;
 }
 
-.instructor-notices__list aside small,
-.support-requests__ticket-card small {
+.instructor-notices__list aside small {
   color: #8aa0b7;
   font-size: 11px;
   font-weight: 700;
@@ -1739,114 +1486,10 @@
 
 
 
-.support-requests__panel,
-.faq-panel__panel,
-.messages-panel__panel,
-.profile-panel__card {
-  padding: 24px;
-  border: 1px solid #e4edf5;
-  border-radius: 28px;
-  background: #ffffff;
-  box-shadow: 0 16px 34px rgba(18, 48, 86, 0.05);
-}
-
-.support-requests__panel-header,
-.faq-panel__panel-header,
-.messages-panel__panel-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.support-requests__panel-header span,
-.faq-panel__panel-header span,
-.messages-panel__panel-header span {
-  display: block;
-  margin-bottom: 7px;
-  color: #84a0bc;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.support-requests__panel-header h3,
-.faq-panel__panel-header h3,
-.messages-panel__panel-header h3 {
-  margin: 0 0 8px;
-  color: #10284b;
-  font-size: 22px;
-  font-weight: 900;
-}
-
-.support-requests__panel-header p,
-.messages-panel__panel-header p {
-  margin: 0;
-  color: #6b7f95;
-  font-size: 13px;
-  line-height: 1.9;
-}
-
-.support-requests__form {
-  display: grid;
-  gap: 14px;
-}
-
-.support-requests__form label {
-  display: grid;
-  gap: 8px;
-}
-
-.support-requests__form label span {
-  color: #7c8fa6;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.support-requests__ticket-card > div > span,
-.support-requests__ticket-detail > span {
-  display: inline-flex;
-  width: fit-content;
-  margin-bottom: 7px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  color: #166534;
-  background: #dcfce7;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.support-requests__ticket-actions {
-  display: flex;
-  gap: 8px;
-}
-
-
-
-.support-requests__ticket-detail {
-  grid-template-columns: 1fr;
-}
-
-.support-requests__ticket-detail div {
-  margin-top: 10px;
-  padding: 14px;
-  border-radius: 16px;
-  background: #f0fdf4;
-}
-
-.support-requests__ticket-detail div strong {
-  color: #166534;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-
-
 @media (max-width: 1200px) {
   .instructor-dashboard__mini-list,
   .instructor-notices__form,
-  .instructor-notices__list article,
-  .support-requests__ticket-card {
+  .instructor-notices__list article {
     grid-template-columns: 1fr;
   }
 }
@@ -1966,97 +1609,9 @@
   font-weight: 900;
 }
 
-.instructor-dashboard .support-requests__request-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  border: 1px solid #e5edf4;
-  border-radius: 20px;
-  background: #f9fcff;
-}
-
-.instructor-dashboard .support-requests__request-card > div > span,
-.instructor-dashboard .support-requests__status-row > span {
-  display: inline-flex;
-  margin-bottom: 8px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  color: #0f5f80;
-  background: #e8f8ff;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.instructor-dashboard .support-requests__request-card h4 {
-  margin: 0 0 8px;
-  color: #10284b;
-  font-size: 15px;
-  font-weight: 900;
-}
-
-.instructor-dashboard .support-requests__request-card p,
-.instructor-dashboard .support-requests__detail-card p {
-  margin: 0 0 8px;
-  color: #52677f;
-  font-size: 12px;
-  line-height: 2;
-}
-
-.instructor-dashboard .support-requests__request-card small {
-  color: #8aa0b7;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.instructor-dashboard .support-requests__actions,
-.instructor-dashboard .support-requests__status-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-
-
-
-
-.instructor-dashboard .support-requests__detail-card,
-.instructor-dashboard .support-requests__reply-box {
-  padding: 18px;
-  border: 1px solid #e5edf4;
-  border-radius: 20px;
-  background: #f9fcff;
-}
-
-.instructor-dashboard .support-requests__reply-box {
-  margin-top: 14px;
-  background: #ffffff;
-}
-
-.instructor-dashboard .support-requests__reply-box strong {
-  display: block;
-  margin-bottom: 8px;
-  color: #10284b;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.instructor-dashboard .support-requests__reply-box small {
-  color: #8aa0b7;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.instructor-dashboard .support-requests__reply-box--empty {
-  color: #6b7f95;
-  font-size: 12px;
-  font-weight: 800;
-}
 
 @media (max-width: 1180px) {
-  .instructor-dashboard__home-layout,
-  .instructor-dashboard .support-requests__request-card {
+  .instructor-dashboard__home-layout {
     grid-template-columns: 1fr;
     grid-template-areas: none;
   }

@@ -22,17 +22,24 @@
 
 .reviewer-dashboard__dashboard-folders {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 210px));
+  justify-content: start;
   gap: var(--dashboard-gap-sm);
 }
 
 /* Toolbar / filters: shared Input, Select, Tabs and Toolbar own visuals. */
 .reviewer-dashboard__toolbar {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) auto 160px;
+  grid-template-columns: minmax(250px, 340px) minmax(0, 1fr) 150px;
   align-items: end;
   gap: var(--dashboard-gap-sm);
   margin-bottom: var(--dashboard-gap-md);
+}
+
+.reviewer-dashboard__search,
+.reviewer-dashboard__filter-group,
+.reviewer-dashboard__page-size {
+  min-width: 0;
 }
 
 .reviewer-dashboard__search,
@@ -64,7 +71,8 @@
 
 .reviewer-dashboard__folders-board {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 210px));
+  justify-content: start;
   gap: var(--dashboard-gap-sm);
   margin-bottom: var(--dashboard-gap-md);
 }
@@ -166,7 +174,9 @@
 /* Prevent the long plan-management panel from shrinking inside the flex shell.
    The shell remains the scroll owner, so folder/list views can always scroll. */
 .reviewer-dashboard .reviewer-dashboard__plans-panel,
-.reviewer-dashboard .reviewer-dashboard__review-detail {
+.reviewer-dashboard .reviewer-dashboard__review-detail,
+.reviewer-dashboard .reviewer-dashboard__history,
+.reviewer-dashboard .reviewer-dashboard__history-detail {
   flex: 0 0 auto;
 }
 
@@ -355,7 +365,7 @@
 
   .reviewer-dashboard__folders-board,
   .reviewer-dashboard__dashboard-folders {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 210px));
   }
 
   .reviewer-dashboard__plan-actions,

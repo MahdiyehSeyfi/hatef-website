@@ -1,8 +1,18 @@
+@import "../../ui/Button/Button.css";
+@import "../../ui/IconButton/IconButton.css";
+@import "../../ui/Input/Input.css";
+@import "../../ui/Select/Select.css";
+@import "../../ui/Textarea/Textarea.css";
 /*
  * Shared dashboard chrome.
  * Phase 12B reference: Innovator consumes this after its legacy page CSS so
  * shell colors, lines, spacing and interaction states have one visual owner.
+ *
+ * R4B3: canonical list + filter visual owners are imported here so migrated
+ * dashboards consume the same late-loading visual contract.
  */
+@import "../DashboardList/DashboardList.css";
+@import "../DashboardFilterBar/DashboardFilterBar.css";
 
 .innovator-dashboard.innovator-dashboard {
   color: var(--dashboard-text-primary);
