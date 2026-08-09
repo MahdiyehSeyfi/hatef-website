@@ -1,0 +1,20 @@
+.dashboard-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dashboard-gap-md);
+  padding: var(--dashboard-panel-padding-sm);
+  border: var(--dashboard-divider-width) solid var(--dashboard-line);
+  border-radius: var(--dashboard-radius-panel);
+  background: var(--dashboard-surface-subtle);
+}
+
+.dashboard-toolbar--compact {
+  gap: var(--dashboard-gap-sm);
+  padding: var(--space-3);
+}
+
+.dashboard-toolbar > * {
+  min-width: 0;
+}

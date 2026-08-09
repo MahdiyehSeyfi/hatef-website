@@ -1,4 +1,4 @@
-.ui-textarea {
+.ui-textarea.ui-textarea {
   width: 100%;
   min-width: 0;
   min-height: 120px;
@@ -23,24 +23,24 @@
     background-color var(--duration-normal) var(--ease-standard);
 }
 
-.ui-textarea::placeholder {
+.ui-textarea.ui-textarea::placeholder {
   color: var(--color-neutral-400);
 }
-.ui-textarea:hover:not(:disabled):not(:focus) {
+.ui-textarea.ui-textarea:hover:not(:disabled):not(:focus) {
   border-color: var(--interaction-field-hover-border);
 }
 
-.ui-textarea:focus {
+.ui-textarea.ui-textarea:focus {
   border-color: var(--color-action-600);
   box-shadow: var(--focus-ring);
 }
 
-.ui-textarea--invalid,
-.ui-textarea[aria-invalid="true"] {
+.ui-textarea.ui-textarea--invalid,
+.ui-textarea.ui-textarea[aria-invalid="true"] {
   border-color: var(--color-danger);
 }
 
-.ui-textarea:disabled {
+.ui-textarea.ui-textarea:disabled {
   color: var(--text-disabled);
   background-color: var(--color-neutral-100);
   cursor: not-allowed;

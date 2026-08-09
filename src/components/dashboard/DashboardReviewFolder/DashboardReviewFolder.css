@@ -1,0 +1,102 @@
+/* Shared reviewer/committee folder language. Minimal content: title + count only. */
+.dashboard-review-folder-card {
+  --folder-color: var(--color-brand-700);
+  --folder-bg: var(--color-brand-50);
+  --folder-border: var(--color-brand-100);
+
+  width: 100%;
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dashboard-gap-sm);
+  padding: var(--dashboard-panel-padding-sm);
+  border: var(--dashboard-divider-width) solid var(--folder-border);
+  border-radius: var(--dashboard-radius-panel);
+  color: var(--folder-color);
+  background: var(--folder-bg);
+  box-shadow: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: var(--interaction-transition-control);
+}
+
+.dashboard-review-folder-card strong {
+  color: inherit;
+  font-size: var(--text-body);
+  font-weight: var(--weight-black);
+  line-height: var(--line-heading);
+}
+
+.dashboard-review-folder-card span {
+  flex: 0 0 auto;
+  color: inherit;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  opacity: 0.8;
+}
+
+.dashboard-review-folder-card:hover {
+  border-color: currentColor;
+  box-shadow: var(--dashboard-shadow-panel);
+}
+
+.dashboard-review-folder-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.dashboard-review-folder-card.is-selected {
+  border-color: currentColor;
+  box-shadow: var(--interaction-selected-ring);
+}
+
+.dashboard-review-folder-card--warning {
+  --folder-color: var(--color-warning-700);
+  --folder-bg: var(--color-warning-bg);
+  --folder-border: var(--dashboard-line-warning);
+}
+
+.dashboard-review-folder-card--danger {
+  --folder-color: var(--color-danger);
+  --folder-bg: var(--color-danger-bg);
+  --folder-border: var(--dashboard-line-danger);
+}
+
+.dashboard-review-folder-card--info {
+  --folder-color: var(--color-info);
+  --folder-bg: var(--color-info-bg);
+  --folder-border: var(--dashboard-line-accent);
+}
+
+.dashboard-review-folder-badge {
+  gap: var(--space-1);
+}
+
+.dashboard-review-folder-badge__remove {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-black);
+  line-height: 1;
+  cursor: pointer;
+  transition: var(--interaction-transition-control);
+}
+
+.dashboard-review-folder-badge__remove:hover {
+  background: var(--dashboard-surface);
+}
+
+.dashboard-review-folder-badge__remove:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

@@ -156,7 +156,7 @@ let publicSpecialRaw = 0;
 for (const file of jsxFiles) {
   const text = fs.readFileSync(file, "utf8");
   const relative = rel(file);
-  const isDashboard = relative.includes("/pages/dashboard/");
+  const isDashboard = relative.includes("/pages/dashboard/") || relative.includes("/components/dashboard/");
   const nativeBlocks = getNativeButtonBlocks(text);
 
   if (isDashboard) nativeDashboards += nativeBlocks.length;

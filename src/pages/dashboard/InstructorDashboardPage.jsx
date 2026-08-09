@@ -41,8 +41,30 @@ import {
   saveCurrentDashboardProfile,
 } from "../../services/userProfileService";
 
+import Button from "../../components/ui/Button/Button";
+import IconButton from "../../components/ui/IconButton/IconButton";
+import Input from "../../components/ui/Input/Input";
+import Select from "../../components/ui/Select/Select";
+import Textarea from "../../components/ui/Textarea/Textarea";
+import {
+  DashboardChoiceCard,
+  DashboardDisclosure,
+  DashboardEmptyState,
+  DashboardNotice,
+  DashboardNotificationTrigger,
+  DashboardPagination,
+  DashboardPanel as SharedDashboardPanel,
+  DashboardProfileTrigger,
+  DashboardSidebarNav,
+  DashboardStatCard,
+  DashboardStatusBadge,
+  DashboardTabs,
+  DashboardToolbar,
+} from "../../components/dashboard";
+
 import "./InnovatorDashboardPage.css";
 import "./InstructorDashboardPage.css";
+import "../../components/dashboard/DashboardChrome/DashboardChrome.css";
 
 const COURSE_PREVIEW_CSS =
   ':root { --color-white: #ffffff; --color-primary: #0a274f; --color-secondary: #00adea; --color-accent: #01d2c9; --color-warning: #f9bd31; --color-black: #111111; --color-muted: #6b7280; --container-padding: 65px; }\n* { box-sizing: border-box; }\nbody { margin: 0; font-family: IRANSans, Tahoma, Arial, sans-serif; direction: rtl; background: #ffffff; }\na { text-decoration: none; }\n.course-details-page {\n  --course-details-width: 1360px;\n\n  background-color: var(--color-white);\n}\n\n.course-details-page__container {\n  width: min(\n    calc(100% - (2 * var(--container-padding))),\n    var(--course-details-width)\n  );\n  margin-inline: auto;\n}\n\n/* Breadcrumb */\n\n.course-details__breadcrumb {\n  display: flex;\n  align-items: center;\n  gap: 9px;\n  margin-bottom: 30px;\n  color: #9198a2;\n  font-size: 12px;\n}\n\n.course-details__breadcrumb a {\n  color: inherit;\n  transition: color 180ms ease;\n}\n\n.course-details__breadcrumb a:hover {\n  color: var(--color-accent);\n}\n\n/* Hero */\n\n.course-details-hero {\n  position: relative;\n  padding: 46px 0 100px;\n  overflow: hidden;\n  background:\n    radial-gradient(\n      circle at 85% 15%,\n      rgba(0, 173, 234, 0.08),\n      transparent 30%\n    ),\n    var(--color-white);\n}\n\n.course-details-hero::after {\n  position: absolute;\n  right: -5%;\n  bottom: -105px;\n  width: 110%;\n  height: 170px;\n  content: "";\n  border-radius: 50% 50% 0 0;\n  background-color: #fafafa;\n}\n\n.course-details-hero__grid {\n  display: grid;\n  grid-template-columns:\n    minmax(0, 0.95fr)\n    minmax(0, 1.05fr);\n  grid-template-areas: "media content";\n  align-items: center;\n  gap: 76px;\n  direction: ltr;\n}\n\n.course-details-hero__media {\n  position: relative;\n  grid-area: media;\n  height: 440px;\n  overflow: hidden;\n  border-radius: 8px;\n  background-color: var(--color-primary);\n  box-shadow: 0 20px 55px rgba(26, 54, 93, 0.15);\n}\n\n.course-details-hero__media img {\n  width: 100%;\n  height: 100%;\n  display: block;\n  object-fit: cover;\n  transition:\n    filter 450ms ease,\n    transform 650ms ease;\n}\n\n.course-details-hero__media:hover img {\n  filter: brightness(0.82);\n  transform: scale(1.025);\n}\n\n.course-details-hero__badges {\n  position: absolute;\n  right: 20px;\n  bottom: 19px;\n  left: 20px;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 15px;\n}\n\n.course-details-hero__badges span {\n  min-height: 31px;\n  display: inline-flex;\n  align-items: center;\n  padding: 5px 14px;\n  border-radius: 17px;\n  color: #26323d;\n  background-color: var(--color-warning);\n  font-size: 11px;\n  font-weight: 700;\n}\n\n.course-details-hero__badges span:last-child {\n  color: var(--color-white);\n  background-color: rgba(10, 39, 79, 0.84);\n  backdrop-filter: blur(8px);\n}\n\n.course-details-hero__content {\n  grid-area: content;\n  min-width: 0;\n  direction: rtl;\n}\n\n.course-details-hero__eyebrow,\n.course-content-section__eyebrow {\n  display: inline-flex;\n  align-items: center;\n  min-height: 30px;\n  margin-bottom: 15px;\n  padding: 4px 13px;\n  border-radius: 18px;\n  color: #078c86;\n  background-color: rgba(1, 210, 201, 0.11);\n  font-size: 12px;\n  font-weight: 700;\n}\n\n.course-details-hero__content h1 {\n  margin: 0 0 22px;\n  color: var(--color-black);\n  font-size: 38px;\n  font-weight: 900;\n  line-height: 1.65;\n}\n\n.course-details-hero__content p {\n  margin: 0 0 12px;\n  color: #4f5761;\n  font-size: 14px;\n  line-height: 2.25;\n}\n\n.course-details-hero__button {\n  width: 190px;\n  min-height: 49px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  margin-top: 28px;\n  color: var(--color-white);\n  background: linear-gradient(\n    135deg,\n    var(--color-accent),\n    var(--color-secondary)\n  );\n  font-size: 14px;\n  font-weight: 700;\n  box-shadow: 0 12px 26px rgba(0, 173, 234, 0.19);\n  transition:\n    box-shadow 200ms ease,\n    transform 200ms ease;\n}\n\n.course-details-hero__button:hover {\n  color: var(--color-white);\n  box-shadow: 0 16px 32px rgba(0, 173, 234, 0.27);\n  transform: translateY(-3px);\n}\n\n/* Metadata */\n\n.course-details-meta {\n  position: relative;\n  z-index: 2;\n  display: grid;\n  grid-template-columns: repeat(5, minmax(0, 1fr));\n  gap: 22px;\n  margin-top: 48px;\n}\n\n.course-details-meta__item {\n  min-height: 90px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 14px;\n  padding: 17px;\n  border: 1px solid #edf0f3;\n  border-radius: 13px;\n  background-color: #fafafa;\n  transition:\n    border-color 220ms ease,\n    box-shadow 220ms ease,\n    transform 220ms ease;\n}\n\n.course-details-meta__item:hover {\n  border-color: rgba(1, 210, 201, 0.35);\n  box-shadow: 0 12px 26px rgba(26, 54, 93, 0.08);\n  transform: translateY(-4px);\n}\n\n.course-details-meta__icon {\n  width: 46px;\n  height: 46px;\n  display: grid;\n  flex: 0 0 auto;\n  place-items: center;\n  border-radius: 12px;\n  color: var(--color-secondary);\n  background-color: rgba(0, 173, 234, 0.09);\n}\n\n.course-details-meta__icon svg {\n  width: 25px;\n  height: 25px;\n}\n\n.course-details-meta__item h2 {\n  margin: 0 0 5px;\n  color: var(--color-black);\n  font-size: 14px;\n  font-weight: 700;\n}\n\n.course-details-meta__item p {\n  margin: 0;\n  color: #737b85;\n  font-size: 12px;\n}\n\n/* Main content */\n\n.course-details-content {\n  padding: 65px 0 72px;\n  background-color: #fafafa;\n}\n\n.course-details-content__grid {\n  display: grid;\n  grid-template-columns: 375px minmax(0, 1fr);\n  grid-template-areas: "sidebar article";\n  align-items: start;\n  gap: 70px;\n  direction: ltr;\n}\n\n.course-details-sidebar {\n  grid-area: sidebar;\n  position: sticky;\n  top: 82px;\n  direction: rtl;\n}\n\n.course-registration-card {\n  padding: 30px;\n  border: 1px solid #edf0f3;\n  border-radius: 16px;\n  background-color: var(--color-white);\n  box-shadow: 0 16px 42px rgba(26, 54, 93, 0.09);\n}\n\n.course-registration-card__header {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  margin-bottom: 21px;\n}\n\n.course-registration-card__header span {\n  min-height: 27px;\n  display: inline-flex;\n  align-items: center;\n  padding: 3px 12px;\n  border-radius: 14px;\n  color: #087d76;\n  background-color: rgba(1, 210, 201, 0.13);\n  font-size: 10px;\n  font-weight: 700;\n}\n\n.course-registration-card__header span:last-child {\n  color: #b77a00;\n  background-color: rgba(249, 189, 49, 0.17);\n}\n\n.course-registration-card h2 {\n  margin: 0 0 24px;\n  color: var(--color-black);\n  font-size: 22px;\n  font-weight: 900;\n  line-height: 1.7;\n}\n\n.course-registration-card__details {\n  margin: 0;\n  padding: 19px 0;\n  border-top: 1px solid #edf0f3;\n  border-bottom: 1px solid #edf0f3;\n}\n\n.course-registration-card__details div {\n  display: grid;\n  grid-template-columns: 105px minmax(0, 1fr);\n  gap: 8px;\n  margin-bottom: 12px;\n  color: #545c66;\n  font-size: 12px;\n  line-height: 1.9;\n}\n\n.course-registration-card__details div:last-child {\n  margin-bottom: 0;\n}\n\n.course-registration-card__details dt {\n  font-weight: 700;\n}\n\n.course-registration-card__details dd {\n  margin: 0;\n}\n\n.course-registration-card__audience {\n  padding: 19px 0 5px;\n}\n\n.course-registration-card__audience h3 {\n  margin: 0 0 13px;\n  color: var(--color-black);\n  font-size: 13px;\n}\n\n.course-registration-card__audience > div {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 9px 13px;\n}\n\n.course-registration-card__audience span {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n  color: #505861;\n  font-size: 11px;\n}\n\n.course-registration-card__audience svg {\n  width: 16px;\n  height: 16px;\n  color: #31b889;\n}\n\n.course-registration-card__button {\n  min-height: 49px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  margin-top: 23px;\n  color: var(--color-white);\n  background-color: var(--color-secondary);\n  font-size: 14px;\n  font-weight: 700;\n  transition:\n    background-color 200ms ease,\n    box-shadow 200ms ease,\n    transform 200ms ease;\n}\n\n.course-registration-card__button:hover {\n  color: var(--color-white);\n  background-color: var(--color-primary);\n  box-shadow: 0 11px 25px rgba(26, 54, 93, 0.17);\n  transform: translateY(-3px);\n}\n\n.course-details-share {\n  padding: 21px 5px 0;\n  text-align: center;\n}\n\n.course-details-share > span {\n  display: block;\n  margin-bottom: 14px;\n  color: #656d77;\n  font-size: 11px;\n}\n\n.course-details-share > div {\n  direction: ltr;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 15px;\n}\n\n.course-details-share a {\n  width: 25px;\n  height: 25px;\n  display: grid;\n  place-items: center;\n  opacity: 0.58;\n  transition:\n    opacity 180ms ease,\n    transform 180ms ease;\n}\n\n.course-details-share a:hover {\n  opacity: 1;\n  transform: translateY(-3px);\n}\n\n.course-details-share img {\n  width: 20px;\n  height: 20px;\n}\n\n/* Article column */\n\n.course-details-article {\n  grid-area: article;\n  min-width: 0;\n  direction: rtl;\n}\n\n.course-content-section {\n  margin-bottom: 67px;\n}\n\n.course-content-section:last-child {\n  margin-bottom: 0;\n}\n\n.course-content-section h2 {\n  margin: 0 0 21px;\n  color: var(--color-black);\n  font-size: 30px;\n  font-weight: 900;\n  line-height: 1.7;\n}\n\n.course-content-section > p {\n  margin: 0 0 13px;\n  color: #454d57;\n  font-size: 14px;\n  line-height: 2.35;\n  text-align: justify;\n}\n\n/* Outcomes */\n\n.course-learning-outcomes {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 15px;\n}\n\n.course-learning-outcome {\n  display: flex;\n  align-items: flex-start;\n  gap: 15px;\n  padding: 19px;\n  border: 1px solid #edf0f3;\n  border-radius: 12px;\n  background-color: var(--color-white);\n  transition:\n    border-color 200ms ease,\n    box-shadow 200ms ease,\n    transform 200ms ease;\n}\n\n.course-learning-outcome:hover {\n  border-color: rgba(1, 210, 201, 0.35);\n  box-shadow: 0 10px 25px rgba(26, 54, 93, 0.07);\n  transform: translateY(-3px);\n}\n\n.course-learning-outcome__icon {\n  width: 42px;\n  height: 42px;\n  display: grid;\n  flex: 0 0 auto;\n  place-items: center;\n  border-radius: 50%;\n  color: #27896e;\n  background-color: #d7f6eb;\n}\n\n.course-learning-outcome__icon--unavailable {\n  color: #a24d4d;\n  background-color: #f7dada;\n}\n\n.course-learning-outcome__icon svg {\n  width: 22px;\n  height: 22px;\n}\n\n.course-learning-outcome h3 {\n  margin: 0 0 7px;\n  color: var(--color-black);\n  font-size: 15px;\n  font-weight: 700;\n}\n\n.course-learning-outcome p {\n  margin: 0;\n  color: #777e88;\n  font-size: 11px;\n  line-height: 1.9;\n}\n\n/* Modules and FAQ */\n\n.course-module,\n.course-faq__item {\n  overflow: hidden;\n  border-bottom: 1px solid #dfe3e8;\n}\n\n.course-module > button,\n.course-faq__item > button {\n  width: 100%;\n  min-height: 65px;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 25px;\n  padding: 12px 5px;\n  border: 0;\n  color: #242930;\n  background-color: transparent;\n  font-family: inherit;\n  font-size: 14px;\n  font-weight: 700;\n  text-align: right;\n}\n\n.course-module > button i,\n.course-faq__item > button i {\n  width: 33px;\n  height: 33px;\n  display: grid;\n  flex: 0 0 auto;\n  place-items: center;\n  border-radius: 50%;\n  color: var(--color-primary);\n  background-color: rgba(26, 54, 93, 0.06);\n  font-family: Arial, sans-serif;\n  font-size: 21px;\n  font-style: normal;\n}\n\n.course-module__content,\n.course-faq__answer {\n  max-height: 0;\n  overflow: hidden;\n  opacity: 0;\n  transition:\n    max-height 450ms ease,\n    opacity 300ms ease,\n    padding 350ms ease;\n}\n\n.course-module--open .course-module__content,\n.course-faq__item--open .course-faq__answer {\n  max-height: 250px;\n  padding: 0 5px 22px;\n  opacity: 1;\n}\n\n.course-module__content p,\n.course-faq__answer p {\n  margin: 0;\n  color: #646c76;\n  font-size: 13px;\n  line-height: 2.15;\n}\n\n/* Instructors */\n\n.course-instructors {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 20px;\n}\n\n.course-instructor {\n  display: flex;\n  align-items: center;\n  gap: 17px;\n  padding: 22px;\n  border: 1px solid #edf0f3;\n  border-radius: 14px;\n  background-color: var(--color-white);\n}\n\n.course-instructor__avatar {\n  width: 68px;\n  height: 68px;\n  display: grid;\n  flex: 0 0 auto;\n  place-items: center;\n  border-radius: 50%;\n  color: var(--color-white);\n  background: linear-gradient(\n    135deg,\n    var(--color-secondary),\n    var(--color-accent)\n  );\n  font-size: 17px;\n  font-weight: 700;\n}\n\n.course-instructor h3 {\n  margin: 0 0 6px;\n  color: var(--color-black);\n  font-size: 16px;\n}\n\n.course-instructor p {\n  margin: 0;\n  color: #7a828c;\n  font-size: 12px;\n  line-height: 1.9;\n}\n\n/* Benefits */\n\n.course-benefits {\n  display: grid;\n  grid-template-columns: repeat(3, minmax(0, 1fr));\n  gap: 18px;\n}\n\n.course-benefit {\n  padding: 23px 19px;\n  border: 1px solid #edf0f3;\n  border-radius: 14px;\n  text-align: center;\n  background-color: var(--color-white);\n  transition:\n    box-shadow 200ms ease,\n    transform 200ms ease;\n}\n\n.course-benefit:hover {\n  box-shadow: 0 12px 27px rgba(26, 54, 93, 0.08);\n  transform: translateY(-5px);\n}\n\n.course-benefit > span {\n  width: 48px;\n  height: 48px;\n  display: grid;\n  margin: 0 auto 15px;\n  place-items: center;\n  border-radius: 14px;\n  color: var(--color-secondary);\n  background-color: rgba(0, 173, 234, 0.09);\n}\n\n.course-benefit svg {\n  width: 24px;\n  height: 24px;\n}\n\n.course-benefit h3 {\n  margin: 0 0 9px;\n  color: var(--color-black);\n  font-size: 14px;\n}\n\n.course-benefit p {\n  margin: 0;\n  color: #7a828c;\n  font-size: 11px;\n  line-height: 1.9;\n}\n\n/* Related courses */\n\n.course-related-section {\n  padding: 60px 0 35px;\n  background-color: var(--color-white);\n}\n\n.activity-card {\n  min-width: 0;\n  overflow: hidden;\n  border: 1px solid #d9dde2;\n  background-color: var(--color-white);\n  transition:\n    border-color 220ms ease,\n    box-shadow 220ms ease,\n    transform 220ms ease;\n}\n\n.activity-card:hover {\n  border-color: #c6cdd5;\n  box-shadow: 0 13px 30px rgba(26, 54, 93, 0.1);\n  transform: translateY(-5px);\n}\n\n.activity-card__media {\n  height: 220px;\n  display: block;\n  overflow: hidden;\n  background-color: var(--color-primary);\n}\n\n.activity-card__image {\n  width: 100%;\n  height: 100%;\n  display: block;\n  object-fit: cover;\n  transition:\n    filter 350ms ease,\n    transform 500ms ease;\n}\n\n.activity-card:hover .activity-card__image {\n  filter: brightness(0.75);\n  transform: scale(1.035);\n}\n\n.activity-card__content {\n  padding: 20px 20px 22px;\n}\n\n.activity-card__title {\n  min-height: 62px;\n  display: block;\n  margin-bottom: 15px;\n  color: var(--color-black);\n  font-size: 18px;\n  font-weight: 700;\n  line-height: 1.8;\n  transition:\n    color 200ms ease,\n    transform 200ms ease;\n}\n\n.activity-card__title:hover {\n  color: var(--color-accent);\n  transform: translateX(-3px);\n}\n\n.activity-card__details {\n  min-height: 107px;\n  margin: 0 0 19px;\n}\n\n.activity-card__details div {\n  display: flex;\n  align-items: flex-start;\n  gap: 7px;\n  margin-bottom: 7px;\n  color: #848b95;\n  font-size: 13px;\n  line-height: 1.8;\n}\n\n.activity-card__details dt {\n  flex: 0 0 auto;\n  font-weight: 500;\n}\n\n.activity-card__details dd {\n  min-width: 0;\n  margin: 0;\n}\n\n.activity-card__button {\n  min-height: 46px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 9px 15px;\n  color: var(--color-white);\n  background-color: var(--color-primary);\n  font-size: 13px;\n  font-weight: 500;\n  transition:\n    background-color 190ms ease,\n    transform 190ms ease;\n}\n\n.activity-card__button:hover {\n  color: var(--color-white);\n  background-color: var(--color-secondary);\n  transform: translateY(-2px);\n}\n\n.activity-carousel {\n  margin-bottom: 70px;\n}\n\n.activity-carousel:last-child {\n  margin-bottom: 0;\n}\n\n.activity-carousel__heading {\n  display: grid;\n  grid-template-columns: auto 1fr auto;\n  align-items: center;\n  gap: 23px;\n  margin-bottom: 29px;\n}\n\n.activity-carousel__heading h2 {\n  margin: 0;\n  color: var(--color-black);\n  font-size: 29px;\n  font-weight: 900;\n  line-height: 1.6;\n  white-space: nowrap;\n}\n\n.activity-carousel__line {\n  height: 1px;\n  background-color: #edf0f3;\n}\n\n.activity-carousel__dots {\n  direction: ltr;\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.activity-carousel__dot {\n  width: 9px;\n  height: 9px;\n  padding: 0;\n  border: 0;\n  border-radius: 50%;\n  background-color: #d6d9dd;\n  transition:\n    width 200ms ease,\n    height 200ms ease,\n    background-color 200ms ease,\n    transform 200ms ease;\n}\n\n.activity-carousel__dot:hover {\n  background-color: #aeb5bc;\n  transform: scale(1.2);\n}\n\n.activity-carousel__dot--active {\n  width: 13px;\n  height: 13px;\n  background-color: var(--color-accent);\n}\n\n.activity-carousel__viewport {\n  width: 100%;\n  overflow: hidden;\n}\n\n.activity-carousel__track {\n  display: flex;\n  align-items: stretch;\n  direction: ltr;\n  will-change: transform;\n  transition: transform 850ms cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n.activity-carousel__page {\n  width: 100%;\n  flex: 0 0 100%;\n  display: grid;\n  grid-template-columns: repeat(4, minmax(0, 1fr));\n  gap: 27px;\n  padding: 5px 0 12px;\n  direction: rtl;\n}\n\n.activity-carousel__footer {\n  display: flex;\n  justify-content: flex-start;\n  margin-top: 28px;\n  direction: ltr;\n}\n\n.activity-carousel__view-all {\n  width: 175px;\n  min-height: 46px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 13px;\n  border: 1px solid #cbd1d8;\n  color: var(--color-muted);\n  background-color: var(--color-white);\n  font-size: 14px;\n  direction: rtl;\n  transition:\n    color 200ms ease,\n    border-color 200ms ease,\n    background-color 200ms ease,\n    box-shadow 200ms ease,\n    transform 200ms ease;\n}\n\n.activity-carousel__view-all:hover {\n  color: var(--color-white);\n  border-color: var(--color-primary);\n  background-color: var(--color-primary);\n  box-shadow: 0 9px 22px rgba(26, 54, 93, 0.16);\n  transform: translateY(-3px);\n}\n\n.activity-carousel__view-all span {\n  transition: transform 200ms ease;\n}\n\n.activity-carousel__view-all:hover span {\n  transform: translateX(-4px);\n}\n\n.activity-carousel__controls {\n  direction: ltr;\n  display: flex;\n  align-items: center;\n  gap: 12px;\n}\n\n.activity-carousel__arrow {\n  width: 42px;\n  height: 42px;\n  display: grid;\n  flex: 0 0 auto;\n  place-items: center;\n  padding: 0;\n  border: 1px solid #d3d9e0;\n  border-radius: 50%;\n  color: var(--color-primary);\n  background-color: var(--color-white);\n  transition:\n    color 180ms ease,\n    border-color 180ms ease,\n    background-color 180ms ease,\n    box-shadow 180ms ease,\n    transform 180ms ease;\n}\n\n.activity-carousel__arrow:hover {\n  color: var(--color-white);\n  border-color: var(--color-primary);\n  background-color: var(--color-primary);\n  box-shadow: 0 8px 20px rgba(26, 54, 93, 0.15);\n  transform: translateY(-2px);\n}\n\n.activity-carousel__arrow-icon {\n  width: 19px;\n  height: 19px;\n}\n\n.activity-carousel__arrow-icon--previous {\n  transform: rotate(180deg);\n}\n\n.preview-activity-carousel__page { grid-template-columns: repeat(4, minmax(0, 1fr)); }\n.expandable-article-preview { padding: 58px 0 70px; background:#fafafa; }\n.expandable-article-preview__box { padding: 30px; border:1px solid #edf0f3; border-radius:18px; background:#fff; }\n.expandable-article-preview__box h2 { margin:0 0 18px; color:#111; font-size:28px; font-weight:900; }\n.expandable-article-preview__box p { margin:0 0 12px; color:#454d57; font-size:14px; line-height:2.35; text-align:justify; }\n';
@@ -1486,34 +1508,30 @@ function CreateCoursePanel({ onSubmitActivity }) {
 
           {isLastStep && (
             <div className="instructor-create__top-actions">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
+                width="content"
                 onClick={() => openCoursePreview(previewPayload)}
               >
                 پیش‌نمایش دوره
-              </button>
+              </Button>
             </div>
           )}
         </header>
 
-        <div className="instructor-create__steps">
-          {WIZARD_STEPS.map((step, index) => {
-            const isActive = index === stepIndex;
-            const isLocked = index > highestStep;
-            return (
-              <button
-                key={step.id}
-                type="button"
-                disabled={isLocked}
-                onClick={() => goToStep(index)}
-                className={`${isActive ? "instructor-create__step--active" : ""} ${isLocked ? "instructor-create__step--locked" : ""}`}
-              >
-                <span>{toPersianNumber(index + 1)}</span>
-                {step.title}
-              </button>
-            );
-          })}
-        </div>
+        <DashboardTabs
+          value={stepIndex}
+          onChange={(nextStep) => goToStep(nextStep)}
+          items={WIZARD_STEPS.map((step, index) => ({
+            value: index,
+            label: `${toPersianNumber(index + 1)}. ${step.title}`,
+            disabled: index > highestStep,
+          }))}
+          ariaLabel="مراحل فرم"
+          className="instructor-create__steps"
+        />
 
         {stepIndex === 0 && (
           <div className="instructor-create__form-grid">
@@ -1524,7 +1542,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               hint="متن کوتاه؛ حداکثر ۹۰ کاراکتر"
               className="instructor-create__field--full"
             >
-              <input
+              <Input
                 value={form.title}
                 maxLength={90}
                 onChange={(event) => updateField("title", event.target.value)}
@@ -1538,7 +1556,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               hint="این متن در بخش hero صفحه دوره نمایش داده می‌شود."
               className="instructor-create__field--full"
             >
-              <textarea
+              <Textarea
                 value={form.summary}
                 onChange={(event) => updateField("summary", event.target.value)}
               />
@@ -1557,19 +1575,22 @@ function CreateCoursePanel({ onSubmitActivity }) {
                     accept="image/*"
                     onChange={handleImageUpload}
                   />
-                  <input
+                  <Input
                     value={form.image === bannerImage ? "" : form.image}
                     placeholder="یا لینک تصویر را وارد کنید"
                     onChange={(event) =>
                       updateField("image", event.target.value || bannerImage)
                     }
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    width="content"
                     onClick={() => updateField("image", bannerImage)}
                   >
                     استفاده از بنر پیش‌فرض
-                  </button>
+                  </Button>
                 </div>
               </div>
             </Field>
@@ -1584,7 +1605,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               error={errors.startDate}
               hint="فرمت نمونه: 1404/02/06"
             >
-              <input
+              <Input
                 inputMode="numeric"
                 dir="ltr"
                 placeholder="1404/02/06"
@@ -1595,7 +1616,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               />
             </Field>
             <Field label="ساعت شروع (اختیاری)" error={errors.startTime}>
-              <input
+              <Input
                 inputMode="numeric"
                 dir="ltr"
                 placeholder="20:00"
@@ -1611,7 +1632,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               error={errors.endDate}
               hint="فرمت نمونه: 1404/02/06"
             >
-              <input
+              <Input
                 inputMode="numeric"
                 dir="ltr"
                 placeholder="1404/03/17"
@@ -1620,7 +1641,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               />
             </Field>
             <Field label="ساعت پایان (اختیاری)" error={errors.endTime}>
-              <input
+              <Input
                 inputMode="numeric"
                 dir="ltr"
                 placeholder="20:00"
@@ -1634,7 +1655,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               error={errors.registrationDate}
               hint="فرمت نمونه: 1404/01/20"
             >
-              <input
+              <Input
                 inputMode="numeric"
                 dir="ltr"
                 placeholder="1404/01/20"
@@ -1648,7 +1669,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               label="ساعت ثبت‌نام (اختیاری)"
               error={errors.registrationTime}
             >
-              <input
+              <Input
                 inputMode="numeric"
                 dir="ltr"
                 placeholder="20:00"
@@ -1664,7 +1685,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               error={errors.duration}
               hint="متن کوتاه؛ مثل ۶ هفته یا ۱۲۰ ساعت"
             >
-              <input
+              <Input
                 value={form.duration}
                 onChange={(event) =>
                   updateField("duration", event.target.value)
@@ -1672,17 +1693,17 @@ function CreateCoursePanel({ onSubmitActivity }) {
               />
             </Field>
             <Field label="نوع برگزاری">
-              <select
+              <Select
                 value={form.format}
                 onChange={(event) => updateField("format", event.target.value)}
               >
                 <option>حضوری</option>
                 <option>مجازی</option>
                 <option>ترکیبی</option>
-              </select>
+              </Select>
             </Field>
             <Field label="سطح دوره">
-              <select
+              <Select
                 value={form.level}
                 onChange={(event) => updateField("level", event.target.value)}
               >
@@ -1690,7 +1711,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
                 <option>متوسط</option>
                 <option>پیشرفته</option>
                 <option>عمومی تخصصی</option>
-              </select>
+              </Select>
             </Field>
             <Field
               label="ظرفیت دوره"
@@ -1699,7 +1720,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               hint="واحد ظرفیت در خروجی نفر است."
             >
               <div className="course-builder-number-field">
-                <input
+                <Input
                   inputMode="numeric"
                   dir="ltr"
                   value={form.capacity}
@@ -1719,7 +1740,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               label="عنوان بخش معرفی دوره"
               className="instructor-create__field--full"
             >
-              <input
+              <Input
                 value={form.introTitle}
                 onChange={(event) =>
                   updateField("introTitle", event.target.value)
@@ -1732,7 +1753,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               error={errors.introText}
               className="instructor-create__field--full"
             >
-              <textarea
+              <Textarea
                 value={form.introText}
                 onChange={(event) =>
                   updateField("introText", event.target.value)
@@ -1740,7 +1761,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               />
             </Field>
             <Field label="مدرس دوره" required error={errors.mainInstructorName}>
-              <input
+              <Input
                 value={form.mainInstructorName}
                 onChange={(event) =>
                   updateField("mainInstructorName", event.target.value)
@@ -1748,7 +1769,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
               />
             </Field>
             <Field label="محل برگزاری" required error={errors.location}>
-              <input
+              <Input
                 value={form.location}
                 onChange={(event) =>
                   updateField("location", event.target.value)
@@ -1768,7 +1789,7 @@ function CreateCoursePanel({ onSubmitActivity }) {
                     className="course-builder-repeat-item"
                     key={`audience-${index}`}
                   >
-                    <input
+                    <Input
                       value={audience.title}
                       onChange={(event) =>
                         updateListItem(
@@ -1779,23 +1800,29 @@ function CreateCoursePanel({ onSubmitActivity }) {
                         )
                       }
                     />
-                    <button
+                    <Button
                       type="button"
+                      variant="danger"
+                      size="sm"
+                      width="content"
                       onClick={() => removeListItem("audiences", index, 1)}
                     >
                       حذف
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
+                width="content"
                 className="course-builder-add-button"
                 disabled={form.audiences.length >= 6}
                 onClick={() => addListItem("audiences", EMPTY_AUDIENCE, 6)}
               >
                 + افزودن مخاطب
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -1936,24 +1963,26 @@ function CreateCoursePanel({ onSubmitActivity }) {
         )}
 
         <div className="instructor-create__actions">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="md"
             disabled={stepIndex === 0}
             onClick={() => setStepIndex((current) => Math.max(current - 1, 0))}
           >
             مرحله قبل
-          </button>
+          </Button>
 
           {!isLastStep && (
-            <button type="button" onClick={goNext}>
+            <Button type="button" variant="primary" size="md" onClick={goNext}>
               مرحله بعد
-            </button>
+            </Button>
           )}
 
           {isLastStep && (
-            <button type="button" onClick={submitCourse}>
+            <Button type="button" variant="primary" size="md" onClick={submitCourse}>
               ثبت نهایی دوره
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -2207,34 +2236,30 @@ function CreateEventPanel({ onSubmitActivity }) {
           </div>
           {isLastStep && (
             <div className="instructor-create__top-actions">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
+                width="content"
                 onClick={() => openEventPreview(previewPayload)}
               >
                 پیش‌نمایش رویداد
-              </button>
+              </Button>
             </div>
           )}
         </header>
 
-        <div className="instructor-create__steps">
-          {WIZARD_STEPS.map((step, index) => {
-            const isActive = index === stepIndex;
-            const isLocked = index > highestStep;
-            return (
-              <button
-                key={step.id}
-                type="button"
-                disabled={isLocked}
-                onClick={() => goToStep(index)}
-                className={`${isActive ? "instructor-create__step--active" : ""} ${isLocked ? "instructor-create__step--locked" : ""}`}
-              >
-                <span>{toPersianNumber(index + 1)}</span>
-                {step.title}
-              </button>
-            );
-          })}
-        </div>
+        <DashboardTabs
+          value={stepIndex}
+          onChange={(nextStep) => goToStep(nextStep)}
+          items={WIZARD_STEPS.map((step, index) => ({
+            value: index,
+            label: `${toPersianNumber(index + 1)}. ${step.title}`,
+            disabled: index > highestStep,
+          }))}
+          ariaLabel="مراحل فرم"
+          className="instructor-create__steps"
+        />
 
         {stepIndex === 0 && (
           <div className="instructor-create__form-grid">
@@ -2245,7 +2270,7 @@ function CreateEventPanel({ onSubmitActivity }) {
               hint="متن کوتاه؛ حداکثر ۹۰ کاراکتر"
               className="instructor-create__field--full"
             >
-              <input
+              <Input
                 value={form.title}
                 maxLength={90}
                 onChange={(event) => updateField("title", event.target.value)}
@@ -2258,7 +2283,7 @@ function CreateEventPanel({ onSubmitActivity }) {
               hint="این متن در بخش hero صفحه رویداد نمایش داده می‌شود."
               className="instructor-create__field--full"
             >
-              <textarea
+              <Textarea
                 value={form.summary}
                 onChange={(event) => updateField("summary", event.target.value)}
               />
@@ -2279,19 +2304,22 @@ function CreateEventPanel({ onSubmitActivity }) {
                     accept="image/*"
                     onChange={handleImageUpload}
                   />
-                  <input
+                  <Input
                     value={form.image === bannerImage ? "" : form.image}
                     placeholder="یا لینک تصویر را وارد کنید"
                     onChange={(event) =>
                       updateField("image", event.target.value || bannerImage)
                     }
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    width="content"
                     onClick={() => updateField("image", bannerImage)}
                   >
                     استفاده از بنر پیش‌فرض
-                  </button>
+                  </Button>
                 </div>
               </div>
             </Field>
@@ -2306,7 +2334,7 @@ function CreateEventPanel({ onSubmitActivity }) {
               error={errors.eventDate}
               hint="فرمت نمونه: 1404/02/06"
             >
-              <input
+              <Input
                 inputMode="numeric"
                 dir="ltr"
                 placeholder="1404/02/06"
@@ -2317,7 +2345,7 @@ function CreateEventPanel({ onSubmitActivity }) {
               />
             </Field>
             <Field label="ساعت شروع" required error={errors.startTime}>
-              <input
+              <Input
                 inputMode="numeric"
                 dir="ltr"
                 placeholder="08:30"
@@ -2328,7 +2356,7 @@ function CreateEventPanel({ onSubmitActivity }) {
               />
             </Field>
             <Field label="ساعت پایان" required error={errors.endTime}>
-              <input
+              <Input
                 inputMode="numeric"
                 dir="ltr"
                 placeholder="17:00"
@@ -2342,7 +2370,7 @@ function CreateEventPanel({ onSubmitActivity }) {
               error={errors.duration}
               hint="متن کوتاه؛ مثل یک روز یا ۸ ساعت"
             >
-              <input
+              <Input
                 value={form.duration}
                 onChange={(event) =>
                   updateField("duration", event.target.value)
@@ -2350,14 +2378,14 @@ function CreateEventPanel({ onSubmitActivity }) {
               />
             </Field>
             <Field label="نوع برگزاری">
-              <select
+              <Select
                 value={form.format}
                 onChange={(event) => updateField("format", event.target.value)}
               >
                 <option>حضوری</option>
                 <option>مجازی</option>
                 <option>ترکیبی</option>
-              </select>
+              </Select>
             </Field>
             <Field
               label="ظرفیت رویداد"
@@ -2366,7 +2394,7 @@ function CreateEventPanel({ onSubmitActivity }) {
               hint="واحد ظرفیت در خروجی نفر است."
             >
               <div className="course-builder-number-field">
-                <input
+                <Input
                   inputMode="numeric"
                   dir="ltr"
                   value={form.capacity}
@@ -2378,7 +2406,7 @@ function CreateEventPanel({ onSubmitActivity }) {
               </div>
             </Field>
             <Field label="برگزارکننده" required error={errors.organizer}>
-              <input
+              <Input
                 value={form.organizer}
                 onChange={(event) =>
                   updateField("organizer", event.target.value)
@@ -2386,7 +2414,7 @@ function CreateEventPanel({ onSubmitActivity }) {
               />
             </Field>
             <Field label="محل برگزاری" required error={errors.location}>
-              <input
+              <Input
                 value={form.location}
                 onChange={(event) =>
                   updateField("location", event.target.value)
@@ -2402,7 +2430,7 @@ function CreateEventPanel({ onSubmitActivity }) {
               label="عنوان بخش معرفی رویداد"
               className="instructor-create__field--full"
             >
-              <input
+              <Input
                 value={form.introTitle}
                 onChange={(event) =>
                   updateField("introTitle", event.target.value)
@@ -2415,7 +2443,7 @@ function CreateEventPanel({ onSubmitActivity }) {
               error={errors.introText}
               className="instructor-create__field--full"
             >
-              <textarea
+              <Textarea
                 value={form.introText}
                 onChange={(event) =>
                   updateField("introText", event.target.value)
@@ -2423,7 +2451,7 @@ function CreateEventPanel({ onSubmitActivity }) {
               />
             </Field>
             <Field label="دبیر رویداد" required error={errors.secretaryName}>
-              <input
+              <Input
                 value={form.secretaryName}
                 onChange={(event) =>
                   updateField("secretaryName", event.target.value)
@@ -2443,7 +2471,7 @@ function CreateEventPanel({ onSubmitActivity }) {
                     className="course-builder-repeat-item"
                     key={`event-audience-${index}`}
                   >
-                    <input
+                    <Input
                       value={audience.title}
                       onChange={(event) =>
                         updateListItem(
@@ -2454,23 +2482,29 @@ function CreateEventPanel({ onSubmitActivity }) {
                         )
                       }
                     />
-                    <button
+                    <Button
                       type="button"
+                      variant="danger"
+                      size="sm"
+                      width="content"
                       onClick={() => removeListItem("audiences", index, 1)}
                     >
                       حذف
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
+                width="content"
                 className="course-builder-add-button"
                 disabled={form.audiences.length >= 6}
                 onClick={() => addListItem("audiences", EMPTY_AUDIENCE, 6)}
               >
                 + افزودن مخاطب
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -2587,22 +2621,24 @@ function CreateEventPanel({ onSubmitActivity }) {
         )}
 
         <div className="instructor-create__actions">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="md"
             disabled={stepIndex === 0}
             onClick={() => setStepIndex((current) => Math.max(current - 1, 0))}
           >
             مرحله قبل
-          </button>
+          </Button>
           {!isLastStep && (
-            <button type="button" onClick={goNext}>
+            <Button type="button" variant="primary" size="md" onClick={goNext}>
               مرحله بعد
-            </button>
+            </Button>
           )}
           {isLastStep && (
-            <button type="button" onClick={submitEvent}>
+            <Button type="button" variant="primary" size="md" onClick={submitEvent}>
               ثبت نهایی رویداد
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -2637,47 +2673,33 @@ function CreateNewPanel({ onSubmitActivity }) {
         </header>
 
         <div className="instructor-create-choice__grid">
-          <button
-            type="button"
-            className={
-              selectedType === "course"
-                ? "instructor-create-choice__card instructor-create-choice__card--active"
-                : "instructor-create-choice__card"
-            }
+          <DashboardChoiceCard
+            selected={selectedType === "course"}
+            eyebrow="🎓 دوره آموزشی"
+            title="ساخت دوره جدید"
+            description="ثبت دوره آموزشی، سرفصل‌ها، مدرسان، مزایا و سوالات متداول"
             onClick={() => setSelectedType("course")}
-          >
-            <span>🎓</span>
-            <strong>ساخت دوره جدید</strong>
-            <small>
-              ثبت دوره آموزشی، سرفصل‌ها، مدرسان، مزایا و سوالات متداول
-            </small>
-          </button>
+          />
 
-          <button
-            type="button"
-            className={
-              selectedType === "event"
-                ? "instructor-create-choice__card instructor-create-choice__card--active"
-                : "instructor-create-choice__card"
-            }
+          <DashboardChoiceCard
+            selected={selectedType === "event"}
+            eyebrow="📅 رویداد"
+            title="ساخت رویداد جدید"
+            description="ثبت رویداد، زمان‌بندی، سخنرانان، مزایا و پرسش‌های متداول"
             onClick={() => setSelectedType("event")}
-          >
-            <span>📅</span>
-            <strong>ساخت رویداد جدید</strong>
-            <small>
-              ثبت رویداد، زمان‌بندی، سخنرانان، مزایا و پرسش‌های متداول
-            </small>
-          </button>
+          />
         </div>
 
         <div className="instructor-create__actions instructor-create__actions--start">
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="md"
             disabled={!selectedType}
             onClick={() => setBuilderType(selectedType)}
           >
             مرحله بعد
-          </button>
+          </Button>
         </div>
       </div>
     </section>
@@ -2703,14 +2725,17 @@ function RepeatSection({
       title={title}
       description={description}
       action={
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
+          width="content"
           className="course-builder-add-button"
           disabled={items.length >= maxCount}
           onClick={() => onAdd(listName, emptyItem, maxCount)}
         >
           + افزودن
-        </button>
+        </Button>
       }
     >
       {error && (
@@ -2726,20 +2751,23 @@ function RepeatSection({
           >
             <header>
               <strong>{toPersianNumber(index + 1)}</strong>
-              <button
+              <Button
                 type="button"
+                variant="danger"
+                size="sm"
+                width="content"
                 disabled={items.length <= minCount}
                 onClick={() => onRemove(listName, index, minCount)}
               >
                 حذف
-              </button>
+              </Button>
             </header>
             <div className="course-builder-repeat-card__grid">
               {fields.map((field) => (
                 <label key={field.name}>
                   <span>{field.label}</span>
                   {field.name === "description" || field.name === "answer" ? (
-                    <textarea
+                    <Textarea
                       value={item[field.name]}
                       onChange={(event) =>
                         onUpdate(
@@ -2751,7 +2779,7 @@ function RepeatSection({
                       }
                     />
                   ) : field.type === "time" ? (
-                    <input
+                    <Input
                       inputMode="numeric"
                       dir="ltr"
                       placeholder="08:30"
@@ -2766,7 +2794,7 @@ function RepeatSection({
                       }
                     />
                   ) : (
-                    <input
+                    <Input
                       value={item[field.name]}
                       onChange={(event) =>
                         onUpdate(
@@ -2790,7 +2818,7 @@ function RepeatSection({
 
 function CompactProgramList({ title, subtitle, items, emptyText, typeLabel }) {
   return (
-    <div className="instructor-dashboard__panel-card instructor-dashboard__compact-panel">
+    <SharedDashboardPanel className="instructor-dashboard__panel-card instructor-dashboard__compact-panel">
       <div className="instructor-dashboard__panel-head">
         <div>
           <span>{typeLabel}</span>
@@ -2806,9 +2834,11 @@ function CompactProgramList({ title, subtitle, items, emptyText, typeLabel }) {
               <div>
                 <strong>{item.title}</strong>
                 <span>
-                  {displayDate(item.startDate || item.eventDate)} /{" "}
-                  {item.secondaryStatus}
+                  {displayDate(item.startDate || item.eventDate)}
                 </span>
+                {item.secondaryStatus ? (
+                  <DashboardStatusBadge status={item.secondaryStatus} />
+                ) : null}
               </div>
               <small>{toPersianNumber(item.capacity || "۰")} نفر</small>
             </li>
@@ -2817,7 +2847,7 @@ function CompactProgramList({ title, subtitle, items, emptyText, typeLabel }) {
       ) : (
         <p className="instructor-dashboard__empty-text">{emptyText}</p>
       )}
-    </div>
+    </SharedDashboardPanel>
   );
 }
 
@@ -2853,7 +2883,7 @@ function DashboardWorkbench({ activities, onCreateCourse }) {
   ];
 
   return (
-    <div className="instructor-dashboard__panel-card instructor-dashboard__workbench">
+    <SharedDashboardPanel className="instructor-dashboard__panel-card instructor-dashboard__workbench">
       <div className="instructor-dashboard__panel-head">
         <div>
           <span>میزکار</span>
@@ -2869,17 +2899,20 @@ function DashboardWorkbench({ activities, onCreateCourse }) {
               <h4>{item.title}</h4>
               <p>{item.meta}</p>
             </div>
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
+              width="content"
               onClick={item.onClick || undefined}
               disabled={!item.onClick}
             >
               {item.action}
-            </button>
+            </Button>
           </article>
         ))}
       </div>
-    </div>
+    </SharedDashboardPanel>
   );
 }
 
@@ -2896,7 +2929,7 @@ function DashboardCalendar({ activities }) {
     }));
 
   return (
-    <div className="instructor-dashboard__panel-card instructor-dashboard__calendar">
+    <SharedDashboardPanel className="instructor-dashboard__panel-card instructor-dashboard__calendar">
       <div className="instructor-dashboard__panel-head">
         <div>
           <span>تقویم</span>
@@ -2923,7 +2956,7 @@ function DashboardCalendar({ activities }) {
           رویداد زمانی نزدیک ثبت نشده است.
         </p>
       )}
-    </div>
+    </SharedDashboardPanel>
   );
 }
 
@@ -2984,11 +3017,12 @@ function DashboardPanel({ activities, onCreateCourse }) {
     <section className="instructor-dashboard__dashboard">
       <div className="reviewer-dashboard__stats-grid">
         {stats.map((item) => (
-          <article className="reviewer-dashboard__stat-card" key={item.label}>
-            <span>{item.label}</span>
-            <strong>{toPersianNumber(item.value)}</strong>
-            <p>{item.hint}</p>
-          </article>
+          <DashboardStatCard
+            key={item.label}
+            label={item.label}
+            value={toPersianNumber(item.value)}
+            hint={item.hint}
+          />
         ))}
       </div>
 
@@ -3059,7 +3093,7 @@ function ActivitiesListPanel({ type, activities, onManageActivity }) {
 
   return (
     <section className="instructor-activities">
-      <div className="instructor-dashboard__panel-card">
+      <SharedDashboardPanel className="instructor-dashboard__panel-card">
         <div className="instructor-dashboard__panel-head">
           <div>
             <span>{typeLabel}‌ها</span>
@@ -3071,7 +3105,7 @@ function ActivitiesListPanel({ type, activities, onManageActivity }) {
           </div>
         </div>
         <div className="instructor-activity-filters">
-          <select
+          <Select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
           >
@@ -3079,26 +3113,24 @@ function ActivitiesListPanel({ type, activities, onManageActivity }) {
             <option value="در انتظار تایید">در انتظار بررسی</option>
             <option value="منتشر شده">منتشر شده</option>
             <option value="رد شده">رد شده</option>
-          </select>
+          </Select>
 
           <div className="instructor-date-filter">
-            <button
+            <Button
               type="button"
-              className={
-                fromDate || toDate
-                  ? "instructor-date-filter__trigger instructor-date-filter__trigger--active"
-                  : "instructor-date-filter__trigger"
-              }
+              variant="outline"
+              size="sm"
+              width="content"
+              leadingIcon="📅"
               onClick={() => setIsDatePickerOpen((current) => !current)}
             >
-              <span>📅</span>
               {dateFilterLabel}
-            </button>
+            </Button>
             {isDatePickerOpen && (
               <div className="instructor-date-filter__popover">
                 <label>
                   <span>از تاریخ</span>
-                  <input
+                  <Input
                     inputMode="numeric"
                     dir="ltr"
                     placeholder="1404/02/06"
@@ -3108,7 +3140,7 @@ function ActivitiesListPanel({ type, activities, onManageActivity }) {
                 </label>
                 <label>
                   <span>تا تاریخ</span>
-                  <input
+                  <Input
                     inputMode="numeric"
                     dir="ltr"
                     placeholder="1404/03/17"
@@ -3116,21 +3148,23 @@ function ActivitiesListPanel({ type, activities, onManageActivity }) {
                     onChange={(event) => setDraftToDate(event.target.value)}
                   />
                 </label>
-                <button type="button" onClick={applyDateFilter}>
+                <Button type="button" variant="primary" size="sm" width="content" onClick={applyDateFilter}>
                   اعمال فیلتر
-                </button>
+                </Button>
               </div>
             )}
           </div>
 
           {(fromDate || toDate) && (
-            <button
+            <Button
               type="button"
-              className="instructor-date-filter__clear"
+              variant="ghost"
+              size="sm"
+              width="content"
               onClick={clearDateFilter}
             >
               ✕ حذف فیلتر تاریخ
-            </button>
+            </Button>
           )}
         </div>
         {list.length > 0 ? (
@@ -3145,11 +3179,12 @@ function ActivitiesListPanel({ type, activities, onManageActivity }) {
             ))}
           </div>
         ) : (
-          <p className="instructor-dashboard__empty-text">
-            موردی مطابق فیلترها پیدا نشد.
-          </p>
+          <DashboardEmptyState
+            title="موردی پیدا نشد"
+            description="موردی مطابق فیلترهای انتخاب‌شده وجود ندارد."
+          />
         )}
-      </div>
+      </SharedDashboardPanel>
     </section>
   );
 }
@@ -3163,14 +3198,15 @@ function ActivityCard({ item, typeLabel, onManageActivity }) {
     >
       <div className="instructor-activity-card__media">
         <img src={item.image || bannerImage} alt={item.title} />
-        <span>{item.status}</span>
+        <DashboardStatusBadge status={item.status} />
       </div>
       <div className="instructor-activity-card__body">
         <div className="instructor-activity-card__head">
           <span>{typeLabel}</span>
-          <button
+          <IconButton
             type="button"
-            className="instructor-activity-card__preview"
+            variant="outline"
+            size="md"
             onClick={() =>
               item.type === "event"
                 ? openEventPreview(item)
@@ -3180,7 +3216,7 @@ function ActivityCard({ item, typeLabel, onManageActivity }) {
             aria-label="پیش‌نمایش"
           >
             <EyeIcon />
-          </button>
+          </IconButton>
         </div>
         <h4>{item.title}</h4>
         <p>{item.summary}</p>
@@ -3205,9 +3241,11 @@ function ActivityCard({ item, typeLabel, onManageActivity }) {
             <p>{item.statusFeedback}</p>
           </div>
         )}
-        <button
+        <Button
           type="button"
-          className="instructor-activity-card__manage"
+          variant="primary"
+          size="sm"
+          fullWidth
           disabled={!canManage}
           onClick={() => canManage && onManageActivity(item)}
           title={
@@ -3217,7 +3255,7 @@ function ActivityCard({ item, typeLabel, onManageActivity }) {
           }
         >
           {canManage ? `مدیریت ${typeLabel}` : "مدیریت غیرفعال"}
-        </button>
+        </Button>
       </div>
     </article>
   );
@@ -3302,31 +3340,33 @@ function ActivityManagementPanel({ activity, onBack }) {
               شده است.
             </p>
           </div>
-          <button
+          <Button
             type="button"
-            className="instructor-create__action--neutral"
+            variant="outline"
+            size="sm"
+            width="content"
             onClick={onBack}
           >
             بازگشت
-          </button>
+          </Button>
         </div>
 
         <div className="instructor-management__stats">
-          <article>
-            <span>ثبت‌نام‌شده</span>
-            <strong>{toPersianNumber(registrationStats.total)}</strong>
-            <p>تعداد افراد ثبت‌نام‌کرده</p>
-          </article>
-          <article>
-            <span>ظرفیت باقی‌مانده</span>
-            <strong>{toPersianNumber(remainingCapacity)}</strong>
-            <p>از {capacity ? toPersianNumber(capacity) : "ظرفیت نامحدود"}</p>
-          </article>
-          <article>
-            <span>وضعیت اجرا</span>
-            <strong>{activity.secondaryStatus || "منتشر شده"}</strong>
-            <p>وضعیت فعلی {typeLabel}</p>
-          </article>
+          <DashboardStatCard
+            label="ثبت‌نام‌شده"
+            value={toPersianNumber(registrationStats.total)}
+            hint="تعداد افراد ثبت‌نام‌کرده"
+          />
+          <DashboardStatCard
+            label="ظرفیت باقی‌مانده"
+            value={toPersianNumber(remainingCapacity)}
+            hint={`از ${capacity ? toPersianNumber(capacity) : "ظرفیت نامحدود"}`}
+          />
+          <DashboardStatCard
+            label="وضعیت اجرا"
+            value={activity.secondaryStatus || "منتشر شده"}
+            hint={`وضعیت فعلی ${typeLabel}`}
+          />
         </div>
 
         <div className="instructor-management__table-wrap">
@@ -3388,7 +3428,7 @@ function OrderCard({ order, onAcceptOrder }) {
       <div className="instructor-order-card__main">
         <div className="instructor-order-card__topline">
           <span>{order.subject}</span>
-          <small>{order.status}</small>
+          <DashboardStatusBadge status={order.status} />
         </div>
         <h4>{order.title}</h4>
         <p>{orderDescription}</p>
@@ -3401,13 +3441,13 @@ function OrderCard({ order, onAcceptOrder }) {
         </div>
       </div>
       {canAccept ? (
-        <button type="button" onClick={() => onAcceptOrder(order.id)}>
+        <Button type="button" variant="primary" size="sm" width="content" onClick={() => onAcceptOrder(order.id)}>
           قبول این سفارش
-        </button>
+        </Button>
       ) : (
-        <button type="button" disabled>
+        <Button type="button" variant="outline" size="sm" width="content" disabled>
           {order.status === "قبول شده" ? "قبول شده" : "آرشیو شده"}
-        </button>
+        </Button>
       )}
     </article>
   );
@@ -3563,7 +3603,7 @@ function ParticipantNotificationsPanel({ mode, activities }) {
           {!isBroadcast && (
             <label>
               <span>انتخاب دوره یا رویداد</span>
-              <select
+              <Select
                 value={selectedActivityId}
                 onChange={(event) => {
                   setSelectedActivityId(event.target.value);
@@ -3576,13 +3616,13 @@ function ParticipantNotificationsPanel({ mode, activities }) {
                     {item.type === "event" ? "رویداد" : "دوره"} - {item.title}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           )}
 
           <label>
             <span>تیتر پیام</span>
-            <input
+            <Input
               value={noticeTitle}
               onChange={(event) => {
                 setNoticeTitle(event.target.value);
@@ -3594,7 +3634,7 @@ function ParticipantNotificationsPanel({ mode, activities }) {
 
           <label className="instructor-notices__textarea">
             <span>متن پیام</span>
-            <textarea
+            <Textarea
               value={noticeText}
               onChange={(event) => {
                 setNoticeText(event.target.value);
@@ -3606,8 +3646,10 @@ function ParticipantNotificationsPanel({ mode, activities }) {
 
           <div className="instructor-notices__summary">
             <span>گیرندگان: {toPersianNumber(recipientsCount)} نفر</span>
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              size="md"
               disabled={
                 !noticeTitle.trim() ||
                 !noticeText.trim() ||
@@ -3616,7 +3658,7 @@ function ParticipantNotificationsPanel({ mode, activities }) {
               }
             >
               ارسال پیام
-            </button>
+            </Button>
           </div>
 
           {noticeStatus && (
@@ -3786,13 +3828,9 @@ function MessagesPanel({ onOpenTarget = () => {} }) {
               <p>{selectedMessage.sentAt}</p>
             </div>
 
-            <button
-              type="button"
-              className="messages-panel__back-button"
-              onClick={closeMessage}
-            >
+            <Button type="button" variant="outline" size="sm" width="content" onClick={closeMessage}>
               بازگشت به پیام‌ها
-            </button>
+            </Button>
           </div>
 
           <article className="messages-panel__detail-card">
@@ -3807,21 +3845,12 @@ function MessagesPanel({ onOpenTarget = () => {} }) {
             </div>
             <p>{selectedMessage.body}</p>
             <div className="messages-panel__card-actions">
-              <button
-                type="button"
-                onClick={() => openMessageTarget(selectedMessage)}
-              >
+              <Button type="button" variant="outline" size="sm" width="content" onClick={() => openMessageTarget(selectedMessage)}>
                 {getMessageTargetLabel(selectedMessage)}
-              </button>
-              <button
-                type="button"
-                className="messages-panel__remove-message"
-                onClick={() => deleteMessage(selectedMessage.id)}
-                aria-label={`حذف پیام ${selectedMessage.title}`}
-                title="حذف پیام"
-              >
+              </Button>
+              <IconButton type="button" variant="danger" size="sm" onClick={() => deleteMessage(selectedMessage.id)} aria-label={`حذف پیام ${selectedMessage.title}`} title="حذف پیام">
                 ×
-              </button>
+              </IconButton>
             </div>
           </article>
         </div>
@@ -3852,46 +3881,29 @@ function MessagesPanel({ onOpenTarget = () => {} }) {
           </div>
 
           <div className="messages-panel__header-actions">
-            <button type="button" onClick={refreshMessages}>
+            <Button type="button" variant="ghost" size="sm" width="content" onClick={refreshMessages}>
               به‌روزرسانی
-            </button>
-            <button
-              type="button"
-              onClick={markAllAsRead}
-              disabled={unreadCount === 0}
-            >
+            </Button>
+            <Button type="button" variant="ghost" size="sm" width="content" onClick={markAllAsRead} disabled={unreadCount === 0}>
               خواندن همه
-            </button>
-            <button
-              type="button"
-              className="messages-panel__delete-all-button"
-              onClick={deleteAllMessages}
-              aria-label="حذف همه پیام‌ها"
-              title="حذف همه پیام‌ها"
-              disabled={messages.length === 0}
-            >
+            </Button>
+            <IconButton type="button" variant="danger" size="sm" onClick={deleteAllMessages} aria-label="حذف همه پیام‌ها" title="حذف همه پیام‌ها" disabled={messages.length === 0}>
               🗑
-            </button>
+            </IconButton>
           </div>
         </div>
 
-        <div className="messages-panel__filters">
-          {filterItems.map((item) => (
-            <button
-              type="button"
-              key={item.id}
-              className={
-                filter === item.id ? "messages-panel__filter--active" : ""
-              }
-              onClick={() => setFilter(item.id)}
-            >
-              {item.label}
-              <span className="messages-panel__filter-count">
-                {toPersianNumber(item.count)}
-              </span>
-            </button>
-          ))}
-        </div>
+        <DashboardTabs
+          value={filter}
+          onChange={setFilter}
+          items={filterItems.map((item) => ({
+            value: item.id,
+            label: item.label,
+            count: toPersianNumber(item.count),
+          }))}
+          ariaLabel="فیلتر پیام‌ها"
+          className="messages-panel__filters"
+        />
 
         <div className="messages-panel__list">
           {filteredMessages.map((message) => (
@@ -3917,24 +3929,15 @@ function MessagesPanel({ onOpenTarget = () => {} }) {
               </div>
 
               <div className="messages-panel__card-actions">
-                <button type="button" onClick={() => openMessage(message.id)}>
+                <Button type="button" variant="outline" size="sm" width="content" onClick={() => openMessage(message.id)}>
                   مشاهده
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openMessageTarget(message)}
-                >
+                </Button>
+                <Button type="button" variant="ghost" size="sm" width="content" onClick={() => openMessageTarget(message)}>
                   بخش مربوطه
-                </button>
-                <button
-                  type="button"
-                  className="messages-panel__remove-message"
-                  onClick={() => deleteMessage(message.id)}
-                  aria-label={`حذف پیام ${message.title}`}
-                  title="حذف پیام"
-                >
+                </Button>
+                <IconButton type="button" variant="danger" size="sm" onClick={() => deleteMessage(message.id)} aria-label={`حذف پیام ${message.title}`} title="حذف پیام">
                   ×
-                </button>
+                </IconButton>
               </div>
             </article>
           ))}
@@ -3992,7 +3995,7 @@ function FaqPanel() {
         <div className="faq-panel__tools">
           <label>
             <span>جست‌وجو در سوالات</span>
-            <input
+            <Input
               type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
@@ -4000,39 +4003,29 @@ function FaqPanel() {
             />
           </label>
 
-          <div className="faq-panel__categories">
-            {categories.map((category) => (
-              <button
-                type="button"
-                key={category}
-                className={
-                  activeCategory === category
-                    ? "faq-panel__category--active"
-                    : ""
-                }
-                onClick={() => setActiveCategory(category)}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+          <DashboardTabs
+            value={activeCategory}
+            onChange={setActiveCategory}
+            items={categories.map((category) => ({ value: category, label: category }))}
+            ariaLabel="دسته‌بندی سوالات متداول"
+            className="faq-panel__categories"
+          />
         </div>
 
         <div className="faq-panel__list">
           {filteredItems.map((item) => {
             const isOpen = openQuestionId === item.id;
             return (
-              <article
-                className={`faq-panel__item ${isOpen ? "faq-panel__item--open" : ""}`}
+              <DashboardDisclosure
                 key={item.id}
+                open={isOpen}
+                eyebrow={item.category}
+                title={item.question}
+                onToggle={() => toggleQuestion(item.id)}
+                className="faq-panel__item"
               >
-                <button type="button" onClick={() => toggleQuestion(item.id)}>
-                  <span>{item.category}</span>
-                  <strong>{item.question}</strong>
-                  <i>{isOpen ? "−" : "+"}</i>
-                </button>
-                {isOpen && <p>{item.answer}</p>}
-              </article>
+                <p>{item.answer}</p>
+              </DashboardDisclosure>
             );
           })}
 
@@ -4136,19 +4129,15 @@ function RequestsPanel() {
                 پشتیبان، امکان حذف آن وجود نخواهد داشت.
               </p>
             </div>
-            <button
-              type="button"
-              className="support-requests__neutral-button"
-              onClick={openList}
-            >
+            <Button type="button" variant="outline" size="sm" width="content" onClick={openList}>
               بازگشت به درخواست‌ها
-            </button>
+            </Button>
           </div>
 
           <form className="support-requests__form" onSubmit={submitRequest}>
             <label>
               <span>عنوان درخواست</span>
-              <input
+              <Input
                 type="text"
                 value={requestTitle}
                 onChange={(event) => setRequestTitle(event.target.value)}
@@ -4157,23 +4146,19 @@ function RequestsPanel() {
             </label>
             <label>
               <span>متن درخواست</span>
-              <textarea
+              <Textarea
                 value={requestMessage}
                 onChange={(event) => setRequestMessage(event.target.value)}
                 placeholder="متن درخواست خود را وارد کنید..."
               />
             </label>
             <div className="support-requests__form-actions">
-              <button
-                type="button"
-                className="support-requests__neutral-button"
-                onClick={openList}
-              >
+              <Button type="button" variant="outline" size="sm" width="content" onClick={openList}>
                 انصراف
-              </button>
-              <button type="submit" disabled={!requestMessage.trim()}>
+              </Button>
+              <Button type="submit" variant="primary" size="md" disabled={!requestMessage.trim()}>
                 ثبت درخواست
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -4196,25 +4181,18 @@ function RequestsPanel() {
               <h3>{selectedRequest.title}</h3>
               <p>{selectedRequest.sentAt}</p>
             </div>
-            <button
-              type="button"
-              className="support-requests__neutral-button"
-              onClick={openList}
-            >
+            <Button type="button" variant="outline" size="sm" width="content" onClick={openList}>
               بازگشت به درخواست‌ها
-            </button>
+            </Button>
           </div>
 
           <article className="support-requests__detail-card">
             <div className="support-requests__status-row">
-              <span>{selectedRequest.status}</span>
+              <DashboardStatusBadge status={selectedRequest.status} />
               {canDelete && (
-                <button
-                  type="button"
-                  onClick={() => deleteRequest(selectedRequest.id)}
-                >
+                <Button type="button" variant="danger" size="sm" width="content" onClick={() => deleteRequest(selectedRequest.id)}>
                   حذف درخواست
-                </button>
+                </Button>
               )}
             </div>
             <p>{selectedRequest.message}</p>
@@ -4247,9 +4225,9 @@ function RequestsPanel() {
               کنید.
             </p>
           </div>
-          <button type="button" onClick={openNewRequest}>
+          <Button type="button" variant="primary" size="md" onClick={openNewRequest}>
             ثبت درخواست جدید
-          </button>
+          </Button>
         </div>
 
         <div className="support-requests__list">
@@ -4264,22 +4242,19 @@ function RequestsPanel() {
                 key={request.id}
               >
                 <div>
-                  <span>{request.status}</span>
+                  <DashboardStatusBadge status={request.status} />
                   <h4>{request.title}</h4>
                   <p>{request.message}</p>
                   <small>{request.sentAt}</small>
                 </div>
                 <div className="support-requests__actions">
-                  <button type="button" onClick={() => openRequest(request.id)}>
+                  <Button type="button" variant="outline" size="sm" width="content" onClick={() => openRequest(request.id)}>
                     مشاهده
-                  </button>
+                  </Button>
                   {!request.seenBySupport && (
-                    <button
-                      type="button"
-                      onClick={() => deleteRequest(request.id)}
-                    >
+                    <Button type="button" variant="danger" size="sm" width="content" onClick={() => deleteRequest(request.id)}>
                       حذف
-                    </button>
+                    </Button>
                   )}
                 </div>
               </article>
@@ -4318,9 +4293,9 @@ function ProfilePanel({ profile, onEdit }) {
           </h3>
           <p>{profile.level}</p>
         </div>
-        <button type="button" onClick={onEdit}>
+        <Button type="button" variant="outline" size="sm" width="content" onClick={onEdit}>
           ویرایش پروفایل
-        </button>
+        </Button>
       </div>
 
       <div className="profile-panel__info-grid">
@@ -4426,9 +4401,9 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
             <span>ویرایش پروفایل</span>
             <h3>اطلاعات کاربری و رمز عبور</h3>
           </div>
-          <button type="button" onClick={onCancel}>
+          <Button type="button" variant="outline" size="sm" width="content" onClick={onCancel}>
             بازگشت به پروفایل
-          </button>
+          </Button>
         </div>
 
         <div className="profile-panel__avatar-edit">
@@ -4442,7 +4417,7 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
         <div className="profile-panel__form-grid">
           <label>
             <span>نام</span>
-            <input
+            <Input
               type="text"
               value={formData.firstName}
               onChange={(event) => updateField("firstName", event.target.value)}
@@ -4450,7 +4425,7 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
           </label>
           <label>
             <span>نام خانوادگی</span>
-            <input
+            <Input
               type="text"
               value={formData.lastName}
               onChange={(event) => updateField("lastName", event.target.value)}
@@ -4458,7 +4433,7 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
           </label>
           <label>
             <span>شماره موبایل</span>
-            <input
+            <Input
               type="text"
               value={formData.mobile}
               onChange={(event) => updateField("mobile", event.target.value)}
@@ -4466,7 +4441,7 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
           </label>
           <label>
             <span>ایمیل</span>
-            <input
+            <Input
               type="email"
               value={formData.email}
               onChange={(event) => updateField("email", event.target.value)}
@@ -4482,7 +4457,7 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
           <div className="profile-panel__form-grid">
             <label>
               <span>رمز عبور فعلی</span>
-              <input
+              <Input
                 type="password"
                 value={passwordData.currentPassword}
                 onChange={(event) =>
@@ -4492,7 +4467,7 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
             </label>
             <label>
               <span>رمز عبور جدید</span>
-              <input
+              <Input
                 type="password"
                 value={passwordData.newPassword}
                 onChange={(event) =>
@@ -4502,7 +4477,7 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
             </label>
             <label>
               <span>تکرار رمز عبور جدید</span>
-              <input
+              <Input
                 type="password"
                 value={passwordData.confirmPassword}
                 onChange={(event) =>
@@ -4514,10 +4489,10 @@ function ProfileEditPanel({ profile, onSave, onCancel }) {
         </div>
 
         <div className="profile-panel__form-actions">
-          <button type="button" onClick={onCancel}>
+          <Button type="button" variant="outline" size="sm" width="content" onClick={onCancel}>
             انصراف
-          </button>
-          <button type="submit">ذخیره تغییرات</button>
+          </Button>
+          <Button type="submit" variant="primary" size="md">ذخیره تغییرات</Button>
         </div>
         {message && <p className="profile-panel__message">{message}</p>}
       </form>
@@ -4885,14 +4860,16 @@ function InstructorDashboardPage() {
       <aside className="innovator-dashboard__sidebar">
         <div className="innovator-dashboard__sidebar-top">
           <div className="innovator-dashboard__sidebar-head">
-            <button
+            <IconButton
               type="button"
-              className="innovator-dashboard__menu-button"
+              variant="inverse"
+              size="lg"
+              shape="rounded"
               onClick={() => setIsSidebarCollapsed((current) => !current)}
               aria-label="باز و بسته کردن منوی داشبورد"
             >
               <MenuIcon />
-            </button>
+            </IconButton>
             <Link to="/" className="innovator-dashboard__brand">
               <img src={universityLogo} alt="لوگوی دانشگاه تهران" />
               <div className="innovator-dashboard__brand-text">
@@ -4900,51 +4877,16 @@ function InstructorDashboardPage() {
               </div>
             </Link>
           </div>
-          <nav className="innovator-dashboard__nav">
-            {NAV_ITEMS.map((item) => {
-              const isActive = activeSection === item.id;
-              const hasSubItems = Boolean(item.subItems?.length);
-              const isOpen = openMenuId === item.id;
-              return (
-                <div className="innovator-dashboard__nav-group" key={item.id}>
-                  <button
-                    type="button"
-                    className={`innovator-dashboard__nav-item ${isActive ? "innovator-dashboard__nav-item--active" : ""}`}
-                    onClick={() => handleNavClick(item)}
-                    title={isSidebarCollapsed ? item.label : undefined}
-                  >
-                    <span className="innovator-dashboard__nav-icon">
-                      {item.icon}
-                    </span>
-                    <span className="innovator-dashboard__nav-text">
-                      {item.label}
-                    </span>
-                    {hasSubItems && !isSidebarCollapsed && (
-                      <span className="innovator-dashboard__nav-chevron">
-                        <ChevronIcon isOpen={isOpen} />
-                      </span>
-                    )}
-                  </button>
-                  {hasSubItems && !isSidebarCollapsed && (
-                    <div
-                      className={`innovator-dashboard__subnav ${isOpen ? "innovator-dashboard__subnav--open" : ""}`}
-                    >
-                      {item.subItems.map((subItem) => (
-                        <button
-                          type="button"
-                          key={subItem.id}
-                          className={`innovator-dashboard__subnav-item ${activeSubItem === subItem.id ? "innovator-dashboard__subnav-item--active" : ""}`}
-                          onClick={() => handleSubNavClick(item.id, subItem.id)}
-                        >
-                          {subItem.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
+          <DashboardSidebarNav
+            items={NAV_ITEMS}
+            activeSection={activeSection}
+            activeSubItem={activeSubItem}
+            openMenuId={openMenuId}
+            collapsed={isSidebarCollapsed}
+            onItemClick={handleNavClick}
+            onSubItemClick={handleSubNavClick}
+            className="innovator-dashboard__nav"
+          />
         </div>
       </aside>
       <section className="innovator-dashboard__main">
@@ -4958,67 +4900,43 @@ function InstructorDashboardPage() {
               className="innovator-dashboard__notification-menu"
               ref={notificationMenuRef}
             >
-              <button
-                type="button"
-                className="innovator-dashboard__notification-trigger"
+              <DashboardNotificationTrigger
+                unreadCount={unreadMessagesCount}
+                expanded={isNotificationOpen}
                 onClick={() => {
                   refreshRecentMessages();
                   setIsNotificationOpen((current) => !current);
                   setIsProfileMenuOpen(false);
                 }}
-                aria-label="نمایش پیام‌های اخیر"
               >
                 <BellIcon />
-                {unreadMessagesCount > 0 && <span>{unreadMessagesCount}</span>}
-              </button>
+              </DashboardNotificationTrigger>
               {isNotificationOpen && (
                 <div className="innovator-dashboard__notification-dropdown">
                   <div className="innovator-dashboard__notification-header">
                     <strong>پیام‌های اخیر</strong>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      <button
+                    <DashboardToolbar compact className="innovator-dashboard__notification-actions">
+                      <IconButton
                         type="button"
+                        variant="ghost"
+                        size="md"
                         onClick={openMessagesCenter}
+                        aria-label="رفتن به پیام‌ها و اعلانات"
                         title="رفتن به پیام‌ها و اعلانات"
-                        style={{
-                          width: "30px",
-                          height: "30px",
-                          border: "0",
-                          borderRadius: "999px",
-                          background: "#e8f8ff",
-                          cursor: "pointer",
-                        }}
                       >
                         📨
-                      </button>
-                      <button
+                      </IconButton>
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
+                        width="content"
                         onClick={markAllRecentMessagesAsRead}
                         disabled={unreadMessagesCount === 0}
-                        style={{
-                          height: "30px",
-                          border: "0",
-                          borderRadius: "999px",
-                          padding: "0 10px",
-                          color: unreadMessagesCount ? "#0e7ca8" : "#64748b",
-                          background: unreadMessagesCount
-                            ? "#e8f8ff"
-                            : "#e9edf2",
-                          fontFamily: "inherit",
-                          fontSize: "10px",
-                          fontWeight: 900,
-                          cursor: unreadMessagesCount ? "pointer" : "default",
-                        }}
                       >
                         خواندن همه
-                      </button>
-                    </div>
+                      </Button>
+                    </DashboardToolbar>
                     <small>
                       {toPersianNumber(unreadMessagesCount)} خوانده‌نشده
                     </small>
@@ -5041,33 +4959,23 @@ function InstructorDashboardPage() {
                               openNotificationTarget(message);
                             }
                           }}
-                          style={{
-                            cursor: "pointer",
-                            border: message.isRead
-                              ? "1px solid #bbf7d0"
-                              : "1px solid transparent",
-                            background: message.isRead ? "#f0fdf4" : undefined,
-                            opacity: message.isRead ? 1 : undefined,
-                          }}
                         >
                           <div>
                             <h4>{message.title}</h4>
                             <p>{message.sentAt || message.time}</p>
                           </div>
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="sm"
+                            width="content"
                             onClick={(event) =>
                               markMessageAsRead(message.id, event)
                             }
                             disabled={message.isRead}
-                            style={
-                              message.isRead
-                                ? { color: "#166534", background: "#dcfce7" }
-                                : undefined
-                            }
                           >
                             {message.isRead ? "خوانده شد" : "خواندن"}
-                          </button>
+                          </Button>
                         </article>
                       ))
                     ) : (
@@ -5086,42 +4994,34 @@ function InstructorDashboardPage() {
               className="innovator-dashboard__profile-menu"
               ref={profileMenuRef}
             >
-              <button
-                type="button"
+              <DashboardProfileTrigger
+                primary={
+                  userProfile.fullName ||
+                  `${userProfile.firstName || ""} ${userProfile.lastName || ""}`.trim()
+                }
+                secondary={`نوع کاربر: ${userProfile.level}`}
+                avatarSrc={userProfile.avatarPreview}
+                avatarAlt={userProfile.fullName || "پروفایل کاربر"}
+                fallback={
+                  userProfile.avatarLetter ||
+                  userProfile.firstName?.[0] ||
+                  userProfile.fullName?.[0] ||
+                  "م"
+                }
+                expanded={isProfileMenuOpen}
                 className="innovator-dashboard__profile-trigger"
                 onClick={() => {
                   setIsProfileMenuOpen((current) => !current);
                   setIsNotificationOpen(false);
                 }}
-                aria-expanded={isProfileMenuOpen}
-              >
-                <span className="innovator-dashboard__profile-text">
-                  <strong>
-                    {userProfile.fullName ||
-                      `${userProfile.firstName || ""} ${userProfile.lastName || ""}`.trim()}
-                  </strong>
-                  <small>نوع کاربر: {userProfile.level}</small>
-                </span>
-                {userProfile.avatarPreview ? (
-                  <img
-                    className="innovator-dashboard__top-avatar"
-                    src={userProfile.avatarPreview}
-                    alt={userProfile.fullName || "پروفایل کاربر"}
-                  />
-                ) : (
-                  <span className="innovator-dashboard__top-avatar">
-                    {userProfile.avatarLetter ||
-                      userProfile.firstName?.[0] ||
-                      userProfile.fullName?.[0] ||
-                      "م"}
-                  </span>
-                )}
-                <span className="innovator-dashboard__profile-caret">▾</span>
-              </button>
+              />
               {isProfileMenuOpen && (
                 <div className="innovator-dashboard__profile-dropdown">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    fullWidth
                     onClick={() => {
                       setActiveSection("profile");
                       setIsProfileMenuOpen(false);
@@ -5129,9 +5029,12 @@ function InstructorDashboardPage() {
                     }}
                   >
                     پروفایل
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
+                    fullWidth
                     onClick={() => {
                       setActiveSection("edit-profile");
                       setIsProfileMenuOpen(false);
@@ -5139,14 +5042,16 @@ function InstructorDashboardPage() {
                     }}
                   >
                     ویرایش پروفایل
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    className="innovator-dashboard__profile-logout"
+                    variant="danger"
+                    size="sm"
+                    fullWidth
                     onClick={handleLogout}
                   >
                     خروج
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -5155,9 +5060,12 @@ function InstructorDashboardPage() {
         {successNotice &&
           activeSection === "activities" &&
           activeSubItem === "create-new" && (
-            <div className="instructor-create__success instructor-create__success--top">
+            <DashboardNotice
+              tone="success"
+              className="instructor-create__success instructor-create__success--top"
+            >
               {successNotice}
-            </div>
+            </DashboardNotice>
           )}
         {renderContent()}
       </section>

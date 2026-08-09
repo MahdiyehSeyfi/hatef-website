@@ -59,13 +59,6 @@ import {
 } from "../../constants/statuses";
 
 import {
-  addSupportTicket,
-  deleteSupportTicket,
-  getCurrentUserSupportTickets,
-} from "../../services/supportService";
-import {
-  deleteAllNotificationsForCurrentUser,
-  deleteNotification,
   getNotificationsForCurrentUser,
   markAllNotificationsAsReadForCurrentUser,
   markNotificationAsRead,
@@ -77,7 +70,35 @@ import {
 } from "../../services/userProfileService";
 import { hydrateDashboardDataForCurrentSession } from "../../services/supabaseDashboardHydrationService";
 
+import Button from "../../components/ui/Button/Button";
+import IconButton from "../../components/ui/IconButton/IconButton";
+import Input from "../../components/ui/Input/Input";
+import Select from "../../components/ui/Select/Select";
+import Textarea from "../../components/ui/Textarea/Textarea";
+import {
+  DashboardAttachmentField,
+  DashboardChoiceCard,
+  DashboardEmptyState,
+  DashboardReadOnlyField,
+  DashboardTextareaField,
+  DashboardFAQ,
+  DashboardMessages,
+  DashboardNotice,
+  DashboardNotificationMenu,
+  DashboardPanel,
+  DashboardProfileEdit,
+  DashboardProfileMenu,
+  DashboardProfileView,
+  DashboardShell,
+  DashboardStatCard,
+  DashboardStatusBadge,
+  DashboardSupportRequests,
+  DashboardTabs,
+  DashboardToolbar,
+} from "../../components/dashboard";
+
 import "./InnovatorDashboardPage.css";
+import "../../components/dashboard/DashboardChrome/DashboardChrome.css";
 
 const NAV_ITEMS = [
   {
@@ -1256,42 +1277,6 @@ const DASHBOARD_REMINDERS = [
   },
 ];
 
-function MenuIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M4 7h16M4 12h16M4 17h16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M10 21h4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 function ChevronIcon({ isOpen }) {
   return (
     <svg
@@ -1345,38 +1330,6 @@ function BackIcon() {
         strokeLinejoin="round"
       />
     </svg>
-  );
-}
-
-function DashboardDateTime() {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setNow(new Date());
-    }, 60000);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const dateText = now.toLocaleDateString("fa-IR-u-ca-persian", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  const timeText = now.toLocaleTimeString("fa-IR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  return (
-    <div className="innovator-dashboard__date-time">
-      <span>تاریخ امروز</span>
-      <strong>{dateText}</strong>
-      <small>ساعت {timeText}</small>
-    </div>
   );
 }
 
@@ -1539,11 +1492,7 @@ function StatusBadge({ status, className = "" }) {
   const isJudged = status === "داوری شده";
 
   return (
-    <span
-      className={`submit-plan__status submit-plan__status--${getPlanStatusClass(
-        status,
-      )} ${className}`}
-    >
+    <DashboardStatusBadge status={status} className={className}>
       {status}
 
       {isJudged && (
@@ -1554,7 +1503,7 @@ function StatusBadge({ status, className = "" }) {
           </span>
         </span>
       )}
-    </span>
+    </DashboardStatusBadge>
   );
 }
 
@@ -1833,16 +1782,16 @@ function SubmitPlanPanel() {
   return (
     <section className="submit-plan">
       {mode === "list" && (
-        <div className="submit-plan__panel">
+        <DashboardPanel as="div" className="submit-plan__panel" padding="md">
           <div className="submit-plan__panel-header">
             <div>
               <span>طرح‌های ثبت‌شده</span>
               <h3>لیست طرح‌های ارسال‌شده توسط شما</h3>
             </div>
 
-            <button type="button" onClick={openNewPlan}>
+            <Button type="button" variant="secondary" size="sm" width="content" onClick={openNewPlan}>
               ارسال طرح جدید
-            </button>
+            </Button>
           </div>
 
           {businessOpportunityPlans.length > 0 && (
@@ -1871,8 +1820,11 @@ function SubmitPlanPanel() {
                       <small>{getBusinessRequestStatsText(plan.id)}</small>
                     )}
                     <div className="submit-plan__footer-actions">
-                      <button
+                      <Button
                         type="button"
+                        variant="outline"
+                        size="sm"
+                        width="content"
                         onClick={() => openBusinessOpportunityDetails(plan)}
                       >
                         {plan.businessOpportunityPublished
@@ -1880,7 +1832,7 @@ function SubmitPlanPanel() {
                           : plan.businessOpportunityDetails?.updatedAt
                             ? "ویرایش و انتشار نهایی"
                             : "تکمیل اطلاعات همکاری تجاری"}
-                      </button>
+                      </Button>
                     </div>
                   </article>
                 ))}
@@ -1893,7 +1845,7 @@ function SubmitPlanPanel() {
               const canModify = isEditableSubmittedPlan(plan.status);
 
               return (
-                <li className="submit-plan__submitted-card" key={plan.id}>
+                <DashboardPanel as="li" interactive className="submit-plan__submitted-card" padding="sm" key={plan.id}>
                   <span className="submit-plan__order">{index + 1}</span>
 
                   <div className="submit-plan__submitted-info">
@@ -1909,65 +1861,73 @@ function SubmitPlanPanel() {
                   <StatusBadge status={plan.status} />
 
                   <div className="submit-plan__actions">
-                    <button
+                    <Button
                       type="button"
-                      className="submit-plan__action submit-plan__action--view"
+                      variant="outline"
+                      size="sm"
+                      width="content"
                       onClick={() => openViewPlan(plan)}
                     >
                       مشاهده
-                    </button>
+                    </Button>
 
                     {false && isBusinessOpportunityPlan(plan) && (
-                      <button
+                      <Button
                         type="button"
-                        className="submit-plan__action submit-plan__action--edit"
+                        variant="outline"
+                        size="sm"
+                        width="content"
                         onClick={() => openBusinessOpportunityDetails(plan)}
                       >
                         اطلاعات همکاری تجاری
-                      </button>
+                      </Button>
                     )}
 
                     {canModify && (
                       <>
-                        <button
+                        <Button
                           type="button"
-                          className="submit-plan__action submit-plan__action--edit"
+                          variant="outline"
+                          size="sm"
+                          width="content"
                           onClick={() => openEditPlan(plan)}
                         >
                           ویرایش
-                        </button>
+                        </Button>
 
-                        <button
+                        <Button
                           type="button"
-                          className="submit-plan__action submit-plan__action--delete"
+                          variant="danger-soft"
+                          size="sm"
+                          width="content"
                           onClick={() => deletePlan(plan.id)}
                         >
                           حذف
-                        </button>
+                        </Button>
                       </>
                     )}
                   </div>
-                </li>
+                </DashboardPanel>
               );
             })}
           </ol>
-        </div>
+        </DashboardPanel>
       )}
 
       {mode === "view" && selectedPlan && (
-        <div className="submit-plan__panel">
+        <DashboardPanel as="div" className="submit-plan__panel" padding="md">
           <div className="submit-plan__panel-header">
             <div>
               <span>مشاهده طرح</span>
               <h3>{selectedPlan.title}</h3>
             </div>
 
-            <button type="button" onClick={openList}>
+            <Button type="button" variant="outline" size="sm" width="content" onClick={openList}>
               بازگشت به لیست
-            </button>
+            </Button>
           </div>
 
-          <div className="submit-plan__view-card">
+          <DashboardPanel as="div" className="submit-plan__view-card" variant="subtle" padding="sm">
             <div>
               <span>فراخوان</span>
               <strong>{selectedPlan.call}</strong>
@@ -2008,7 +1968,7 @@ function SubmitPlanPanel() {
                 دانلود فایل
               </a>
             </div>
-          </div>
+          </DashboardPanel>
 
           {false &&
             selectedPlan.resultsPublished &&
@@ -2074,14 +2034,17 @@ function SubmitPlanPanel() {
                 </div>
 
                 <div className="submit-plan__footer-actions">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
+                    width="content"
                     onClick={() => openBusinessOpportunityDetails(selectedPlan)}
                   >
                     {selectedPlan.businessOpportunityPublished
                       ? "ویرایش اطلاعات همکاری تجاری"
                       : "تکمیل و انتشار اطلاعات همکاری تجاری"}
-                  </button>
+                  </Button>
                 </div>
               </section>
             )}
@@ -2111,18 +2074,18 @@ function SubmitPlanPanel() {
 
           {isEditableSubmittedPlan(selectedPlan.status) && (
             <div className="submit-plan__footer-actions">
-              <button type="button" onClick={() => openEditPlan(selectedPlan)}>
+              <Button type="button" variant="outline" size="sm" width="content" onClick={() => openEditPlan(selectedPlan)}>
                 {isRevisionResubmissionPlan(selectedPlan)
                   ? "ویرایش و ارسال مجدد طرح"
                   : "ویرایش این طرح"}
-              </button>
+              </Button>
             </div>
           )}
-        </div>
+        </DashboardPanel>
       )}
 
       {mode === "business-details" && selectedPlan && (
-        <div className="submit-plan__panel">
+        <DashboardPanel as="div" className="submit-plan__panel" padding="md">
           <div className="submit-plan__panel-header">
             <div>
               <span>اطلاعات همکاری تجاری</span>
@@ -2134,9 +2097,9 @@ function SubmitPlanPanel() {
               </p>
             </div>
 
-            <button type="button" onClick={() => openViewPlan(selectedPlan)}>
+            <Button type="button" variant="outline" size="sm" width="content" onClick={() => openViewPlan(selectedPlan)}>
               بازگشت به مشاهده طرح
-            </button>
+            </Button>
           </div>
 
           <form
@@ -2145,7 +2108,7 @@ function SubmitPlanPanel() {
           >
             <label className="submit-plan__input-group">
               <span>عنوان نمایش در پنل همکاری تجاری</span>
-              <input
+              <Input
                 type="text"
                 value={businessForm.title}
                 onChange={(event) =>
@@ -2157,7 +2120,7 @@ function SubmitPlanPanel() {
 
             <label className="submit-plan__input-group">
               <span>حوزه / دسته‌بندی</span>
-              <input
+              <Input
                 type="text"
                 value={businessForm.field}
                 onChange={(event) => {
@@ -2170,7 +2133,7 @@ function SubmitPlanPanel() {
 
             <label className="submit-plan__input-group">
               <span>نوع همکاری پیشنهادی</span>
-              <input
+              <Input
                 type="text"
                 value={businessForm.collaborationType}
                 onChange={(event) =>
@@ -2185,7 +2148,7 @@ function SubmitPlanPanel() {
 
             <label className="submit-plan__input-group">
               <span>محل اجرا یا بازار هدف</span>
-              <input
+              <Input
                 type="text"
                 value={businessForm.location}
                 onChange={(event) =>
@@ -2197,7 +2160,7 @@ function SubmitPlanPanel() {
 
             <label className="submit-plan__input-group">
               <span>برآورد حمایت یا سرمایه موردنیاز</span>
-              <input
+              <Input
                 type="text"
                 value={businessForm.estimatedSupport}
                 onChange={(event) =>
@@ -2212,7 +2175,7 @@ function SubmitPlanPanel() {
 
             <label className="submit-plan__input-group">
               <span>بازه همکاری پیشنهادی</span>
-              <input
+              <Input
                 type="text"
                 value={businessForm.duration}
                 onChange={(event) =>
@@ -2224,7 +2187,7 @@ function SubmitPlanPanel() {
 
             <label className="submit-plan__input-group">
               <span>خلاصه موقعیت</span>
-              <textarea
+              <Textarea
                 rows="4"
                 value={businessForm.summary}
                 onChange={(event) =>
@@ -2236,7 +2199,7 @@ function SubmitPlanPanel() {
 
             <label className="submit-plan__input-group">
               <span>مسئله یا چالش</span>
-              <textarea
+              <Textarea
                 rows="4"
                 value={businessForm.challenge}
                 onChange={(event) =>
@@ -2248,7 +2211,7 @@ function SubmitPlanPanel() {
 
             <label className="submit-plan__input-group">
               <span>راهکار پیشنهادی</span>
-              <textarea
+              <Textarea
                 rows="4"
                 value={businessForm.solution}
                 onChange={(event) =>
@@ -2260,7 +2223,7 @@ function SubmitPlanPanel() {
 
             <label className="submit-plan__input-group">
               <span>ارزش تجاری</span>
-              <textarea
+              <Textarea
                 rows="4"
                 value={businessForm.businessValue}
                 onChange={(event) =>
@@ -2272,7 +2235,7 @@ function SubmitPlanPanel() {
 
             <label className="submit-plan__input-group">
               <span>نیازمندی‌های همکاری</span>
-              <textarea
+              <Textarea
                 rows="4"
                 value={businessForm.requirements}
                 onChange={(event) =>
@@ -2284,7 +2247,7 @@ function SubmitPlanPanel() {
 
             <label className="submit-plan__input-group">
               <span>برچسب‌ها</span>
-              <input
+              <Input
                 type="text"
                 value={businessForm.tags}
                 onChange={(event) =>
@@ -2295,61 +2258,48 @@ function SubmitPlanPanel() {
             </label>
 
             <div className="submit-plan__footer-actions">
-              <button type="button" onClick={() => openViewPlan(selectedPlan)}>
+              <Button type="button" variant="outline" size="sm" width="content" onClick={() => openViewPlan(selectedPlan)}>
                 انصراف
-              </button>
+              </Button>
 
-              <button type="submit">ذخیره اطلاعات همکاری تجاری</button>
+              <Button type="submit" variant="primary" size="sm" width="content">ذخیره اطلاعات همکاری تجاری</Button>
 
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
+                width="content"
                 onClick={handleBusinessOpportunityFinalPublish}
               >
                 {selectedPlan.businessOpportunityPublished
                   ? "ذخیره و به‌روزرسانی انتشار"
                   : "ذخیره و انتشار نهایی در پنل همکار تجاری"}
-              </button>
+              </Button>
             </div>
           </form>
 
           {submitMessage && (
-            <p className="submit-plan__success-message">{submitMessage}</p>
+            <DashboardNotice tone="success">{submitMessage}</DashboardNotice>
           )}
-        </div>
+        </DashboardPanel>
       )}
 
       {(mode === "new" || mode === "edit") && (
-        <div className="submit-plan__panel">
-          <div className="submit-plan__wizard">
-            <button
-              type="button"
-              className={
-                submitStep === "select"
-                  ? "submit-plan__wizard-step submit-plan__wizard-step--active"
-                  : "submit-plan__wizard-step"
-              }
-              onClick={() => setSubmitStep("select")}
-            >
-              ۱. انتخاب فراخوان
-            </button>
-
-            <button
-              type="button"
-              className={
-                submitStep === "upload"
-                  ? "submit-plan__wizard-step submit-plan__wizard-step--active"
-                  : "submit-plan__wizard-step"
-              }
-              disabled={!selectedCallId}
-              onClick={() => {
-                if (selectedCallId) {
-                  setSubmitStep("upload");
-                }
-              }}
-            >
-              ۲. بارگذاری و ارسال
-            </button>
-          </div>
+        <DashboardPanel as="div" className="submit-plan__panel" padding="md">
+          <DashboardTabs
+            className="submit-plan__wizard"
+            ariaLabel="مراحل ارسال طرح"
+            value={submitStep}
+            onChange={setSubmitStep}
+            items={[
+              { value: "select", label: "۱. انتخاب فراخوان" },
+              {
+                value: "upload",
+                label: "۲. بارگذاری و ارسال",
+                disabled: !selectedCallId,
+              },
+            ]}
+          />
 
           {submitStep === "select" && (
             <>
@@ -2362,44 +2312,40 @@ function SubmitPlanPanel() {
 
               <div className="submit-plan__call-grid">
                 {callOptions.map((call) => (
-                  <button
-                    type="button"
+                  <DashboardChoiceCard
                     key={call.id}
-                    className={
-                      selectedCallId === call.id
-                        ? "submit-plan__call-card submit-plan__call-card--active"
-                        : "submit-plan__call-card"
-                    }
+                    selected={selectedCallId === call.id}
                     onClick={() => setSelectedCallId(call.id)}
-                  >
-                    <span>{call.status}</span>
-                    <h4>{call.title}</h4>
-                    <p>{call.field}</p>
-                    <strong>ددلاین: {call.deadline}</strong>
-                  </button>
+                    eyebrow={call.status}
+                    title={call.title}
+                    description={call.field}
+                    meta={`ددلاین: ${call.deadline}`}
+                  />
                 ))}
 
                 {!callOptions.length && (
-                  <div className="submit-plan__empty-state">
-                    فراخوان منتشرشده‌ای برای انتخاب وجود ندارد. اگر کمیته
-                    فراخوان منتشر کرده است، صفحه را یک‌بار تازه‌سازی کنید یا
-                    دوباره وارد داشبورد شوید.
-                  </div>
+                  <DashboardEmptyState
+                    title="فراخوانی برای انتخاب وجود ندارد"
+                    description="اگر کمیته فراخوان منتشر کرده است، صفحه را یک‌بار تازه‌سازی کنید یا دوباره وارد داشبورد شوید."
+                  />
                 )}
               </div>
 
               <div className="submit-plan__footer-actions">
-                <button type="button" onClick={openList}>
+                <Button type="button" variant="outline" size="sm" width="content" onClick={openList}>
                   بازگشت
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  variant="primary"
+                  size="sm"
+                  width="content"
                   disabled={!selectedCallId}
                   onClick={() => setSubmitStep("upload")}
                 >
                   ادامه به مرحله آپلود
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -2424,7 +2370,7 @@ function SubmitPlanPanel() {
 
               <label className="submit-plan__input-group">
                 <span>عنوان طرح</span>
-                <input
+                <Input
                   type="text"
                   value={planTitle}
                   onChange={(event) => setPlanTitle(event.target.value)}
@@ -2442,9 +2388,9 @@ function SubmitPlanPanel() {
                     </strong>
                   </div>
 
-                  <button type="button" onClick={removeCurrentFile}>
+                  <Button type="button" variant="danger-soft" size="sm" width="content" onClick={removeCurrentFile}>
                     حذف فایل
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -2465,8 +2411,11 @@ function SubmitPlanPanel() {
               </label>
 
               <div className="submit-plan__footer-actions">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
+                  width="content"
                   onClick={() =>
                     mode === "edit" ? openList() : setSubmitStep("select")
                   }
@@ -2474,11 +2423,13 @@ function SubmitPlanPanel() {
                   {mode === "edit"
                     ? "انصراف از ویرایش"
                     : "بازگشت به انتخاب فراخوان"}
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="submit"
-                  className={mode === "edit" ? "submit-plan__edit-submit" : ""}
+                  variant="primary"
+                  size="sm"
+                  width="content"
                   disabled={!hasFile || isUploadingPlanFile}
                 >
                   {isUploadingPlanFile
@@ -2488,15 +2439,15 @@ function SubmitPlanPanel() {
                         ? "ارسال مجدد طرح"
                         : "ذخیره تغییرات"
                       : "ارسال طرح"}
-                </button>
+                </Button>
               </div>
             </form>
           )}
 
           {submitMessage && (
-            <p className="submit-plan__success-message">{submitMessage}</p>
+            <DashboardNotice tone="success">{submitMessage}</DashboardNotice>
           )}
-        </div>
+        </DashboardPanel>
       )}
     </section>
   );
@@ -2882,16 +2833,19 @@ function SitePublicationPanel() {
             </p>
           </div>
 
-          <button
+          <Button
             type="button"
-            className="site-publication__back-button"
+            variant="outline"
+            size="sm"
+            width="content"
             onClick={openList}
+            leadingIcon="←"
           >
-            ← بازگشت به انتخاب طرح
-          </button>
+            بازگشت به انتخاب طرح
+          </Button>
         </div>
 
-        <div className="submit-plan__panel site-publication__editor-panel">
+        <DashboardPanel as="div" className="submit-plan__panel site-publication__editor-panel" padding="md">
           <div className="submit-plan__panel-header">
             <div>
               <span>
@@ -2900,13 +2854,7 @@ function SitePublicationPanel() {
               <h3>{selectedRequest.planTitle}</h3>
             </div>
 
-            <span
-              className={`submit-plan__status submit-plan__status--${getSitePublicationStatusClass(
-                selectedRequest.status,
-              )}`}
-            >
-              {selectedRequest.status}
-            </span>
+            <DashboardStatusBadge status={selectedRequest.status} />
           </div>
 
           <div className="site-publication__meta-grid">
@@ -2980,21 +2928,23 @@ function SitePublicationPanel() {
                     />
                   </label>
 
-                  <button
+                  <Button
                     type="button"
-                    className="site-publication__ghost-button"
+                    variant="danger-soft"
+                    size="sm"
+                    width="content"
                     onClick={() => updateFormField("image", "")}
                     disabled={isLocked || !form.image}
                   >
                     حذف تصویر
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
 
             <label className="submit-plan__input-group">
               <span>عنوان صفحه پروژه / دستاورد</span>
-              <input
+              <Input
                 type="text"
                 value={form.title}
                 onChange={(event) =>
@@ -3007,7 +2957,7 @@ function SitePublicationPanel() {
 
             <label className="submit-plan__input-group">
               <span>حوزه پروژه</span>
-              <select
+              <Select
                 value={form.field}
                 onChange={(event) =>
                   updateFormField("field", event.target.value)
@@ -3020,12 +2970,12 @@ function SitePublicationPanel() {
                     {fieldOption}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="submit-plan__input-group">
               <span>خلاصه معرفی / توضیح هیرو</span>
-              <textarea
+              <Textarea
                 rows="3"
                 value={form.summary}
                 onChange={(event) =>
@@ -3039,34 +2989,46 @@ function SitePublicationPanel() {
             <div className="submit-plan__input-group site-publication__full-row">
               <span>توضیحات کامل پروژه</span>
               <div className="site-publication__editor-toolbar">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  width="content"
                   onClick={() => applyEditorCommand("bold")}
                   disabled={isLocked}
                 >
                   Bold
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  width="content"
                   onClick={() => applyEditorCommand("underline")}
                   disabled={isLocked}
                 >
                   Underline
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  width="content"
                   onClick={() => applyEditorCommand("formatBlock", "h3")}
                   disabled={isLocked}
                 >
                   تیتر
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  width="content"
                   onClick={applyEditorLink}
                   disabled={isLocked}
                 >
                   لینک
-                </button>
+                </Button>
               </div>
               <div
                 ref={descriptionEditorRef}
@@ -3099,7 +3061,7 @@ function SitePublicationPanel() {
                     }
                     disabled={isLocked}
                   />
-                  <input
+                  <Input
                     type="number"
                     inputMode="numeric"
                     min="0"
@@ -3144,7 +3106,7 @@ function SitePublicationPanel() {
                     }
                     disabled={isLocked}
                   />
-                  <input
+                  <Input
                     type="number"
                     inputMode="numeric"
                     min="0"
@@ -3172,7 +3134,7 @@ function SitePublicationPanel() {
 
             <label className="submit-plan__input-group">
               <span>نیاز به سرمایه</span>
-              <select
+              <Select
                 value={form.investmentNeed}
                 onChange={(event) =>
                   updateFormField("investmentNeed", event.target.value)
@@ -3185,7 +3147,7 @@ function SitePublicationPanel() {
                     {investmentOption}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <div className="submit-plan__input-group site-publication__full-row">
@@ -3213,9 +3175,9 @@ function SitePublicationPanel() {
                     برای هر گزارش می‌توانید توضیح متنی و فایل جداگانه ثبت کنید.
                   </p>
                 </div>
-                <button type="button" onClick={addReport} disabled={isLocked}>
+                <Button type="button" variant="outline" size="sm" width="content" onClick={addReport} disabled={isLocked}>
                   افزودن گزارش
-                </button>
+                </Button>
               </div>
 
               {normalizeReportsForForm(form.reports).map((report, index) => (
@@ -3225,18 +3187,21 @@ function SitePublicationPanel() {
                 >
                   <div className="site-publication__report-editor-head">
                     <strong>گزارش {index + 1}</strong>
-                    <button
+                    <Button
                       type="button"
+                      variant="danger-soft"
+                      size="sm"
+                      width="content"
                       onClick={() => removeReport(report.id)}
                       disabled={isLocked}
                     >
                       حذف گزارش
-                    </button>
+                    </Button>
                   </div>
 
                   <label>
                     عنوان گزارش
-                    <input
+                    <Input
                       type="text"
                       value={report.title}
                       onChange={(event) =>
@@ -3248,7 +3213,7 @@ function SitePublicationPanel() {
 
                   <label>
                     وضعیت گزارش
-                    <select
+                    <Select
                       value={report.status}
                       onChange={(event) =>
                         updateReport(report.id, { status: event.target.value })
@@ -3258,12 +3223,12 @@ function SitePublicationPanel() {
                       <option value="تکمیل شده">تکمیل شده</option>
                       <option value="در حال تکمیل">در حال تکمیل</option>
                       <option value="نیازمند بررسی">نیازمند بررسی</option>
-                    </select>
+                    </Select>
                   </label>
 
                   <label className="site-publication__report-text">
                     متن گزارش
-                    <textarea
+                    <Textarea
                       rows="3"
                       value={report.text}
                       onChange={(event) =>
@@ -3289,9 +3254,11 @@ function SitePublicationPanel() {
                     ) : (
                       <span>فایلی انتخاب نشده است.</span>
                     )}
-                    <button
+                    <Button
                       type="button"
-                      className="site-publication__ghost-button"
+                      variant="danger-soft"
+                      size="sm"
+                      width="content"
                       onClick={() =>
                         updateReport(report.id, {
                           fileName: "",
@@ -3302,43 +3269,45 @@ function SitePublicationPanel() {
                       disabled={isLocked || !report.fileUrl}
                     >
                       حذف فایل
-                    </button>
+                    </Button>
                   </div>
                 </article>
               ))}
             </div>
 
             <div className="submit-plan__footer-actions site-publication__footer-actions">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
+                width="content"
                 onClick={openList}
-                className="site-publication__secondary-button"
               >
                 بازگشت
-              </button>
+              </Button>
 
-              <button type="button" onClick={handlePreview}>
+              <Button type="button" variant="outline" size="sm" width="content" onClick={handlePreview}>
                 پیش‌نمایش
-              </button>
+              </Button>
 
               {!isSubmitted && !isPublished && (
                 <>
-                  <button type="button" onClick={handleSaveDraft}>
+                  <Button type="button" variant="outline" size="sm" width="content" onClick={handleSaveDraft}>
                     ذخیره پیش‌نویس
-                  </button>
+                  </Button>
 
-                  <button type="button" onClick={handleSubmitToCommittee}>
+                  <Button type="button" variant="primary" size="sm" width="content" onClick={handleSubmitToCommittee}>
                     ارسال برای بررسی کمیته
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
           </form>
 
           {panelMessage && (
-            <p className="submit-plan__success-message">{panelMessage}</p>
+            <DashboardNotice tone="success">{panelMessage}</DashboardNotice>
           )}
-        </div>
+        </DashboardPanel>
       </section>
     );
   }
@@ -3357,7 +3326,7 @@ function SitePublicationPanel() {
         </div>
       </div>
 
-      <div className="submit-plan__panel site-publication__selection-panel">
+      <DashboardPanel as="div" className="submit-plan__panel site-publication__selection-panel" padding="md">
         <div className="submit-plan__panel-header">
           <div>
             <span>مرحله اول</span>
@@ -3371,7 +3340,10 @@ function SitePublicationPanel() {
               const hasDraft = hasSitePublicationDraft(request);
 
               return (
-                <article
+                <DashboardPanel
+                  as="article"
+                  padding="sm"
+                  interactive
                   className="site-publication__selection-card"
                   key={request.id}
                 >
@@ -3386,17 +3358,9 @@ function SitePublicationPanel() {
                         {hasDraft &&
                           request.status ===
                             SITE_PUBLICATION_STATUS.WAITING_FOR_INNOVATOR && (
-                            <span className="site-publication__draft-badge">
-                              پیش‌نویس
-                            </span>
+                            <DashboardStatusBadge status="پیش‌نویس" />
                           )}
-                        <span
-                          className={`submit-plan__status submit-plan__status--${getSitePublicationStatusClass(
-                            request.status,
-                          )}`}
-                        >
-                          {request.status}
-                        </span>
+                        <DashboardStatusBadge status={request.status} />
                       </div>
                     </div>
 
@@ -3431,29 +3395,25 @@ function SitePublicationPanel() {
                   </div>
 
                   <div className="site-publication__selection-actions">
-                    <button type="button" onClick={() => openEditor(request)}>
+                    <Button type="button" variant="outline" size="sm" width="content" onClick={() => openEditor(request)}>
                       {getSitePublicationActionLabel(request.status)}
-                    </button>
+                    </Button>
                   </div>
-                </article>
+                </DashboardPanel>
               );
             })}
           </div>
         ) : (
-          <div className="submit-plan__empty-state site-publication__empty-state">
-            <h3>فعلاً طرحی برای تکمیل معرفی نشده است.</h3>
-            <p>
-              اگر کمیته در مرحله تعیین‌تکلیف، گزینه معرفی به موقعیت تجاری یا
-              معرفی برای پروژه‌های موفق را فعال کند، طرح در این بخش نمایش داده
-              می‌شود.
-            </p>
-          </div>
+          <DashboardEmptyState
+            title="فعلاً طرحی برای تکمیل معرفی نشده است"
+            description="اگر کمیته در مرحله تعیین‌تکلیف، گزینه معرفی به موقعیت تجاری یا معرفی برای پروژه‌های موفق را فعال کند، طرح در این بخش نمایش داده می‌شود."
+          />
         )}
 
         {panelMessage && (
-          <p className="submit-plan__success-message">{panelMessage}</p>
+          <DashboardNotice tone="success">{panelMessage}</DashboardNotice>
         )}
-      </div>
+      </DashboardPanel>
     </section>
   );
 }
@@ -3605,7 +3565,7 @@ function SelectedPlansPanel() {
 
     return (
       <section className="selected-plans">
-        <div className="selected-plans__panel">
+        <DashboardPanel as="div" className="selected-plans__panel" padding="md">
           <div className="selected-plans__panel-header">
             <div>
               <span>جزئیات وظیفه</span>
@@ -3613,14 +3573,16 @@ function SelectedPlansPanel() {
               <p>{selectedPlan.title}</p>
             </div>
 
-            <button
+            <Button
               type="button"
-              className="selected-plans__back-button"
+              variant="outline"
+              size="sm"
+              width="content"
+              leadingIcon={<BackIcon />}
               onClick={closeTask}
             >
-              <BackIcon />
               بازگشت به وظایف
-            </button>
+            </Button>
           </div>
 
           <div
@@ -3637,57 +3599,42 @@ function SelectedPlansPanel() {
 
             <div>
               <span>وضعیت وظیفه</span>
-              <b
-                className={`selected-plans__task-status selected-plans__task-status--${getTaskStatusClass(
-                  selectedTask.status,
-                )}`}
-              >
-                {selectedTask.status}
-              </b>
+              <DashboardStatusBadge status={selectedTask.status} />
             </div>
           </div>
 
           <div className="selected-plans__message-grid">
-            <div>
-              <span>پیام یا توضیحات مدیر</span>
-              <p>{selectedTask.managerMessage || "پیامی ثبت نشده است."}</p>
-            </div>
+            <DashboardReadOnlyField
+              label="پیام یا توضیحات مدیر"
+              value={selectedTask.managerMessage || "پیامی ثبت نشده است."}
+            />
 
-            <div>
-              <span>بازخورد مدیر</span>
-              <p>
-                {selectedTask.managerFeedback ||
-                  "هنوز بازخوردی از طرف مدیر ثبت نشده است."}
-              </p>
-            </div>
+            <DashboardReadOnlyField
+              label="بازخورد مدیر"
+              value={selectedTask.managerFeedback || "هنوز بازخوردی از طرف مدیر ثبت نشده است."}
+            />
           </div>
 
-          <label className="selected-plans__description">
-            <span>توضیحات شما</span>
-            <textarea
-              value={selectedTask.description}
-              readOnly={taskIsLocked}
-              onChange={(event) =>
+          <DashboardTextareaField
+            className="selected-plans__description"
+            label="توضیحات شما"
+            textareaProps={{
+              value: selectedTask.description,
+              readOnly: taskIsLocked,
+              onChange: (event) =>
                 updateTask(selectedPlan.id, selectedTask.id, {
                   description: event.target.value,
-                })
-              }
-              placeholder="توضیحات خود را برای مدیر وارد کنید..."
-            />
-          </label>
+                }),
+              placeholder: "توضیحات خود را برای مدیر وارد کنید...",
+            }}
+          />
 
-          <div className="selected-plans__upload-row">
-            <div className="selected-plans__file-box">
-              <span>فایل ارسالی</span>
-
-              {selectedTask.fileName ? (
-                <strong>{selectedTask.fileName}</strong>
-              ) : (
-                <strong>هنوز فایلی بارگذاری نشده است</strong>
-              )}
-            </div>
-
-            {!taskIsLocked && (
+          <DashboardAttachmentField
+            className="selected-plans__upload-row"
+            contentClassName="selected-plans__file-box"
+            label="فایل ارسالی"
+            fileName={selectedTask.fileName}
+            actions={!taskIsLocked ? (
               <div className="selected-plans__task-actions">
                 <label>
                   <input
@@ -3705,27 +3652,29 @@ function SelectedPlansPanel() {
                 </label>
 
                 {selectedTask.fileName && (
-                  <button
+                  <Button
                     type="button"
-                    onClick={() =>
-                      removeTaskFile(selectedPlan.id, selectedTask.id)
-                    }
+                    variant="danger-soft"
+                    size="sm"
+                    width="content"
+                    onClick={() => removeTaskFile(selectedPlan.id, selectedTask.id)}
                   >
                     حذف فایل
-                  </button>
+                  </Button>
                 )}
 
-                <button
+                <Button
                   type="button"
-                  onClick={() =>
-                    saveTaskResponse(selectedPlan.id, selectedTask.id)
-                  }
+                  variant="primary"
+                  size="sm"
+                  width="content"
+                  onClick={() => saveTaskResponse(selectedPlan.id, selectedTask.id)}
                 >
                   ارسال پاسخ
-                </button>
+                </Button>
               </div>
-            )}
-          </div>
+            ) : null}
+          />
 
           {taskIsLocked && (
             <div className="selected-plans__locked-note">
@@ -3738,7 +3687,7 @@ function SelectedPlansPanel() {
               {taskSubmitMessage}
             </p>
           )}
-        </div>
+        </DashboardPanel>
       </section>
     );
   }
@@ -3748,7 +3697,7 @@ function SelectedPlansPanel() {
 
     return (
       <section className="selected-plans">
-        <div className="selected-plans__panel">
+        <DashboardPanel as="div" className="selected-plans__panel" padding="md">
           <div className="selected-plans__panel-header">
             <div>
               <span>طرح انتخاب‌شده</span>
@@ -3756,14 +3705,16 @@ function SelectedPlansPanel() {
               <p>{selectedPlan.call}</p>
             </div>
 
-            <button
+            <Button
               type="button"
-              className="selected-plans__back-button"
+              variant="outline"
+              size="sm"
+              width="content"
+              leadingIcon={<BackIcon />}
               onClick={closePlan}
             >
-              <BackIcon />
               بازگشت به طرح‌ها
-            </button>
+            </Button>
           </div>
 
           <div className="selected-plans__summary">
@@ -3816,7 +3767,10 @@ function SelectedPlansPanel() {
                   task.deadline && task.status !== "پایان یافته";
 
                 return (
-                  <article
+                  <DashboardPanel
+                    as="article"
+                    padding="sm"
+                    interactive
                     className="selected-plans__task-preview-card"
                     key={task.id}
                   >
@@ -3826,20 +3780,12 @@ function SelectedPlansPanel() {
                           <span>{task.title}</span>
 
                           {task.isNew && (
-                            <span className="selected-plans__new-label">
-                              جدید
-                            </span>
+                            <DashboardStatusBadge status="جدید" />
                           )}
                         </h4>
                       </div>
 
-                      <span
-                        className={`selected-plans__task-status selected-plans__task-status--${getTaskStatusClass(
-                          task.status,
-                        )}`}
-                      >
-                        {task.status}
-                      </span>
+                      <DashboardStatusBadge status={task.status} />
                     </div>
 
                     {hasDeadline ? (
@@ -3856,22 +3802,22 @@ function SelectedPlansPanel() {
 
                     <p>{task.managerMessage}</p>
 
-                    <button type="button" onClick={() => openTask(task.id)}>
+                    <Button type="button" variant="outline" size="sm" width="content" onClick={() => openTask(task.id)}>
                       مشاهده وظیفه
-                    </button>
-                  </article>
+                    </Button>
+                  </DashboardPanel>
                 );
               })}
             </div>
           </section>
-        </div>
+        </DashboardPanel>
       </section>
     );
   }
 
   return (
     <section className="selected-plans">
-      <div className="selected-plans__panel">
+      <DashboardPanel as="div" className="selected-plans__panel" padding="md">
         <div className="selected-plans__panel-header">
           <div>
             <span>طرح‌های انتخاب‌شده</span>
@@ -3890,7 +3836,7 @@ function SelectedPlansPanel() {
             const nearestDeadline = getNearestTaskDeadline(planTasks);
 
             return (
-              <article className="selected-plans__card" key={plan.id}>
+              <DashboardPanel as="article" interactive className="selected-plans__card" padding="md" key={plan.id}>
                 <div className="selected-plans__card-top">
                   <StatusBadge
                     status={plan.status}
@@ -3898,9 +3844,7 @@ function SelectedPlansPanel() {
                   />
 
                   {hasNewTask && (
-                    <span className="selected-plans__project-new-badge">
-                      وظیفه جدید
-                    </span>
+                    <DashboardStatusBadge status="جدید">وظیفه جدید</DashboardStatusBadge>
                   )}
                 </div>
 
@@ -3912,14 +3856,14 @@ function SelectedPlansPanel() {
                   <span>نزدیک‌ترین ددلاین: {nearestDeadline}</span>
                 </div>
 
-                <button type="button" onClick={() => openPlan(plan.id)}>
+                <Button type="button" variant="primary" size="sm" width="content" onClick={() => openPlan(plan.id)}>
                   ورود به طرح
-                </button>
-              </article>
+                </Button>
+              </DashboardPanel>
             );
           })}
         </div>
-      </div>
+      </DashboardPanel>
     </section>
   );
 }
@@ -3971,7 +3915,7 @@ function RegisteredActivitiesPanel() {
 
   return (
     <section className="selected-plans">
-      <div className="selected-plans__panel">
+      <DashboardPanel as="div" className="selected-plans__panel" padding="md">
         <div className="selected-plans__header">
           <div>
             <span>دوره‌ها و رویدادهای من</span>
@@ -3995,7 +3939,7 @@ function RegisteredActivitiesPanel() {
               title,
               notices,
             }) => (
-              <article className="selected-plans__card" key={registration.id}>
+              <DashboardPanel as="article" interactive className="selected-plans__card" padding="md" key={registration.id}>
                 <div>
                   <span>{typeLabel}</span>
                   <h4>{title}</h4>
@@ -4084,627 +4028,18 @@ function RegisteredActivitiesPanel() {
                 >
                   مشاهده جزئیات
                 </Link>
-              </article>
+              </DashboardPanel>
             ),
           )}
 
           {registeredActivities.length === 0 && (
-            <div className="selected-plans__empty">
-              هنوز در هیچ دوره یا رویدادی ثبت‌نام نکرده‌اید.
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function SupportRequestsPanel() {
-  const supportRoleName = "فناور";
-  const [requests, setRequests] = useState(() =>
-    getCurrentUserSupportTickets(supportRoleName),
-  );
-  const [mode, setMode] = useState("list");
-  const [selectedRequestId, setSelectedRequestId] = useState(null);
-  const [requestTitle, setRequestTitle] = useState("");
-  const [requestMessage, setRequestMessage] = useState("");
-
-  const refreshRequests = () => {
-    setRequests(getCurrentUserSupportTickets(supportRoleName));
-  };
-
-  const selectedRequest = requests.find(
-    (request) => String(request.id) === String(selectedRequestId),
-  );
-
-  const openNewRequest = () => {
-    setMode("new");
-    setSelectedRequestId(null);
-    setRequestTitle("");
-    setRequestMessage("");
-    refreshRequests();
-  };
-
-  const openList = () => {
-    setMode("list");
-    setSelectedRequestId(null);
-    setRequestTitle("");
-    setRequestMessage("");
-    refreshRequests();
-  };
-
-  const openRequest = (requestId) => {
-    setSelectedRequestId(requestId);
-    setMode("view");
-    refreshRequests();
-  };
-
-  const deleteRequest = (requestId) => {
-    const targetRequest = requests.find(
-      (request) => String(request.id) === String(requestId),
-    );
-
-    if (!targetRequest || targetRequest.seenBySupport) {
-      return;
-    }
-
-    const confirmed = window.confirm("آیا از حذف این درخواست مطمئن هستید؟");
-
-    if (!confirmed) {
-      return;
-    }
-
-    deleteSupportTicket(requestId);
-    refreshRequests();
-  };
-
-  const submitRequest = (event) => {
-    event.preventDefault();
-
-    if (!requestMessage.trim()) {
-      return;
-    }
-
-    addSupportTicket(
-      {
-        title: requestTitle.trim() || "درخواست جدید",
-        message: requestMessage.trim(),
-      },
-      supportRoleName,
-    );
-
-    openList();
-  };
-
-  if (mode === "new") {
-    return (
-      <section className="support-requests">
-        <div className="support-requests__panel">
-          <div className="support-requests__panel-header">
-            <div>
-              <span>درخواست جدید</span>
-              <h3>ثبت درخواست پشتیبانی</h3>
-              <p>
-                درخواست شما برای کمیته/دبیرخانه ثبت می‌شود و پاسخ آن در همین بخش
-                و در پیام‌ها نمایش داده خواهد شد.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="support-requests__neutral-button"
-              onClick={openList}
-            >
-              بازگشت به درخواست‌ها
-            </button>
-          </div>
-
-          <form className="support-requests__form" onSubmit={submitRequest}>
-            <label>
-              <span>عنوان درخواست</span>
-              <input
-                type="text"
-                value={requestTitle}
-                onChange={(event) => setRequestTitle(event.target.value)}
-                placeholder="مثلاً مشکل در بارگذاری فایل"
-              />
-            </label>
-
-            <label>
-              <span>متن درخواست</span>
-              <textarea
-                value={requestMessage}
-                onChange={(event) => setRequestMessage(event.target.value)}
-                placeholder="متن درخواست خود را وارد کنید..."
-              />
-            </label>
-
-            <div className="support-requests__form-actions">
-              <button
-                type="button"
-                className="support-requests__neutral-button"
-                onClick={openList}
-              >
-                انصراف
-              </button>
-
-              <button type="submit" disabled={!requestMessage.trim()}>
-                ثبت درخواست
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-    );
-  }
-
-  if (mode === "view" && selectedRequest) {
-    const hasReply = Boolean(
-      selectedRequest.supportReply || selectedRequest.reply,
-    );
-    const canDelete = !selectedRequest.seenBySupport;
-
-    return (
-      <section className="support-requests">
-        <div className="support-requests__panel">
-          <div className="support-requests__panel-header">
-            <div>
-              <span>جزئیات درخواست</span>
-              <h3>{selectedRequest.title}</h3>
-              <p>ارسال شده در {selectedRequest.sentAt}</p>
-            </div>
-
-            <button
-              type="button"
-              className="support-requests__neutral-button"
-              onClick={openList}
-            >
-              بازگشت به درخواست‌ها
-            </button>
-          </div>
-
-          <div className="support-requests__detail-grid support-requests__detail-grid--compact">
-            <div>
-              <span>زمان ارسال</span>
-              <strong>{selectedRequest.sentAt}</strong>
-            </div>
-
-            <div>
-              <span>زمان پاسخ</span>
-              <strong>
-                {hasReply ? selectedRequest.repliedAt : "هنوز پاسخ ثبت نشده"}
-              </strong>
-            </div>
-          </div>
-
-          <div className="support-requests__conversation">
-            <article className="support-requests__message support-requests__message--user">
-              <span>پیام شما</span>
-              <p>{selectedRequest.message}</p>
-            </article>
-
-            {hasReply ? (
-              <article className="support-requests__message support-requests__message--support">
-                <span>پاسخ کمیته/دبیرخانه</span>
-                <p>{selectedRequest.supportReply || selectedRequest.reply}</p>
-              </article>
-            ) : (
-              <article className="support-requests__empty-reply">
-                هنوز پاسخی برای این درخواست ثبت نشده است.
-              </article>
-            )}
-          </div>
-
-          {canDelete && (
-            <div className="support-requests__detail-actions">
-              <button
-                type="button"
-                className="support-requests__delete-button"
-                onClick={() => {
-                  deleteRequest(selectedRequest.id);
-                  openList();
-                }}
-              >
-                حذف درخواست
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="support-requests">
-      <div className="support-requests__panel">
-        <div className="support-requests__panel-header">
-          <div>
-            <span>درخواست‌ها</span>
-            <h3>درخواست‌ها و پشتیبانی</h3>
-            <p>
-              درخواست‌های شما، وضعیت پیگیری و پاسخ‌های کمیته/دبیرخانه در این بخش
-              نمایش داده می‌شود.
-            </p>
-          </div>
-
-          <button type="button" onClick={openNewRequest}>
-            ثبت درخواست جدید
-          </button>
-        </div>
-
-        <div className="support-requests__list">
-          {requests.map((request) => {
-            const hasReply = Boolean(request.supportReply || request.reply);
-            const canDelete = !request.seenBySupport;
-
-            return (
-              <article className="support-requests__card" key={request.id}>
-                <div className="support-requests__card-main">
-                  <div className="support-requests__card-title">
-                    <h4>{request.title}</h4>
-                    {hasReply && (
-                      <span className="support-requests__reply-badge">
-                        پاسخ دریافت شده
-                      </span>
-                    )}
-                    {!hasReply && (
-                      <span className="support-requests__waiting-badge">
-                        {request.status || "در انتظار پیگیری"}
-                      </span>
-                    )}
-                  </div>
-
-                  <p>{request.message}</p>
-
-                  <div className="support-requests__meta">
-                    <span>ارسال: {request.sentAt}</span>
-                    <span>
-                      پاسخ: {hasReply ? request.repliedAt : "در انتظار پاسخ"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="support-requests__actions">
-                  <button type="button" onClick={() => openRequest(request.id)}>
-                    مشاهده
-                  </button>
-
-                  {canDelete && (
-                    <button
-                      type="button"
-                      className="support-requests__delete-button"
-                      onClick={() => deleteRequest(request.id)}
-                    >
-                      حذف
-                    </button>
-                  )}
-                </div>
-              </article>
-            );
-          })}
-
-          {requests.length === 0 && (
-            <div className="support-requests__empty-reply">
-              هنوز درخواستی ثبت نشده است.
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function MessagesPanel() {
-  const [messages, setMessages] = useState(() =>
-    getNotificationsForCurrentUser(),
-  );
-  const [filter, setFilter] = useState("all");
-  const [selectedMessageId, setSelectedMessageId] = useState(null);
-
-  const refreshMessages = () => {
-    setMessages(getNotificationsForCurrentUser());
-  };
-
-  const selectedMessage = messages.find(
-    (message) => String(message.id) === String(selectedMessageId),
-  );
-
-  const unreadCount = messages.filter((message) => !message.isRead).length;
-  const importantCount = messages.filter(
-    (message) => message.isImportant,
-  ).length;
-
-  const filteredMessages = messages.filter((message) => {
-    if (filter === "unread") return !message.isRead;
-    if (filter === "important") return message.isImportant;
-    return true;
-  });
-
-  const markAllAsRead = () => {
-    markAllNotificationsAsReadForCurrentUser();
-    refreshMessages();
-  };
-
-  const deleteAllMessages = () => {
-    if (!window.confirm("آیا از حذف همه پیام‌ها مطمئن هستید؟")) return;
-    deleteAllNotificationsForCurrentUser();
-    setSelectedMessageId(null);
-    refreshMessages();
-  };
-
-  const openMessage = (messageId) => {
-    markNotificationAsRead(messageId);
-    setSelectedMessageId(messageId);
-    refreshMessages();
-  };
-
-  const removeMessage = (messageId) => {
-    deleteNotification(messageId);
-    if (String(selectedMessageId) === String(messageId)) {
-      setSelectedMessageId(null);
-    }
-    refreshMessages();
-  };
-
-  if (selectedMessage) {
-    return (
-      <section className="messages-panel">
-        <div className="messages-panel__panel">
-          <div className="messages-panel__panel-header">
-            <div>
-              <span>جزئیات پیام</span>
-              <h3>{selectedMessage.title}</h3>
-              <p>
-                {selectedMessage.category} / {selectedMessage.sentAt}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="messages-panel__back-button"
-              onClick={() => {
-                setSelectedMessageId(null);
-                refreshMessages();
-              }}
-            >
-              بازگشت
-            </button>
-          </div>
-
-          <article className="messages-panel__detail-card">
-            {selectedMessage.isImportant && (
-              <span className="messages-panel__important-badge">مهم</span>
-            )}
-            <p>{selectedMessage.body}</p>
-          </article>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="messages-panel">
-      <div className="messages-panel__panel">
-        <div className="messages-panel__panel-header">
-          <div>
-            <span>پیام‌ها و اعلانات</span>
-            <h3>اعلان‌های سامانه</h3>
-            <p>
-              اعلان‌های مربوط به درخواست‌ها، پاسخ‌ها، وظایف و فعالیت‌های جدید
-              اینجا نمایش داده می‌شود.
-            </p>
-          </div>
-
-          <div className="messages-panel__header-actions">
-            <button type="button" onClick={markAllAsRead}>
-              خواندن همه
-            </button>
-            <button
-              type="button"
-              className="messages-panel__delete-all-button"
-              onClick={deleteAllMessages}
-              disabled={messages.length === 0}
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
-        <div className="messages-panel__filters">
-          <button
-            type="button"
-            className={filter === "all" ? "messages-panel__filter--active" : ""}
-            onClick={() => setFilter("all")}
-          >
-            همه پیام‌ها
-            <span className="messages-panel__filter-count">
-              {messages.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            className={
-              filter === "unread" ? "messages-panel__filter--active" : ""
-            }
-            onClick={() => setFilter("unread")}
-          >
-            خوانده‌نشده
-            <span className="messages-panel__filter-count">{unreadCount}</span>
-          </button>
-
-          <button
-            type="button"
-            className={
-              filter === "important" ? "messages-panel__filter--active" : ""
-            }
-            onClick={() => setFilter("important")}
-          >
-            مهم
-            <span className="messages-panel__filter-count">
-              {importantCount}
-            </span>
-          </button>
-        </div>
-
-        <div className="messages-panel__list">
-          {filteredMessages.map((message) => (
-            <article
-              className={`messages-panel__card ${
-                message.isRead ? "messages-panel__card--read" : ""
-              }`}
-              key={message.id}
-            >
-              <div className="messages-panel__card-main">
-                <div className="messages-panel__title-row">
-                  <h4>{message.title}</h4>
-                  {!message.isRead && (
-                    <span className="messages-panel__unread-badge">جدید</span>
-                  )}
-                  {message.isImportant && (
-                    <span className="messages-panel__important-badge">مهم</span>
-                  )}
-                </div>
-
-                <p>{message.body}</p>
-
-                <div className="messages-panel__meta">
-                  <span>{message.category}</span>
-                  <span>{message.sentAt}</span>
-                </div>
-              </div>
-
-              <div className="messages-panel__card-actions messages-panel__actions">
-                <button
-                  type="button"
-                  className="messages-panel__view-button"
-                  onClick={() => openMessage(message.id)}
-                >
-                  مشاهده
-                </button>
-                <button
-                  type="button"
-                  className="messages-panel__delete-message-button messages-panel__remove-button messages-panel__remove-message"
-                  onClick={() => removeMessage(message.id)}
-                  aria-label="حذف پیام"
-                >
-                  ×
-                </button>
-              </div>
-            </article>
-          ))}
-
-          {filteredMessages.length === 0 && (
-            <div className="messages-panel__empty">
-              پیامی برای نمایش وجود ندارد.
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FaqPanel() {
-  const categories = [
-    "همه",
-    ...new Set(FAQ_ITEMS.map((item) => item.category)),
-  ];
-
-  const [activeCategory, setActiveCategory] = useState("همه");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [openQuestionId, setOpenQuestionId] = useState(
-    FAQ_ITEMS[0]?.id || null,
-  );
-
-  const filteredItems = FAQ_ITEMS.filter((item) => {
-    const matchesCategory =
-      activeCategory === "همه" || item.category === activeCategory;
-
-    const matchesSearch =
-      item.question.includes(searchTerm) || item.answer.includes(searchTerm);
-
-    return matchesCategory && matchesSearch;
-  });
-
-  const toggleQuestion = (questionId) => {
-    setOpenQuestionId((currentId) =>
-      currentId === questionId ? null : questionId,
-    );
-  };
-
-  return (
-    <section className="faq-panel">
-      <div className="faq-panel__panel">
-        <div className="faq-panel__panel-header">
-          <div>
-            <span>سوالات متداول</span>
-            <h3>راهنمای سریع استفاده از داشبورد</h3>
-            <p>
-              پاسخ سوالات پرتکرار درباره فراخوان‌ها، طرح‌ها، وظایف، درخواست‌ها و
-              پیام‌های سامانه.
-            </p>
-          </div>
-        </div>
-
-        <div className="faq-panel__tools">
-          <label>
-            <span>جست‌وجو در سوالات</span>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="عبارت موردنظر را وارد کنید..."
+            <DashboardEmptyState
+              title="هنوز ثبت‌نامی ندارید"
+              description="دوره‌ها و رویدادهایی که در آن‌ها ثبت‌نام می‌کنید در این بخش نمایش داده می‌شوند."
             />
-          </label>
-
-          <div className="faq-panel__categories">
-            {categories.map((category) => (
-              <button
-                type="button"
-                key={category}
-                className={
-                  activeCategory === category
-                    ? "faq-panel__category--active"
-                    : ""
-                }
-                onClick={() => setActiveCategory(category)}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="faq-panel__list">
-          {filteredItems.map((item) => {
-            const isOpen = openQuestionId === item.id;
-
-            return (
-              <article
-                className={`faq-panel__item ${
-                  isOpen ? "faq-panel__item--open" : ""
-                }`}
-                key={item.id}
-              >
-                <button type="button" onClick={() => toggleQuestion(item.id)}>
-                  <span>{item.category}</span>
-                  <strong>{item.question}</strong>
-                  <i>{isOpen ? "−" : "+"}</i>
-                </button>
-
-                {isOpen && <p>{item.answer}</p>}
-              </article>
-            );
-          })}
-
-          {filteredItems.length === 0 && (
-            <div className="faq-panel__empty">
-              سوالی با این عبارت یا دسته‌بندی پیدا نشد.
-            </div>
           )}
         </div>
-      </div>
+      </DashboardPanel>
     </section>
   );
 }
@@ -4758,15 +4093,17 @@ function DashboardHomePanel() {
     <section className="dashboard-home">
       <div className="dashboard-home__stats">
         {stats.map((item) => (
-          <article className="dashboard-home__stat-card" key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.hint}</small>
-          </article>
+          <DashboardStatCard
+            key={item.label}
+            label={item.label}
+            value={item.value}
+            hint={item.hint}
+            className="dashboard-home__stat-card"
+          />
         ))}
       </div>
 
-      <article className="dashboard-home__recent-card">
+      <DashboardPanel className="dashboard-home__recent-card" padding="md">
         {latestSubmittedPlan ? (
           <>
             <div>
@@ -4776,24 +4113,20 @@ function DashboardHomePanel() {
             </div>
 
             <div className="dashboard-home__recent-meta">
-              <StatusBadge
-                status={latestSubmittedPlan.status}
-                className="submit-plan__status--inline"
-              />
+              <StatusBadge status={latestSubmittedPlan.status} />
               <small>ارسال: {latestSubmittedPlan.date}</small>
             </div>
           </>
         ) : (
-          <div>
-            <span>طرح اخیر</span>
-            <h3>هنوز طرحی ثبت نشده است</h3>
-            <p>پس از ارسال اولین طرح، خلاصه آن در این بخش نمایش داده می‌شود.</p>
-          </div>
+          <DashboardEmptyState
+            title="هنوز طرحی ثبت نشده است"
+            description="پس از ارسال اولین طرح، خلاصه آن در این بخش نمایش داده می‌شود."
+          />
         )}
-      </article>
+      </DashboardPanel>
 
       <div className="dashboard-home__workspace-grid">
-        <section className="dashboard-home__selected-plan">
+        <DashboardPanel className="dashboard-home__selected-plan" padding="md">
           {latestSelectedPlan ? (
             <>
               <div className="dashboard-home__section-head">
@@ -4805,10 +4138,7 @@ function DashboardHomePanel() {
               <div className="dashboard-home__selected-summary">
                 <div>
                   <span>وضعیت</span>
-                  <StatusBadge
-                    status={latestSelectedPlan.status}
-                    className="submit-plan__status--inline"
-                  />
+                  <StatusBadge status={latestSelectedPlan.status} />
                 </div>
                 <div>
                   <span>تعداد وظایف</span>
@@ -4827,25 +4157,20 @@ function DashboardHomePanel() {
                       <h4>{task.title}</h4>
                       <span>{task.deadline || "بدون ددلاین فعال"}</span>
                     </div>
-                    <b
-                      className={`selected-plans__task-status selected-plans__task-status--${getTaskStatusClass(
-                        task.status,
-                      )}`}
-                    >
-                      {task.status}
-                    </b>
+                    <DashboardStatusBadge status={task.status} />
                   </article>
                 ))}
               </div>
             </>
           ) : (
-            <div className="dashboard-home__empty-selected">
-              هنوز طرح انتخاب‌شده‌ای برای نمایش وجود ندارد.
-            </div>
+            <DashboardEmptyState
+              title="طرح انتخاب‌شده‌ای وجود ندارد"
+              description="پس از انتخاب یک طرح، خلاصه وضعیت و وظایف آن در این بخش نمایش داده می‌شود."
+            />
           )}
-        </section>
+        </DashboardPanel>
 
-        <section className="dashboard-home__desk">
+        <DashboardPanel className="dashboard-home__desk" padding="md">
           <div className="dashboard-home__section-head">
             <span>میزکار</span>
             <h3>تقویم ددلاین‌ها و یادآوری‌ها</h3>
@@ -4853,15 +4178,23 @@ function DashboardHomePanel() {
           </div>
 
           <div className="dashboard-home__deadline-calendar">
-            {activeDeadlines.map((task) => (
-              <article key={task.id}>
-                <div>
-                  <span>ددلاین</span>
-                  <strong>{task.deadline}</strong>
-                </div>
-                <p>{task.title}</p>
-              </article>
-            ))}
+            {activeDeadlines.length > 0 ? (
+              activeDeadlines.map((task) => (
+                <article key={task.id}>
+                  <div>
+                    <span>ددلاین</span>
+                    <strong>{task.deadline}</strong>
+                  </div>
+                  <p>{task.title}</p>
+                </article>
+              ))
+            ) : (
+              <DashboardEmptyState
+                title="ددلاین فعالی ندارید"
+                description="ددلاین وظایف فعال در این بخش نمایش داده می‌شود."
+                className="dashboard-home__compact-empty"
+              />
+            )}
           </div>
 
           <div className="dashboard-home__reminders">
@@ -4876,261 +4209,8 @@ function DashboardHomePanel() {
               </article>
             ))}
           </div>
-        </section>
+        </DashboardPanel>
       </div>
-    </section>
-  );
-}
-
-function ProfileAvatar({ profile, size = "normal" }) {
-  return profile.avatarPreview ? (
-    <img
-      className={`profile-panel__avatar profile-panel__avatar--${size}`}
-      src={profile.avatarPreview}
-      alt={`${profile.firstName} ${profile.lastName}`}
-    />
-  ) : (
-    <span className={`profile-panel__avatar profile-panel__avatar--${size}`}>
-      {profile.avatarLetter || profile.firstName?.[0] || "ف"}
-    </span>
-  );
-}
-
-function ProfilePanel({ profile, onEdit }) {
-  return (
-    <section className="profile-panel">
-      <div className="profile-panel__card profile-panel__hero-card">
-        <ProfileAvatar profile={profile} size="large" />
-
-        <div>
-          <span>پروفایل کاربری</span>
-          <h3>
-            {profile.fullName ||
-              `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
-          </h3>
-          <p>{profile.level}</p>
-        </div>
-
-        <button type="button" onClick={onEdit}>
-          ویرایش پروفایل
-        </button>
-      </div>
-
-      <div className="profile-panel__info-grid">
-        <article>
-          <span>نام و نام خانوادگی</span>
-          <strong>
-            {profile.fullName ||
-              `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
-          </strong>
-        </article>
-        <article>
-          <span>شماره موبایل</span>
-          <strong>{profile.mobile}</strong>
-        </article>
-        <article>
-          <span>ایمیل</span>
-          <strong>{profile.email}</strong>
-        </article>
-        <article>
-          <span>سطح کاربری</span>
-          <strong>{profile.level}</strong>
-        </article>
-        <article>
-          <span>سابقه عضویت</span>
-          <strong>
-            عضو از سال {profile.memberSince} - به مدت{" "}
-            {profile.membershipDuration}
-          </strong>
-        </article>
-      </div>
-    </section>
-  );
-}
-
-function ProfileEditPanel({ profile, onSave, onCancel }) {
-  const [formData, setFormData] = useState(profile);
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-  const [message, setMessage] = useState("");
-
-  const updateField = (field, value) => {
-    setFormData((current) => ({ ...current, [field]: value }));
-  };
-
-  const updatePasswordField = (field, value) => {
-    setPasswordData((current) => ({ ...current, [field]: value }));
-  };
-
-  const handleAvatarChange = (event) => {
-    const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      updateField("avatarPreview", String(reader.result || ""));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
-    if (
-      passwordData.newPassword &&
-      passwordData.newPassword !== passwordData.confirmPassword
-    ) {
-      setMessage("رمز عبور جدید و تکرار آن یکسان نیست.");
-      return;
-    }
-
-    const nextProfile = {
-      ...formData,
-      fullName:
-        formData.fullName ||
-        `${formData.firstName || ""} ${formData.lastName || ""}`.trim(),
-      avatarLetter:
-        formData.firstName?.[0] ||
-        formData.fullName?.[0] ||
-        profile.avatarLetter ||
-        "ف",
-    };
-
-    try {
-      const savedProfile = onSave(nextProfile, passwordData);
-      setFormData(savedProfile || nextProfile);
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-      setMessage(
-        passwordData.newPassword
-          ? "اطلاعات پروفایل و رمز عبور با موفقیت ذخیره شد."
-          : "تغییرات پروفایل با موفقیت ذخیره شد.",
-      );
-    } catch (error) {
-      setMessage(error?.message || "ذخیره تغییرات با خطا روبه‌رو شد.");
-    }
-  };
-
-  return (
-    <section className="profile-panel">
-      <form className="profile-panel__edit-card" onSubmit={handleSubmit}>
-        <div className="profile-panel__edit-header">
-          <div>
-            <span>ویرایش پروفایل</span>
-            <h3>اطلاعات کاربری و رمز عبور</h3>
-          </div>
-
-          <button type="button" onClick={onCancel}>
-            بازگشت به پروفایل
-          </button>
-        </div>
-
-        <div className="profile-panel__avatar-edit">
-          <ProfileAvatar profile={formData} size="large" />
-          <label>
-            <input type="file" accept="image/*" onChange={handleAvatarChange} />
-            تغییر تصویر پروفایل
-          </label>
-        </div>
-
-        <div className="profile-panel__form-grid">
-          <label>
-            <span>نام</span>
-            <input
-              type="text"
-              value={formData.firstName}
-              onChange={(event) => updateField("firstName", event.target.value)}
-            />
-          </label>
-
-          <label>
-            <span>نام خانوادگی</span>
-            <input
-              type="text"
-              value={formData.lastName}
-              onChange={(event) => updateField("lastName", event.target.value)}
-            />
-          </label>
-
-          <label>
-            <span>شماره موبایل</span>
-            <input
-              type="text"
-              value={formData.mobile}
-              onChange={(event) => updateField("mobile", event.target.value)}
-            />
-          </label>
-
-          <label>
-            <span>ایمیل</span>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(event) => updateField("email", event.target.value)}
-            />
-          </label>
-        </div>
-
-        <div className="profile-panel__password-box">
-          <div>
-            <span>تغییر رمز عبور</span>
-            <p>در صورت نیاز، رمز فعلی و رمز جدید را وارد کنید.</p>
-          </div>
-
-          <div className="profile-panel__form-grid">
-            <label>
-              <span>رمز عبور فعلی</span>
-              <input
-                type="password"
-                value={passwordData.currentPassword}
-                onChange={(event) =>
-                  updatePasswordField("currentPassword", event.target.value)
-                }
-              />
-            </label>
-
-            <label>
-              <span>رمز عبور جدید</span>
-              <input
-                type="password"
-                value={passwordData.newPassword}
-                onChange={(event) =>
-                  updatePasswordField("newPassword", event.target.value)
-                }
-              />
-            </label>
-
-            <label>
-              <span>تکرار رمز عبور جدید</span>
-              <input
-                type="password"
-                value={passwordData.confirmPassword}
-                onChange={(event) =>
-                  updatePasswordField("confirmPassword", event.target.value)
-                }
-              />
-            </label>
-          </div>
-        </div>
-
-        <div className="profile-panel__form-actions">
-          <button type="button" onClick={onCancel}>
-            انصراف
-          </button>
-          <button type="submit">ذخیره تغییرات</button>
-        </div>
-
-        {message && <p className="profile-panel__message">{message}</p>}
-      </form>
     </section>
   );
 }
@@ -5156,13 +4236,15 @@ function GenericDashboardContent({ currentSection, activeSubItem }) {
             آموزشی و پشتیبانی.
           </p>
 
-          <div className="innovator-dashboard__hero-buttons">
-            <button type="button">{currentSection.actionLabel}</button>
+          <DashboardToolbar className="innovator-dashboard__hero-buttons">
+            <Button type="button" variant="secondary" size="sm" width="content">
+              {currentSection.actionLabel}
+            </Button>
 
-            <button type="button" className="innovator-dashboard__ghost-btn">
+            <Button type="button" variant="inverse" size="sm" width="content">
               سفارشی‌سازی داشبورد
-            </button>
-          </div>
+            </Button>
+          </DashboardToolbar>
         </div>
 
         <div className="innovator-dashboard__hero-side">
@@ -5185,26 +4267,25 @@ function GenericDashboardContent({ currentSection, activeSubItem }) {
 
       <section className="innovator-dashboard__summary-grid">
         {SUMMARY_CARDS.map((card) => (
-          <article
+          <DashboardStatCard
             key={card.label}
+            label={card.label}
+            value={card.value}
+            hint={card.hint}
             className="innovator-dashboard__summary-card"
-          >
-            <span>{card.label}</span>
-            <strong>{card.value}</strong>
-            <p>{card.hint}</p>
-          </article>
+          />
         ))}
       </section>
 
       <section className="innovator-dashboard__content-grid">
-        <div className="innovator-dashboard__panel innovator-dashboard__panel--wide">
+        <DashboardPanel className="innovator-dashboard__panel innovator-dashboard__panel--wide" padding="md">
           <div className="innovator-dashboard__panel-header">
             <div>
               <span>بخش فعال</span>
               <h3>{currentSection.primaryTitle}</h3>
             </div>
 
-            <button type="button">مشاهده همه</button>
+            <Button type="button" variant="outline" size="sm" width="content">مشاهده همه</Button>
           </div>
 
           <div className="innovator-dashboard__feature-list">
@@ -5218,21 +4299,18 @@ function GenericDashboardContent({ currentSection, activeSubItem }) {
                   <p>{item.meta}</p>
                 </div>
 
-                <span className="innovator-dashboard__feature-status">
-                  {item.status}
-                </span>
+                <DashboardStatusBadge status={item.status} />
               </article>
             ))}
           </div>
 
-          <div className="innovator-dashboard__placeholder-note">
-            جزئیات و زیرمنوهای کامل این بخش در مرحله بعدی به داشبورد اضافه
-            می‌شوند.
-          </div>
-        </div>
+          <DashboardNotice tone="info">
+            جزئیات و زیرمنوهای کامل این بخش در مرحله بعدی به داشبورد اضافه می‌شوند.
+          </DashboardNotice>
+        </DashboardPanel>
 
         <div className="innovator-dashboard__stack">
-          <div className="innovator-dashboard__panel">
+          <DashboardPanel className="innovator-dashboard__panel" padding="md">
             <div className="innovator-dashboard__panel-header">
               <div>
                 <span>زیرمنوی فعال</span>
@@ -5243,13 +4321,13 @@ function GenericDashboardContent({ currentSection, activeSubItem }) {
             <ul className="innovator-dashboard__quick-list">
               {currentSection.sideItems.map((item) => (
                 <li key={item}>
-                  <button type="button">{item}</button>
+                  <Button type="button" variant="ghost" size="sm" width="content">{item}</Button>
                 </li>
               ))}
             </ul>
-          </div>
+          </DashboardPanel>
 
-          <div className="innovator-dashboard__panel">
+          <DashboardPanel className="innovator-dashboard__panel" padding="md">
             <div className="innovator-dashboard__panel-header">
               <div>
                 <span>آخرین فعالیت‌ها</span>
@@ -5262,7 +4340,7 @@ function GenericDashboardContent({ currentSection, activeSubItem }) {
                 <li key={item}>{item}</li>
               ))}
             </ul>
-          </div>
+          </DashboardPanel>
         </div>
       </section>
     </>
@@ -5279,7 +4357,6 @@ function InnovatorDashboardPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const notificationMenuRef = useRef(null);
   const [recentMessages, setRecentMessages] = useState(() =>
     getNotificationsForCurrentUser().slice(0, 3),
   );
@@ -5305,27 +4382,6 @@ function InnovatorDashboardPage() {
   const unreadMessagesCount = recentMessages.filter(
     (item) => !item.isRead,
   ).length;
-
-  useEffect(() => {
-    if (!isNotificationOpen) {
-      return undefined;
-    }
-
-    const closeOnOutsideClick = (event) => {
-      if (
-        notificationMenuRef.current &&
-        !notificationMenuRef.current.contains(event.target)
-      ) {
-        setIsNotificationOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", closeOnOutsideClick);
-
-    return () => {
-      document.removeEventListener("mousedown", closeOnOutsideClick);
-    };
-  }, [isNotificationOpen]);
 
   const resetCurrentContent = () => {
     setContentResetKey((currentKey) => currentKey + 1);
@@ -5446,295 +4502,44 @@ function InnovatorDashboardPage() {
   const shouldShowEditProfile = activeSection === "edit-profile";
 
   return (
-    <main
-      className={`innovator-dashboard ${
-        isSidebarCollapsed ? "innovator-dashboard--collapsed" : ""
-      }`}
+    <DashboardShell
+      collapsed={isSidebarCollapsed}
+      onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
+      logoSrc={universityLogo}
+      navItems={NAV_ITEMS}
+      activeSection={activeSection}
+      activeSubItem={activeSubItem}
+      openMenuId={openMenuId}
+      onNavClick={handleNavClick}
+      onSubNavClick={handleSubNavClick}
+      title={currentSection.title}
+      topbarActions={
+        <>
+          <DashboardNotificationMenu
+            open={isNotificationOpen}
+            onOpenChange={setIsNotificationOpen}
+            unreadCount={unreadMessagesCount}
+            messages={recentMessages}
+            onOpenMessages={openMessagesCenter}
+            onMarkAllRead={markAllRecentMessagesAsRead}
+            onMarkRead={markMessageAsRead}
+            onOpenMessage={openNotificationTarget}
+            onBeforeOpen={() => setIsProfileMenuOpen(false)}
+          />
+
+          <DashboardProfileMenu
+            profile={userProfile}
+            open={isProfileMenuOpen}
+            onOpenChange={setIsProfileMenuOpen}
+            onOpenProfile={() => openInternalPage("profile")}
+            onEditProfile={() => openInternalPage("edit-profile")}
+            onLogout={handleLogout}
+            onBeforeOpen={() => setIsNotificationOpen(false)}
+          />
+        </>
+      }
     >
-      <aside className="innovator-dashboard__sidebar">
-        <div className="innovator-dashboard__sidebar-top">
-          <div className="innovator-dashboard__sidebar-head">
-            <button
-              type="button"
-              className="innovator-dashboard__menu-button"
-              onClick={() => setIsSidebarCollapsed((current) => !current)}
-              aria-label="باز و بسته کردن منوی داشبورد"
-            >
-              <MenuIcon />
-            </button>
-
-            <Link to="/" className="innovator-dashboard__brand">
-              <img src={universityLogo} alt="لوگوی دانشگاه تهران" />
-
-              <div className="innovator-dashboard__brand-text">
-                <strong>هاتف</strong>
-              </div>
-            </Link>
-          </div>
-
-          <nav className="innovator-dashboard__nav">
-            {NAV_ITEMS.map((item) => {
-              const isActive = activeSection === item.id;
-              const hasSubItems = Boolean(item.subItems?.length);
-              const isOpen = openMenuId === item.id;
-
-              return (
-                <div className="innovator-dashboard__nav-group" key={item.id}>
-                  <button
-                    type="button"
-                    className={`innovator-dashboard__nav-item ${
-                      isActive ? "innovator-dashboard__nav-item--active" : ""
-                    }`}
-                    onClick={() => handleNavClick(item)}
-                    title={isSidebarCollapsed ? item.label : undefined}
-                  >
-                    <span className="innovator-dashboard__nav-icon">
-                      {item.icon}
-                    </span>
-
-                    <span className="innovator-dashboard__nav-text">
-                      {item.label}
-                    </span>
-
-                    {hasSubItems && !isSidebarCollapsed && (
-                      <span className="innovator-dashboard__nav-chevron">
-                        <ChevronIcon isOpen={isOpen} />
-                      </span>
-                    )}
-                  </button>
-
-                  {hasSubItems && !isSidebarCollapsed && (
-                    <div
-                      className={`innovator-dashboard__subnav ${
-                        isOpen ? "innovator-dashboard__subnav--open" : ""
-                      }`}
-                    >
-                      {item.subItems.map((subItem) => (
-                        <button
-                          type="button"
-                          key={subItem.id}
-                          className={`innovator-dashboard__subnav-item ${
-                            activeSubItem === subItem.id
-                              ? "innovator-dashboard__subnav-item--active"
-                              : ""
-                          }`}
-                          onClick={() => handleSubNavClick(item.id, subItem.id)}
-                        >
-                          {subItem.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
-        </div>
-      </aside>
-
-      <section className="innovator-dashboard__main">
-        <header className="innovator-dashboard__topbar">
-          <div className="innovator-dashboard__topbar-title">
-            <DashboardDateTime />
-
-            <h1>{currentSection.title}</h1>
-          </div>
-
-          <div className="innovator-dashboard__topbar-actions">
-            <div
-              className="innovator-dashboard__notification-menu"
-              ref={notificationMenuRef}
-            >
-              <button
-                type="button"
-                className="innovator-dashboard__notification-trigger"
-                onClick={() => {
-                  setIsNotificationOpen((current) => !current);
-                  setIsProfileMenuOpen(false);
-                }}
-                aria-label="نمایش پیام‌های اخیر"
-              >
-                <BellIcon />
-
-                {unreadMessagesCount > 0 && <span>{unreadMessagesCount}</span>}
-              </button>
-
-              {isNotificationOpen && (
-                <div className="innovator-dashboard__notification-dropdown">
-                  <div className="innovator-dashboard__notification-header">
-                    <strong>پیام‌های اخیر</strong>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={openMessagesCenter}
-                        title="رفتن به پیام‌ها و اعلانات"
-                        style={{
-                          width: "30px",
-                          height: "30px",
-                          border: "0",
-                          borderRadius: "999px",
-                          background: "#e8f8ff",
-                          cursor: "pointer",
-                        }}
-                      >
-                        📨
-                      </button>
-                      <button
-                        type="button"
-                        onClick={markAllRecentMessagesAsRead}
-                        disabled={unreadMessagesCount === 0}
-                        style={{
-                          height: "30px",
-                          border: "0",
-                          borderRadius: "999px",
-                          padding: "0 10px",
-                          color: unreadMessagesCount ? "#0e7ca8" : "#64748b",
-                          background: unreadMessagesCount
-                            ? "#e8f8ff"
-                            : "#e9edf2",
-                          fontFamily: "inherit",
-                          fontSize: "10px",
-                          fontWeight: 900,
-                          cursor: unreadMessagesCount ? "pointer" : "default",
-                        }}
-                      >
-                        خواندن همه
-                      </button>
-                    </div>
-                    <small>{unreadMessagesCount} خوانده‌نشده</small>
-                  </div>
-
-                  <div className="innovator-dashboard__notification-list">
-                    {recentMessages.map((message) => (
-                      <article
-                        key={message.id}
-                        className={`innovator-dashboard__notification-item ${
-                          message.isRead
-                            ? "innovator-dashboard__notification-item--read"
-                            : ""
-                        }`}
-                        onClick={() => openNotificationTarget(message)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            openNotificationTarget(message);
-                          }
-                        }}
-                        style={{
-                          cursor: "pointer",
-                          border: message.isRead
-                            ? "1px solid #bbf7d0"
-                            : "1px solid transparent",
-                          background: message.isRead ? "#f0fdf4" : undefined,
-                          opacity: message.isRead ? 1 : undefined,
-                        }}
-                      >
-                        <div>
-                          <h4>{message.title}</h4>
-                          <p>{message.sentAt}</p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={(event) =>
-                            markMessageAsRead(message.id, event)
-                          }
-                          disabled={message.isRead}
-                          style={
-                            message.isRead
-                              ? { color: "#166534", background: "#dcfce7" }
-                              : undefined
-                          }
-                        >
-                          {message.isRead ? "خوانده شد" : "خواندن"}
-                        </button>
-                      </article>
-                    ))}
-
-                    {recentMessages.length === 0 && (
-                      <article className="innovator-dashboard__notification-item">
-                        <div>
-                          <h4>اعلان جدیدی ندارید</h4>
-                          <p>همه چیز خوانده شده است.</p>
-                        </div>
-                      </article>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="innovator-dashboard__profile-menu">
-              <button
-                type="button"
-                className="innovator-dashboard__profile-trigger"
-                onClick={() => {
-                  setIsProfileMenuOpen((current) => !current);
-                  setIsNotificationOpen(false);
-                }}
-                aria-expanded={isProfileMenuOpen}
-              >
-                <span className="innovator-dashboard__profile-text">
-                  <strong>
-                    {userProfile.fullName ||
-                      `${userProfile.firstName || ""} ${userProfile.lastName || ""}`.trim()}
-                  </strong>
-                  <small>نوع کاربر: {userProfile.level}</small>
-                </span>
-
-                {userProfile.avatarPreview ? (
-                  <img
-                    className="innovator-dashboard__top-avatar"
-                    src={userProfile.avatarPreview}
-                    alt={userProfile.fullName || "پروفایل کاربر"}
-                  />
-                ) : (
-                  <span className="innovator-dashboard__top-avatar">
-                    {userProfile.avatarLetter ||
-                      userProfile.firstName?.[0] ||
-                      userProfile.fullName?.[0] ||
-                      "ف"}
-                  </span>
-                )}
-
-                <span className="innovator-dashboard__profile-caret">▾</span>
-              </button>
-
-              {isProfileMenuOpen && (
-                <div className="innovator-dashboard__profile-dropdown">
-                  <button
-                    type="button"
-                    onClick={() => openInternalPage("profile")}
-                  >
-                    پروفایل
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openInternalPage("edit-profile")}
-                  >
-                    ویرایش پروفایل
-                  </button>
-                  <button
-                    type="button"
-                    className="innovator-dashboard__profile-logout"
-                    onClick={handleLogout}
-                  >
-                    خروج
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {shouldShowDashboard ? (
+      {shouldShowDashboard ? (
           <DashboardHomePanel key={`dashboard-${contentResetKey}`} />
         ) : shouldShowSubmitPlan ? (
           <SubmitPlanPanel key={`submit-plan-${contentResetKey}`} />
@@ -5745,19 +4550,19 @@ function InnovatorDashboardPage() {
         ) : shouldShowMyActivities ? (
           <RegisteredActivitiesPanel key={`my-activities-${contentResetKey}`} />
         ) : shouldShowRequests ? (
-          <SupportRequestsPanel key={`requests-${contentResetKey}`} />
+          <DashboardSupportRequests key={`requests-${contentResetKey}`} supportRoleName="فناور" />
         ) : shouldShowMessages ? (
-          <MessagesPanel key={`messages-${contentResetKey}`} />
+          <DashboardMessages key={`messages-${contentResetKey}`} />
         ) : shouldShowFaq ? (
-          <FaqPanel key={`faq-${contentResetKey}`} />
+          <DashboardFAQ key={`faq-${contentResetKey}`} items={FAQ_ITEMS} />
         ) : shouldShowProfile ? (
-          <ProfilePanel
+          <DashboardProfileView
             key={`profile-${contentResetKey}`}
             profile={userProfile}
             onEdit={() => openInternalPage("edit-profile")}
           />
         ) : shouldShowEditProfile ? (
-          <ProfileEditPanel
+          <DashboardProfileEdit
             key={`edit-profile-${contentResetKey}`}
             profile={userProfile}
             onSave={saveUserProfile}
@@ -5770,8 +4575,7 @@ function InnovatorDashboardPage() {
             activeSubItem={activeSubItem}
           />
         )}
-      </section>
-    </main>
+    </DashboardShell>
   );
 }
 

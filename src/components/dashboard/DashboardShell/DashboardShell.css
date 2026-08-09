@@ -1,0 +1,18 @@
+/* Canonical dashboard shell controls restored from the approved Innovator reference. */
+.dashboard-shell__menu-button {
+  width:58px;
+  height:58px;
+  display:grid;
+  place-items:center;
+  flex:0 0 58px;
+  padding:0;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:var(--dashboard-ref-radius-control);
+  color:var(--dashboard-ref-surface);
+  background:rgba(255,255,255,.08);
+  cursor:pointer;
+  transition:background 180ms ease,transform 180ms ease;
+}
+.dashboard-shell__menu-button:hover { background:rgba(255,255,255,.14); transform:translateY(-1px); }
+.dashboard-shell__menu-button:focus-visible { outline:none; box-shadow:var(--focus-ring); }
+.dashboard-shell__menu-button svg { width:23px; height:23px; }

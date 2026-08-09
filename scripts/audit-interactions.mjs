@@ -58,7 +58,7 @@ const raw=[]; const family=[];
 let publicHover=0,dashboardHover=0,exceptions=0;
 for(const file of cssFiles){
   const relative=rel(file);
-  const dashboard=relative.includes("/pages/dashboard/");
+  const dashboard=relative.includes("/pages/dashboard/") || relative.includes("/components/dashboard/");
   const shared=relative.includes("/components/ui/");
   const utility=relative.endsWith("/styles/interactions.css");
   const text=fs.readFileSync(file,"utf8");

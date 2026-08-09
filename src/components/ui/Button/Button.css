@@ -150,6 +150,20 @@
   text-underline-offset: 3px;
 }
 
+
+.ui-button.ui-button--danger-soft {
+  color: var(--color-danger);
+  border-color: var(--dashboard-ref-danger-line);
+  background-color: var(--color-danger-bg);
+}
+
+.ui-button.ui-button--danger-soft:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: var(--dashboard-ref-danger-hover);
+  border-color: var(--dashboard-ref-danger-line-hover);
+  background-color: var(--dashboard-ref-danger-bg);
+  box-shadow: var(--dashboard-ref-shadow-danger-soft);
+}
+
 .ui-button.ui-button--danger {
   color: var(--text-inverse);
   border-color: var(--color-danger);

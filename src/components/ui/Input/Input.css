@@ -1,4 +1,4 @@
-.ui-input {
+.ui-input.ui-input {
   width: 100%;
   min-width: 0;
   height: 44px;
@@ -21,29 +21,29 @@
     background-color var(--duration-normal) var(--ease-standard);
 }
 
-.ui-input::placeholder {
+.ui-input.ui-input::placeholder {
   color: var(--color-neutral-400);
 }
-.ui-input:hover:not(:disabled):not(:focus) {
+.ui-input.ui-input:hover:not(:disabled):not(:focus) {
   border-color: var(--interaction-field-hover-border);
 }
 
-.ui-input:focus {
+.ui-input.ui-input:focus {
   border-color: var(--color-action-600);
   box-shadow: var(--focus-ring);
 }
 
-.ui-input--invalid,
-.ui-input[aria-invalid="true"] {
+.ui-input.ui-input--invalid,
+.ui-input.ui-input[aria-invalid="true"] {
   border-color: var(--color-danger);
 }
 
-.ui-input--invalid:focus,
-.ui-input[aria-invalid="true"]:focus {
+.ui-input.ui-input--invalid:focus,
+.ui-input.ui-input[aria-invalid="true"]:focus {
   box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.12);
 }
 
-.ui-input:disabled {
+.ui-input.ui-input:disabled {
   color: var(--text-disabled);
   background-color: var(--color-neutral-100);
   cursor: not-allowed;

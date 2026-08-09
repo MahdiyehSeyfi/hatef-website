@@ -1,0 +1,16 @@
+/* Canonical dashboard messages feature composition. */
+.messages-panel { display:grid; gap:18px; }
+.messages-panel__panel-header { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:20px; }
+.messages-panel__panel-header span { display:block; margin-bottom:7px; color:var(--dashboard-ref-text-muted); font-size:12px; font-weight:700; }
+.messages-panel__panel-header h3 { margin:0 0 8px; color:var(--dashboard-ref-text-strong); font-size:22px; font-weight:900; }
+.messages-panel__panel-header p { margin:0; color:var(--dashboard-ref-body); font-size:13px; line-height:1.9; }
+.messages-panel__header-actions,.messages-panel__card-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.messages-panel__filters { margin-bottom:18px; }
+.messages-panel__list { display:grid; gap:12px; }
+.messages-panel__card { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:18px; }
+.messages-panel__title-row { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+.messages-panel__title-row h4 { margin:0; color:var(--dashboard-ref-text-strong); font-size:14px; font-weight:900; line-height:1.8; }
+.messages-panel__card p,.messages-panel__detail-card p { margin:0 0 10px; color:var(--dashboard-ref-text-soft); font-size:12px; line-height:2; }
+.messages-panel__meta { display:flex; flex-wrap:wrap; gap:8px 14px; }
+.messages-panel__meta span { color:var(--dashboard-ref-text-faint); font-size:11px; font-weight:700; }
+@media(max-width:1280px){ .messages-panel__card{grid-template-columns:1fr;} .messages-panel__panel-header{flex-direction:column;} }

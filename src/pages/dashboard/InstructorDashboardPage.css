@@ -105,9 +105,6 @@
   line-height: 1.9;
 }
 
-.instructor-dashboard__panel-head button,
-.instructor-create__header button,
-.instructor-create__actions button,
 .instructor-activity-card__manage {
   min-height: 42px;
   padding: 0 18px;
@@ -126,23 +123,14 @@
     opacity 180ms ease;
 }
 
-.instructor-dashboard__panel-head button:hover,
-.instructor-create__header button:hover,
-.instructor-create__actions button:hover:not(:disabled),
 .instructor-activity-card__manage:hover:not(:disabled) {
   background: #0e9fd9;
   box-shadow: 0 10px 22px rgba(25, 180, 233, 0.16);
   transform: translateY(-1px);
 }
 
-.instructor-create__actions button:first-child,
-.instructor-create__actions button:nth-child(2) {
-  color: #17406a;
-  background: #eff6fb;
-  border: 1px solid #dce6ef;
-}
 
-.instructor-create__actions button:disabled,
+
 .instructor-activity-card__manage:disabled {
   opacity: 0.48;
   cursor: not-allowed;
@@ -245,36 +233,9 @@
   margin-bottom: 22px;
 }
 
-.instructor-create__steps button {
-  min-height: 54px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 0 12px;
-  border: 1px solid #dce6ef;
-  border-radius: 16px;
-  color: #52677f;
-  background: #f8fbfd;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
-  text-align: right;
-}
 
-.instructor-create__steps button span {
-  width: 24px;
-  height: 24px;
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  color: #17406a;
-  background: #eef3f8;
-  font-size: 11px;
-  font-weight: 900;
-}
+
+
 
 .instructor-create__step--active {
   color: #0f5f80 !important;
@@ -298,24 +259,8 @@
   gap: 16px;
 }
 
-.instructor-create__type-grid button {
-  min-height: 180px;
-  padding: 20px;
-  border: 1px solid #e2ebf3;
-  border-radius: 22px;
-  color: #173154;
-  background: #f8fbfd;
-  font-family: inherit;
-  text-align: right;
-  cursor: pointer;
-  transition:
-    border-color 180ms ease,
-    background 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms ease;
-}
 
-.instructor-create__type-grid button:hover,
+
 .instructor-create__type-card--active {
   border-color: rgba(25, 180, 233, 0.45) !important;
   background: #f1fbff !important;
@@ -323,17 +268,7 @@
   transform: translateY(-2px);
 }
 
-.instructor-create__type-grid button span {
-  width: fit-content;
-  display: inline-flex;
-  margin-bottom: 14px;
-  padding: 6px 11px;
-  border-radius: 999px;
-  color: #0d7da8;
-  background: #e6f8ff;
-  font-size: 11px;
-  font-weight: 900;
-}
+
 
 .instructor-create__type-grid h4 {
   margin: 0 0 10px;
@@ -667,19 +602,7 @@
   box-shadow: 0 16px 34px rgba(18, 48, 86, 0.05);
 }
 
-.instructor-dashboard .reviewer-dashboard__profile-card > button {
-  width: fit-content;
-  min-height: 42px;
-  padding: 0 18px;
-  border: 1px solid #dce6ef;
-  border-radius: 14px;
-  color: #17406a;
-  background: #f8fbfd;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
+
 
 .instructor-dashboard .reviewer-dashboard__profile-head {
   display: flex;
@@ -770,19 +693,7 @@
   margin-bottom: 20px;
 }
 
-.instructor-dashboard .reviewer-dashboard__profile-edit-header button,
-.instructor-dashboard .reviewer-dashboard__profile-actions button {
-  min-height: 42px;
-  padding: 0 18px;
-  border: 1px solid #dce6ef;
-  border-radius: 14px;
-  color: #17406a;
-  background: #f8fbfd;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
+
 
 .instructor-dashboard .reviewer-dashboard__password-box {
   margin-top: 18px;
@@ -806,11 +717,7 @@
   margin-top: 18px;
 }
 
-.instructor-dashboard .reviewer-dashboard__profile-actions button:last-child {
-  color: #ffffff;
-  border-color: var(--instructor-accent);
-  background: var(--instructor-accent);
-}
+
 
 /* Reuse support/messages/faq block classes with small fallback if base CSS is absent */
 .instructor-dashboard .support-requests,
@@ -947,24 +854,9 @@
   margin: 0 0 18px;
 }
 
-.instructor-activities__filters button {
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid #dce6ef;
-  border-radius: 999px;
-  color: #52677f;
-  background: #f8fbfd;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 850;
-  cursor: pointer;
-}
 
-.instructor-activities__filters button.is-active {
-  color: #ffffff;
-  border-color: var(--instructor-accent);
-  background: var(--instructor-accent);
-}
+
+
 
 .instructor-activities__filters label {
   display: grid;
@@ -1019,24 +911,9 @@
   gap: 12px;
 }
 
-.instructor-home__quick-actions button {
-  min-height: 42px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 14px;
-  color: #ffffff;
-  background: var(--instructor-accent);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 900;
-  cursor: pointer;
-}
 
-.instructor-home__quick-actions button:nth-child(2) {
-  color: #17406a;
-  background: #f8fbfd;
-  border: 1px solid #dce6ef;
-}
+
+
 
 .profile-panel__form-grid label,
 .profile-panel__grid article {
@@ -1114,37 +991,11 @@
   align-content: center;
 }
 
-.course-builder-image-field button,
-.course-builder-add-button,
-.course-builder-repeat-item button,
-.course-builder-repeat-card header button {
-  width: fit-content;
-  min-height: 36px;
-  padding: 0 13px;
-  border: 1px solid #dce6ef;
-  border-radius: 12px;
-  color: #17406a;
-  background: #eff6fb;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
-}
 
-.course-builder-image-field button:hover,
-.course-builder-add-button:hover:not(:disabled),
-.course-builder-repeat-item button:hover,
-.course-builder-repeat-card header button:hover:not(:disabled) {
-  color: #ffffff;
-  border-color: var(--instructor-accent);
-  background: var(--instructor-accent);
-}
 
-.course-builder-add-button:disabled,
-.course-builder-repeat-card header button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+
+
+
 
 .course-builder-number-field {
   display: grid;
@@ -1536,17 +1387,7 @@
   text-align: left;
 }
 
-.instructor-date-filter__popover button {
-  min-height: 40px;
-  border: 0;
-  border-radius: 13px;
-  color: #ffffff;
-  background: var(--instructor-accent);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 900;
-  cursor: pointer;
-}
+
 
 .instructor-management__stats {
   display: grid;
@@ -1734,36 +1575,11 @@
   font-weight: 800;
 }
 
-.instructor-order-card > button {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 12px;
-  color: #ffffff;
-  background: #0a274f;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 900;
-  cursor: pointer;
-  transition:
-    background-color 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms ease;
-}
 
-.instructor-order-card > button:hover:not(:disabled) {
-  background: #00adea;
-  box-shadow: 0 12px 24px rgba(0, 173, 234, 0.22);
-  transform: translateY(-2px);
-}
 
-.instructor-order-card > button:disabled {
-  color: #6b7280;
-  background: #eef2f6;
-  cursor: default;
-}
+
+
+
 
 .instructor-management__row-number {
   width: 30px;
@@ -1782,10 +1598,7 @@
     grid-template-columns: 1fr;
   }
 
-  .instructor-order-card > button {
-    justify-self: start;
-    min-width: 170px;
-  }
+  
 }
 
 /* Instructor dashboard v9 refinements */
@@ -1864,30 +1677,9 @@
   background: #f8fbfd;
 }
 
-.instructor-notices__summary button,
-.support-requests__panel-header button,
-.support-requests__form button,
-.support-requests__ticket-actions button:first-child {
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 14px;
-  color: #ffffff;
-  background: #19b4e9;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 900;
-  cursor: pointer;
-}
 
-.instructor-notices__summary button:disabled,
-.support-requests__form button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+
+
 
 .instructor-notices__list,
 .support-requests__list {
@@ -1945,13 +1737,7 @@
   font-weight: 700;
 }
 
-.support-requests__neutral-button,
-.support-requests__ticket-actions button:first-child,
-.profile-panel__actions button:first-child {
-  color: #17406a !important;
-  border: 1px solid #dce6ef !important;
-  background: #f8fbfd !important;
-}
+
 
 .support-requests__panel,
 .faq-panel__panel,
@@ -2035,18 +1821,7 @@
   gap: 8px;
 }
 
-.support-requests__ticket-actions button:last-child {
-  min-height: 42px;
-  padding: 0 16px;
-  border: 1px solid #fecaca;
-  border-radius: 14px;
-  color: #c24141;
-  background: #fff1f1;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 900;
-  cursor: pointer;
-}
+
 
 .support-requests__ticket-detail {
   grid-template-columns: 1fr;
@@ -2065,10 +1840,7 @@
   font-weight: 900;
 }
 
-.profile-panel__actions button:last-child {
-  color: #ffffff;
-  background: #19b4e9;
-}
+
 
 @media (max-width: 1200px) {
   .instructor-dashboard__mini-list,
@@ -2171,30 +1943,11 @@
   gap: 10px;
 }
 
-.instructor-dashboard__workbench-list button {
-  min-height: 38px;
-  padding: 0 14px;
-  border: 1px solid #dce6ef;
-  border-radius: 999px;
-  color: #17406a;
-  background: #ffffff;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 900;
-  cursor: pointer;
-  white-space: nowrap;
-}
 
-.instructor-dashboard__workbench-list button:not(:disabled):hover {
-  color: #ffffff;
-  border-color: #19b4e9;
-  background: #19b4e9;
-}
 
-.instructor-dashboard__workbench-list button:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
+
+
+
 
 .instructor-dashboard__calendar-list li {
   justify-content: flex-start;
@@ -2264,26 +2017,9 @@
   gap: 8px;
 }
 
-.instructor-dashboard .support-requests__actions button,
-.instructor-dashboard .support-requests__status-row button {
-  min-height: 36px;
-  padding: 0 12px;
-  border: 1px solid #dce6ef;
-  border-radius: 999px;
-  color: #17406a;
-  background: #ffffff;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 900;
-  cursor: pointer;
-}
 
-.instructor-dashboard .support-requests__actions button:last-child,
-.instructor-dashboard .support-requests__status-row button {
-  color: #c24141;
-  border-color: #fecaca;
-  background: #fff1f1;
-}
+
+
 
 .instructor-dashboard .support-requests__detail-card,
 .instructor-dashboard .support-requests__reply-box {

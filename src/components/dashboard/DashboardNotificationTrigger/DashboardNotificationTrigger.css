@@ -1,0 +1,51 @@
+/* Canonical dashboard notification trigger — approved Innovator reference. */
+.dashboard-notification-trigger.dashboard-notification-trigger {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: grid;
+  flex: 0 0 58px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--dashboard-ref-line-control);
+  border-radius: var(--dashboard-ref-radius-control);
+  color: var(--dashboard-ref-text);
+  background: var(--dashboard-ref-surface);
+  cursor: pointer;
+  box-shadow: var(--dashboard-ref-shadow-control);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.dashboard-notification-trigger.dashboard-notification-trigger:hover {
+  border-color: rgba(25, 180, 233, 0.35);
+  box-shadow: var(--dashboard-ref-shadow-control-hover);
+  transform: translateY(-1px);
+}
+
+.dashboard-notification-trigger.dashboard-notification-trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.dashboard-notification-trigger svg {
+  width: 22px;
+  height: 22px;
+}
+
+.dashboard-notification-trigger__badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  color: var(--dashboard-ref-surface);
+  background: var(--dashboard-ref-danger-bright);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}

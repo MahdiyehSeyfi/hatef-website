@@ -207,6 +207,128 @@
     filter var(--duration-slow) var(--ease-standard),
     transform var(--duration-slow) var(--ease-standard);
 
+  /* Dashboard — shared semantic aliases
+     Phase 12A: all dashboard roles consume these values instead of
+     page-local colors, borders, spacing and shadows. */
+  --dashboard-surface: var(--surface-page);
+  --dashboard-surface-subtle: var(--surface-subtle);
+  --dashboard-surface-muted: var(--surface-muted);
+  --dashboard-surface-accent: var(--color-action-50);
+
+  --dashboard-text-primary: var(--text-primary);
+  --dashboard-text-secondary: var(--text-secondary);
+  --dashboard-text-muted: var(--text-muted);
+
+  --dashboard-line: var(--border-subtle);
+  --dashboard-line-strong: var(--border-default);
+  --dashboard-line-accent: var(--color-action-100);
+  --dashboard-line-danger: #fecaca;
+  --dashboard-line-success: #bbf7d0;
+  --dashboard-line-warning: #fde68a;
+
+  --dashboard-gap-xs: var(--space-2);
+  --dashboard-gap-sm: var(--space-3);
+  --dashboard-gap-md: var(--space-4);
+  --dashboard-gap-lg: var(--space-6);
+  --dashboard-gap-xl: var(--space-8);
+
+  --dashboard-panel-padding-sm: var(--space-4);
+  --dashboard-panel-padding-md: var(--space-6);
+  --dashboard-panel-padding-lg: var(--space-8);
+
+  --dashboard-radius-control: var(--radius-md);
+  --dashboard-radius-panel: var(--radius-lg);
+  --dashboard-radius-emphasis: var(--radius-xl);
+
+  --dashboard-shadow-panel: var(--shadow-xs);
+  --dashboard-shadow-raised: var(--shadow-sm);
+  --dashboard-shadow-hover: var(--shadow-md);
+
+  --dashboard-divider-width: 1px;
+  --dashboard-row-min-height: 44px;
+  --dashboard-control-min-height: 44px;
+
+  /* Dashboard chrome / shell */
+  --dashboard-app-bg: #eef3f8;
+  --dashboard-sidebar-start: #0e2f59;
+  --dashboard-sidebar-end: #133a6d;
+  --dashboard-sidebar-text: rgba(255, 255, 255, 0.86);
+  --dashboard-sidebar-text-muted: rgba(255, 255, 255, 0.7);
+  --dashboard-sidebar-line: rgba(255, 255, 255, 0.12);
+  --dashboard-sidebar-control-bg: rgba(255, 255, 255, 0.08);
+  --dashboard-sidebar-control-hover-bg: rgba(255, 255, 255, 0.14);
+  --dashboard-sidebar-active-bg: var(--dashboard-ref-sidebar-active-bg);
+  --dashboard-sidebar-active-shadow: var(--dashboard-ref-sidebar-active-shadow);
+  --dashboard-topbar-bg: var(--dashboard-app-bg);
+  --dashboard-dropdown-bg: var(--surface-page);
+  --dashboard-dropdown-shadow: var(--shadow-lg);
+  --dashboard-read-bg: var(--color-success-bg);
+  --dashboard-read-border: var(--dashboard-line-success);
+
+  /* Locked Innovator feature-reference aliases. Shared dashboard features consume these; pages do not redefine them. */
+  --dashboard-ref-text-strong: #10284b;
+  --dashboard-ref-text: #173154;
+  --dashboard-ref-text-soft: #52677f;
+  --dashboard-ref-text-muted: #84a0bc;
+  --dashboard-ref-text-faint: #7c8fa6;
+  --dashboard-ref-text-menu: #0f2645;
+  --dashboard-ref-line: #e4edf5;
+  --dashboard-ref-line-soft: #e6edf3;
+  --dashboard-ref-line-faint: #eef3f7;
+  --dashboard-ref-line-control: #e0e8f0;
+  --dashboard-ref-line-button: #dce6ef;
+  --dashboard-ref-line-field: #d6dee5;
+  --dashboard-ref-surface: #ffffff;
+  --dashboard-ref-surface-soft: #f8fbfd;
+  --dashboard-ref-surface-cyan: #e8f8ff;
+  --dashboard-ref-surface-cyan-soft: #eef9fd;
+  --dashboard-ref-action: #19b4e9;
+  --dashboard-ref-action-dark: #0e9fd9;
+  --dashboard-ref-action-text: #0e7ca8;
+  --dashboard-ref-danger-text: #c24141;
+  --dashboard-ref-danger-hover: #b91c1c;
+  --dashboard-ref-danger-bg: #fff1f1;
+  --dashboard-ref-danger-line: #fecaca;
+  --dashboard-ref-danger-line-hover: #fca5a5;
+  --dashboard-ref-success-text: #166534;
+  --dashboard-ref-success-bg: #f0fdf4;
+  --dashboard-ref-success-fill: #dcfce7;
+  --dashboard-ref-success-line: #bbf7d0;
+  --dashboard-ref-radius-item: 14px;
+  --dashboard-ref-radius-control: 18px;
+  --dashboard-ref-radius-content: 20px;
+  --dashboard-ref-radius-panel: 28px;
+  --dashboard-ref-shadow-control: 0 10px 24px rgba(14, 47, 89, 0.05);
+  --dashboard-ref-shadow-control-hover: 0 16px 30px rgba(14, 47, 89, 0.08);
+  --dashboard-ref-shadow-dropdown: 0 20px 42px rgba(18, 48, 86, 0.14);
+  --dashboard-ref-shadow-panel: 0 16px 34px rgba(18, 48, 86, 0.05);
+  --dashboard-ref-shadow-danger-soft: 0 8px 18px rgba(239, 68, 68, 0.10);
+  --dashboard-ref-avatar-bg: #d9dadd;
+  --dashboard-ref-sidebar-active-bg: linear-gradient(135deg, rgba(25, 180, 233, 0.42) 0%, rgba(52, 213, 210, 0.32) 100%);
+  --dashboard-ref-sidebar-active-shadow: 0 8px 18px rgba(25, 180, 233, 0.14);
+  --dashboard-ref-sidebar-subnav-bg: rgba(255, 255, 255, 0.04);
+  --dashboard-ref-sidebar-subnav-hover: rgba(255, 255, 255, 0.09);
+  --dashboard-ref-sidebar-subnav-active: rgba(255, 255, 255, 0.13);
+  --dashboard-ref-sidebar-dot: rgba(255, 255, 255, 0.34);
+  --dashboard-ref-sidebar-dot-active: #34d5d2;
+  --dashboard-ref-sidebar-padding-block: 22px;
+  --dashboard-ref-sidebar-padding-inline: 18px;
+  --dashboard-ref-sidebar-section-gap: 18px;
+  --dashboard-ref-sidebar-head-gap: 10px;
+  --dashboard-ref-caret: #5b6678;
+  --dashboard-ref-danger-bright: #ef4444;
+  --dashboard-ref-disabled-text: #64748b;
+  --dashboard-ref-disabled-bg: #e9edf2;
+  --dashboard-ref-notification-bg: #f6fbff;
+  --dashboard-ref-menu-hover-bg: #f3f8fc;
+  --dashboard-ref-body: #6b7f95;
+  --dashboard-ref-action-strong: #17406a;
+  --dashboard-ref-hover-line: #c8d6e3;
+  --dashboard-ref-hover-bg: #eef3f8;
+  --dashboard-ref-item-line: #e5edf4;
+  --dashboard-ref-item-bg: #f9fcff;
+  --dashboard-ref-cyan-label: #0f5f80;
+
   /* Layout — target design-system values */
   --layout-wide: 1440px;
   --layout-content: 1240px;

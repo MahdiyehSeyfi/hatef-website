@@ -1,0 +1,45 @@
+const STATUS_TONE_MAP = {
+  "منتشر شده": "success",
+  "بررسی شده": "success",
+  "قبول شده": "success",
+  "قبول": "success",
+  "پاسخ داده شده": "success",
+  "پایان یافته": "success",
+  "دریافت شده": "info",
+  "فعال": "success",
+  "ارسال شده": "success",
+  "در انتظار ارسال": "warning",
+  "در حال بررسی": "info",
+  "منتشرشده": "success",
+  "در حال پیگیری": "info",
+  "داوری شده": "info",
+  "جدید": "info",
+  "در انتظار بررسی": "warning",
+  "در انتظار پیگیری": "warning",
+  "در انتظار پذیرش": "warning",
+  "در انتظار تایید": "warning",
+  "در حال ثبت نام": "info",
+  "پایان ثبت نام": "warning",
+  "اتمام ظرفیت": "warning",
+  "در حال برگزاری": "info",
+  "برگزار شده": "success",
+  "لغو شده": "danger",
+  "در انتظار تعیین تکلیف": "warning",
+  "در انتظار بررسی فناور": "warning",
+  "پیش‌نویس": "warning",
+  "نیازمند اصلاح": "warning",
+  "نیازمند اطلاعات بیشتر": "warning",
+  "قبول ضعیف": "warning",
+  "رد شده": "danger",
+  "رد": "danger",
+  "رد ضعیف": "danger",
+  "بایگانی شده": "neutral",
+  "غیرفعال": "neutral",
+  "مشاهده شده": "neutral",
+};
+
+export function getDashboardStatusTone(status, fallback = "neutral") {
+  return STATUS_TONE_MAP[String(status || "").trim()] || fallback;
+}
+
+export { STATUS_TONE_MAP };

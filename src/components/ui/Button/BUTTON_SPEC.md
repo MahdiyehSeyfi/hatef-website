@@ -1,6 +1,6 @@
 # Hatef Shared Button & Action Control Contract
 
-> **Version:** 3.0
+> **Version:** 3.1
 > **Status:** 🔒 LOCKED
 > **Canonical primitives:** `Button` and `IconButton`
 
@@ -24,6 +24,7 @@ hover, focus, disabled state, or transition.
 <Button variant="inverse" size="md">...</Button>
 <Button variant="link" size="sm">...</Button>
 <Button variant="danger" size="md">...</Button>
+<Button variant="danger-soft" size="md">...</Button>
 ```
 
 Navigation is handled by the same component:
@@ -182,8 +183,8 @@ secondary → Cyan/Action + white text
 Their hover must be visibly interactive, not merely a slight darkening:
 
 ```text
-2px lift
-stronger role-colored shadow/ring
+role-specific subtle lift (primary up to 2px; secondary 1px)
+role-colored shadow/ring
 controlled darker fill
 active state returns to baseline
 ```
@@ -207,7 +208,7 @@ and reports remaining raw controls/debt.
 
 ---
 
-**Hatef Button Contract v3.0 — LOCKED**
+**Hatef Button Contract v3.1 — LOCKED**
 
 ## 13. Interaction System Ownership
 
@@ -232,3 +233,23 @@ or target the text-link class itself.
 The canonical Button selectors intentionally have stronger ownership specificity so
 ordinary container rules cannot silently change Button color, radius, typography,
 shadow, padding or hover behavior.
+
+
+## 14. Dashboard application
+
+Dashboard pages do not receive a separate Button design system. Standard dashboard actions reuse this exact component:
+
+```text
+Save / submit / confirm       → primary
+Secondary workflow action     → outline or secondary by hierarchy
+Destructive action            → danger
+Icon-only table/toolbar action → IconButton
+Textual low-emphasis action    → link / ghost as defined here
+```
+
+Tabs, filters and segmented controls remain separate shared semantic families; they must not imitate Button through local CSS.
+
+
+## Dashboard destructive actions
+
+Use `danger-soft` for ordinary reversible/removable dashboard actions such as delete file, delete draft, delete support request, and logout-style secondary destructive actions. Reserve filled `danger` for high-severity confirmation actions.

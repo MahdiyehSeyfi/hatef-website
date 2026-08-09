@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 
 import universityLogo from "../../assets/logos/university-of-tehran-logo.svg";
 
@@ -38,8 +38,36 @@ import {
   saveCurrentDashboardProfile,
 } from "../../services/userProfileService";
 
+import Button from "../../components/ui/Button/Button";
+import IconButton from "../../components/ui/IconButton/IconButton";
+import Input from "../../components/ui/Input/Input";
+import Select from "../../components/ui/Select/Select";
+import Textarea from "../../components/ui/Textarea/Textarea";
+import {
+  DashboardDisclosure,
+  DashboardEmptyState,
+  DashboardFAQ,
+  DashboardReviewFolderBadge,
+  DashboardReviewFolderCard,
+  DashboardMessages,
+  DashboardNotice,
+  DashboardNotificationMenu,
+  DashboardPagination,
+  DashboardPanel as SharedDashboardPanel,
+  DashboardProfileEdit,
+  DashboardProfileMenu,
+  DashboardProfileView,
+  DashboardShell,
+  DashboardStatCard,
+  DashboardStatusBadge,
+  DashboardSupportRequests,
+  DashboardTabs,
+  DashboardToolbar,
+} from "../../components/dashboard";
+
 import "./InnovatorDashboardPage.css";
 import "./ReviewerDashboardPage.css";
+import "../../components/dashboard/DashboardChrome/DashboardChrome.css";
 
 const NAV_ITEMS = [
   {
@@ -83,17 +111,17 @@ const REVIEW_FOLDERS = [
   {
     id: "priority",
     label: "دارای اولویت",
-    tone: "priority",
+    tone: "warning",
   },
   {
     id: "needs-improvement",
     label: "نیازمند بهبود",
-    tone: "improvement",
+    tone: "danger",
   },
   {
     id: "more-review",
     label: "بررسی بیشتر",
-    tone: "review",
+    tone: "info",
   },
 ];
 
@@ -341,67 +369,16 @@ function getReviewerProfile(user) {
   return {
     firstName: user?.firstName || "مهدی",
     lastName: user?.lastName || "رضایی",
-    phone: user?.mobile || "09123450657",
+    mobile: user?.mobile || user?.phone || "09123450657",
+    phone: user?.phone || user?.mobile || "09123450657",
     email: user?.email || "reviewer@example.com",
-    role: "داور",
-    memberSince: "عضو از سال ۱۴۰۴ (به مدت ۱ سال)",
+    role: "reviewer",
+    level: "داور",
+    memberSince: "۱۴۰۴",
+    membershipDuration: "۱ سال",
     avatarLetter: user?.avatarLetter || "د",
+    avatarPreview: user?.avatarPreview || user?.avatarUrl || user?.avatar_url || "",
   };
-}
-
-function MenuIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M4 7h16M4 12h16M4 17h16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M10 21h4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function ChevronIcon({ isOpen }) {
-  return (
-    <svg
-      className={isOpen ? "innovator-dashboard__nav-chevron--open" : ""}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
-      <path
-        d="M8 10l4 4 4-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }
 
 function DownloadIcon() {
@@ -461,38 +438,6 @@ function FolderIcon() {
   );
 }
 
-function DashboardDateTime() {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setNow(new Date());
-    }, 60000);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const dateText = now.toLocaleDateString("fa-IR-u-ca-persian", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  const timeText = now.toLocaleTimeString("fa-IR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  return (
-    <div className="innovator-dashboard__date-time">
-      <span>تاریخ امروز</span>
-      <strong>{dateText}</strong>
-      <small>ساعت {timeText}</small>
-    </div>
-  );
-}
-
 function getDownloadHref(plan) {
   return `data:text/plain;charset=utf-8,${encodeURIComponent(
     `فایل نمونه پروپوزال برای طرح ${plan.trackingId} - ${plan.title}`,
@@ -521,18 +466,10 @@ function getHistoryCallType(plan) {
 }
 
 function ReviewerStatusBadge({ status }) {
-  return (
-    <span
-      className={`reviewer-dashboard__status reviewer-dashboard__status--${getStatusClass(
-        status,
-      )}`}
-    >
-      {status}
-    </span>
-  );
+  return <DashboardStatusBadge status={status} />;
 }
 
-function DashboardPanel({ plans, onOpenFolder }) {
+function ReviewerHomePanel({ plans, onOpenFolder }) {
   const reviewedCount = plans.filter(
     (plan) => plan.status === "بررسی شده",
   ).length;
@@ -568,32 +505,25 @@ function DashboardPanel({ plans, onOpenFolder }) {
     <section className="reviewer-dashboard__dashboard">
       <div className="reviewer-dashboard__stats-grid">
         {stats.map((item) => (
-          <article key={item.label} className="reviewer-dashboard__stat-card">
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <p>{item.hint}</p>
-          </article>
+          <DashboardStatCard
+            key={item.label}
+            label={item.label}
+            value={item.value}
+            hint={item.hint}
+          />
         ))}
       </div>
 
       <div className="reviewer-dashboard__dashboard-folders">
         {REVIEW_FOLDERS.map((folder) => (
-          <button
-            type="button"
+          <DashboardReviewFolderCard
             key={folder.id}
-            className={`reviewer-dashboard__folder-card reviewer-dashboard__folder-card--${folder.tone}`}
+            title={folder.label}
+            count={plans.filter((plan) => plan.folders.includes(folder.id)).length}
+            tone={folder.tone}
             onDoubleClick={() => onOpenFolder(folder.id)}
-            title="برای ورود به پوشه دوبار کلیک کنید"
-          >
-            <span className="reviewer-dashboard__folder-icon">
-              <FolderIcon />
-            </span>
-            <span>{folder.label}</span>
-            <strong>
-              {plans.filter((plan) => plan.folders.includes(folder.id)).length}
-            </strong>
-            <small>برای ورود به پوشه دوبار کلیک کنید</small>
-          </button>
+            aria-label={`ورود به پوشه ${folder.label}`}
+          />
         ))}
       </div>
     </section>
@@ -770,49 +700,55 @@ function CurrentPlansPanel({
 
   if (selectedPlan) {
     return (
-      <section className="reviewer-dashboard__panel reviewer-dashboard__review-detail">
-        <div className="reviewer-dashboard__detail-header">
+      <SharedDashboardPanel className="reviewer-dashboard__review-detail" padding="md">
+        <div className="innovator-dashboard__panel-header reviewer-dashboard__detail-header">
           <div>
             <span>جزئیات طرح</span>
             <h3>{selectedPlan.title}</h3>
             <p>شناسه طرح: {selectedPlan.trackingId}</p>
           </div>
 
-          <button type="button" onClick={closePlan}>
-            <BackIcon />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            width="content"
+            leadingIcon={<BackIcon />}
+            onClick={closePlan}
+          >
             بازگشت به لیست
-          </button>
+          </Button>
         </div>
 
         <div className="reviewer-dashboard__detail-grid">
-          <article>
+          <SharedDashboardPanel as="article" variant="subtle" padding="sm" className="reviewer-dashboard__detail-metric">
             <span>فناور</span>
             <strong>{selectedPlan.innovator.name}</strong>
             <small>{selectedPlan.innovator.organization}</small>
-          </article>
+          </SharedDashboardPanel>
 
-          <article>
+          <SharedDashboardPanel as="article" variant="subtle" padding="sm" className="reviewer-dashboard__detail-metric">
             <span>حوزه</span>
             <strong>{selectedPlan.field}</strong>
             <small>{selectedPlan.call}</small>
-          </article>
+          </SharedDashboardPanel>
 
-          <article>
+          <SharedDashboardPanel as="article" variant="subtle" padding="sm" className="reviewer-dashboard__detail-metric">
             <span>تاریخ ارسال</span>
             <strong>{selectedPlan.sentAt}</strong>
             <small>ددلاین: {selectedPlan.deadline}</small>
-          </article>
+          </SharedDashboardPanel>
 
-          <article>
+          <SharedDashboardPanel as="article" variant="subtle" padding="sm" className="reviewer-dashboard__detail-metric">
             <span>وضعیت</span>
             <ReviewerStatusBadge status={selectedPlan.status} />
             {selectedPlan.feedback && <small>بازخورد ثبت شده است</small>}
-          </article>
+          </SharedDashboardPanel>
         </div>
 
         <div className="reviewer-dashboard__review-layout">
           <div className="reviewer-dashboard__info-stack">
-            <div className="reviewer-dashboard__info-card">
+            <SharedDashboardPanel variant="subtle" padding="sm" className="reviewer-dashboard__info-card">
               <h4>اطلاعات فناور</h4>
               <dl>
                 <div>
@@ -828,41 +764,41 @@ function CurrentPlansPanel({
                   <dd>{selectedPlan.innovator.email}</dd>
                 </div>
               </dl>
-            </div>
+            </SharedDashboardPanel>
 
-            <div className="reviewer-dashboard__info-card">
+            <SharedDashboardPanel variant="subtle" padding="sm" className="reviewer-dashboard__info-card">
               <h4>پوشه‌های داور</h4>
               <div className="reviewer-dashboard__folder-actions">
                 {REVIEW_FOLDERS.map((folder) => (
-                  <button
+                  <Button
                     type="button"
                     key={folder.id}
-                    className={
-                      selectedPlan.folders.includes(folder.id)
-                        ? `reviewer-dashboard__folder-toggle reviewer-dashboard__folder-toggle--${folder.tone} reviewer-dashboard__folder-toggle--active`
-                        : `reviewer-dashboard__folder-toggle reviewer-dashboard__folder-toggle--${folder.tone}`
-                    }
+                    variant={selectedPlan.folders.includes(folder.id) ? "secondary" : "outline"}
+                    size="sm"
+                    width="content"
                     onClick={() => toggleFolder(selectedPlan.id, folder.id)}
                   >
                     {selectedPlan.folders.includes(folder.id)
                       ? `حذف از ${folder.label}`
                       : `افزودن به ${folder.label}`}
-                  </button>
+                  </Button>
                 ))}
               </div>
-            </div>
+            </SharedDashboardPanel>
 
-            <a
+            <Button
               href={getDownloadHref(selectedPlan)}
               download={selectedPlan.proposalFile}
-              className="reviewer-dashboard__download-link"
+              variant="outline"
+              size="md"
+              fullWidth
+              leadingIcon={<DownloadIcon />}
             >
-              <DownloadIcon />
               دانلود پروپوزال
-            </a>
+            </Button>
           </div>
 
-          <div className="reviewer-dashboard__feedback-card">
+          <SharedDashboardPanel padding="md" className="reviewer-dashboard__feedback-card">
             <div className="reviewer-dashboard__feedback-head">
               <div>
                 <span>بازخورد داور</span>
@@ -882,7 +818,7 @@ function CurrentPlansPanel({
 
             <label>
               <span>متن بازخورد</span>
-              <textarea
+              <Textarea
                 value={feedbackText}
                 onChange={(event) => setFeedbackText(event.target.value)}
                 placeholder="بازخورد تخصصی خود را درباره طرح وارد کنید..."
@@ -892,7 +828,7 @@ function CurrentPlansPanel({
             <div className="reviewer-dashboard__feedback-fields">
               <label>
                 <span>پیشنهاد داور</span>
-                <select
+                <Select
                   value={recommendation}
                   onChange={(event) => setRecommendation(event.target.value)}
                 >
@@ -900,12 +836,12 @@ function CurrentPlansPanel({
                   <option>نیازمند اصلاح</option>
                   <option>دارای اولویت</option>
                   <option>عدم پیشنهاد برای ادامه</option>
-                </select>
+                </Select>
               </label>
 
               <label>
                 <span>امتیاز</span>
-                <input
+                <Input
                   type="number"
                   min="0"
                   max="100"
@@ -917,44 +853,50 @@ function CurrentPlansPanel({
             </div>
 
             {selectedPlan.feedback && (
-              <div className="reviewer-dashboard__previous-feedback">
-                <span>آخرین بازخورد</span>
+              <DashboardNotice
+                tone="success"
+                title="آخرین بازخورد"
+                className="reviewer-dashboard__previous-feedback"
+              >
                 <p>{selectedPlan.feedback.text}</p>
                 <small>{selectedPlan.feedback.createdAt}</small>
-              </div>
+              </DashboardNotice>
             )}
 
             <div className="reviewer-dashboard__feedback-actions">
               {selectedPlan.feedback && (
-                <button
+                <Button
                   type="button"
-                  className="reviewer-dashboard__delete-feedback"
+                  variant="danger-soft"
+                  size="sm"
+                  width="content"
                   onClick={deleteFeedback}
                 >
                   حذف بازخورد
-                </button>
+                </Button>
               )}
 
-              <button
+              <Button
                 type="button"
-                className="reviewer-dashboard__save-feedback"
+                variant="primary"
+                size="md"
                 onClick={saveFeedback}
                 disabled={!feedbackText.trim()}
               >
                 {selectedPlan.feedback
                   ? "ذخیره ویرایش بازخورد"
                   : "ذخیره بازخورد"}
-              </button>
+              </Button>
             </div>
-          </div>
+          </SharedDashboardPanel>
         </div>
-      </section>
+      </SharedDashboardPanel>
     );
   }
 
   return (
-    <section className="reviewer-dashboard__panel reviewer-dashboard__plans-panel">
-      <div className="reviewer-dashboard__panel-header">
+    <SharedDashboardPanel className="reviewer-dashboard__plans-panel" padding="md">
+      <div className="innovator-dashboard__panel-header">
         <div>
           <span>طرح‌های جاری</span>
           <h3>طرح‌های اختصاص‌یافته برای بررسی</h3>
@@ -962,75 +904,60 @@ function CurrentPlansPanel({
       </div>
 
       <div className="reviewer-dashboard__folders-board">
-        <button
-          type="button"
-          className={
-            folderFilter === "all"
-              ? "reviewer-dashboard__folder-card reviewer-dashboard__folder-card--all reviewer-dashboard__folder-card--active"
-              : "reviewer-dashboard__folder-card reviewer-dashboard__folder-card--all"
-          }
+        <DashboardReviewFolderCard
+          selected={folderFilter === "all"}
+          title="همه طرح‌ها"
+          count={plans.length}
+          tone="brand"
           onClick={() => {
             setFolderFilter("all");
             setCurrentPage(1);
           }}
-        >
-          <span className="reviewer-dashboard__folder-icon">
-            <FolderIcon />
-          </span>
-          <span>همه طرح‌ها</span>
-          <strong>{plans.length}</strong>
-          <small>نمایش کل طرح‌های اختصاص‌یافته</small>
-        </button>
+        />
 
         {REVIEW_FOLDERS.map((folder) => (
-          <button
-            type="button"
+          <DashboardReviewFolderCard
             key={folder.id}
-            className={
-              folderFilter === folder.id
-                ? `reviewer-dashboard__folder-card reviewer-dashboard__folder-card--${folder.tone} reviewer-dashboard__folder-card--active`
-                : `reviewer-dashboard__folder-card reviewer-dashboard__folder-card--${folder.tone}`
-            }
+            selected={folderFilter === folder.id}
+            title={folder.label}
+            count={plans.filter((plan) => plan.folders.includes(folder.id)).length}
+            tone={folder.tone}
             onDoubleClick={() => {
               setFolderFilter(folder.id);
               setCurrentPage(1);
             }}
-            title="برای ورود به پوشه دوبار کلیک کنید"
-          >
-            <span className="reviewer-dashboard__folder-icon">
-              <FolderIcon />
-            </span>
-            <span>{folder.label}</span>
-            <strong>
-              {plans.filter((plan) => plan.folders.includes(folder.id)).length}
-            </strong>
-            <small>برای ورود به پوشه دوبار کلیک کنید</small>
-          </button>
+          />
         ))}
       </div>
 
       {folderFilter !== "all" && (
-        <div className="reviewer-dashboard__folder-view-note">
-          <span>
-            در حال مشاهده پوشه «{getFolderLabel(folderFilter)}». برای حذف یک طرح
-            از این پوشه، روی ضربدر کنار نام پوشه در کارت طرح بزنید.
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              setFolderFilter("all");
-              setCurrentPage(1);
-            }}
-          >
-            خروج از پوشه
-          </button>
-        </div>
+        <DashboardNotice
+          tone="info"
+          className="reviewer-dashboard__folder-view-note"
+          action={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              width="content"
+              onClick={() => {
+                setFolderFilter("all");
+                setCurrentPage(1);
+              }}
+            >
+              خروج از پوشه
+            </Button>
+          }
+        >
+          در حال مشاهده پوشه «{getFolderLabel(folderFilter)}». برای حذف یک طرح
+          از این پوشه، روی ضربدر کنار نام پوشه در کارت طرح بزنید.
+        </DashboardNotice>
       )}
 
-      <div className="reviewer-dashboard__toolbar">
+      <DashboardToolbar className="reviewer-dashboard__toolbar">
         <label className="reviewer-dashboard__search">
           <span>جستجو</span>
-          <input
+          <Input
             type="text"
             value={searchTerm}
             onChange={(event) => {
@@ -1043,53 +970,25 @@ function CurrentPlansPanel({
 
         <div className="reviewer-dashboard__filter-group">
           <span>وضعیت</span>
-          <div>
-            <button
-              type="button"
-              className={statusFilter === "all" ? "is-active" : ""}
-              onClick={() => {
-                setStatusFilter("all");
-                setCurrentPage(1);
-              }}
-            >
-              همه
-            </button>
-            <button
-              type="button"
-              className={statusFilter === "waiting" ? "is-active" : ""}
-              onClick={() => {
-                setStatusFilter("waiting");
-                setCurrentPage(1);
-              }}
-            >
-              بررسی نشده‌ها
-            </button>
-            <button
-              type="button"
-              className={statusFilter === "reviewed" ? "is-active" : ""}
-              onClick={() => {
-                setStatusFilter("reviewed");
-                setCurrentPage(1);
-              }}
-            >
-              بررسی شده‌ها
-            </button>
-            <button
-              type="button"
-              className={statusFilter === "no-feedback" ? "is-active" : ""}
-              onClick={() => {
-                setStatusFilter("no-feedback");
-                setCurrentPage(1);
-              }}
-            >
-              بدون بازخورد
-            </button>
-          </div>
+          <DashboardTabs
+            value={statusFilter}
+            onChange={(value) => {
+              setStatusFilter(value);
+              setCurrentPage(1);
+            }}
+            items={[
+              { value: "all", label: "همه" },
+              { value: "waiting", label: "بررسی نشده‌ها" },
+              { value: "reviewed", label: "بررسی شده‌ها" },
+              { value: "no-feedback", label: "بدون بازخورد" },
+            ]}
+            ariaLabel="فیلتر وضعیت طرح‌ها"
+          />
         </div>
 
         <label className="reviewer-dashboard__page-size">
           <span>تعداد نمایش</span>
-          <select
+          <Select
             value={itemsPerPage}
             onChange={(event) => {
               setItemsPerPage(Number(event.target.value));
@@ -1100,13 +999,16 @@ function CurrentPlansPanel({
             <option value={20}>۲۰ عدد</option>
             <option value={50}>۵۰ عدد</option>
             <option value={100}>۱۰۰ عدد</option>
-          </select>
+          </Select>
         </label>
-      </div>
+      </DashboardToolbar>
 
       <div className="reviewer-dashboard__plans-list">
         {currentPagePlans.map((plan) => (
-          <article
+          <SharedDashboardPanel
+            as="article"
+            variant="subtle"
+            padding="sm"
             className={`reviewer-dashboard__plan-card ${
               plan.feedback ? "reviewer-dashboard__plan-card--has-feedback" : ""
             }`}
@@ -1141,24 +1043,17 @@ function CurrentPlansPanel({
               {plan.folders.length > 0 && (
                 <div className="reviewer-dashboard__folder-tags">
                   {plan.folders.map((folderId) => (
-                    <span
+                    <DashboardReviewFolderBadge
                       key={folderId}
-                      className={`reviewer-dashboard__folder-tag reviewer-dashboard__folder-tag--${getFolderTone(
-                        folderId,
-                      )}`}
-                    >
-                      <strong>در فولدر:</strong>
-                      <span>{getFolderLabel(folderId)}</span>
-                      {folderFilter === folderId && (
-                        <button
-                          type="button"
-                          onClick={() => toggleFolder(plan.id, folderId)}
-                          aria-label={`حذف از پوشه ${getFolderLabel(folderId)}`}
-                        >
-                          ×
-                        </button>
-                      )}
-                    </span>
+                      label={getFolderLabel(folderId)}
+                      tone={getFolderTone(folderId)}
+                      onRemove={
+                        folderFilter === folderId
+                          ? () => toggleFolder(plan.id, folderId)
+                          : undefined
+                      }
+                      removeLabel={`حذف از پوشه ${getFolderLabel(folderId)}`}
+                    />
                   ))}
                 </div>
               )}
@@ -1167,46 +1062,32 @@ function CurrentPlansPanel({
             <ReviewerStatusBadge status={plan.status} />
 
             <div className="reviewer-dashboard__plan-actions">
-              <button type="button" onClick={() => openPlan(plan.id)}>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                width="content"
+                onClick={() => openPlan(plan.id)}
+              >
                 {plan.feedback
                   ? "مشاهده / ویرایش بازخورد"
                   : "مشاهده و ثبت بازخورد"}
-              </button>
+              </Button>
             </div>
-          </article>
+          </SharedDashboardPanel>
         ))}
       </div>
 
-      <div className="reviewer-dashboard__pagination">
-        <span>
-          نمایش {currentPagePlans.length} طرح از {filteredPlans.length} مورد
-        </span>
-
-        <div>
-          <button
-            type="button"
-            disabled={safeCurrentPage === 1}
-            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-          >
-            قبلی
-          </button>
-
-          <strong>
-            صفحه {safeCurrentPage} از {totalPages}
-          </strong>
-
-          <button
-            type="button"
-            disabled={safeCurrentPage === totalPages}
-            onClick={() =>
-              setCurrentPage((page) => Math.min(totalPages, page + 1))
-            }
-          >
-            بعدی
-          </button>
-        </div>
-      </div>
-    </section>
+      <DashboardPagination
+        currentPage={safeCurrentPage}
+        totalPages={totalPages}
+        summary={`نمایش ${currentPagePlans.length} طرح از ${filteredPlans.length} مورد`}
+        onPrevious={() => setCurrentPage((page) => Math.max(1, page - 1))}
+        onNext={() =>
+          setCurrentPage((page) => Math.min(totalPages, page + 1))
+        }
+      />
+    </SharedDashboardPanel>
   );
 }
 
@@ -1249,54 +1130,66 @@ function HistoryPanel({ plans }) {
 
   if (selectedHistoryPlan) {
     return (
-      <section className="reviewer-dashboard__panel reviewer-dashboard__history-detail">
-        <div className="reviewer-dashboard__detail-header">
+      <SharedDashboardPanel className="reviewer-dashboard__history-detail" padding="md">
+        <div className="innovator-dashboard__panel-header reviewer-dashboard__detail-header">
           <div>
             <span>مشاهده تاریخچه</span>
             <h3>{selectedHistoryPlan.title}</h3>
             <p>شناسه طرح: {selectedHistoryPlan.trackingId}</p>
           </div>
 
-          <button type="button" onClick={() => setSelectedHistoryPlanId(null)}>
-            <BackIcon />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            width="content"
+            leadingIcon={<BackIcon />}
+            onClick={() => setSelectedHistoryPlanId(null)}
+          >
             بازگشت به تاریخچه
-          </button>
+          </Button>
         </div>
 
         <div className="reviewer-dashboard__detail-grid">
-          <article>
+          <SharedDashboardPanel as="article" variant="subtle" padding="sm" className="reviewer-dashboard__detail-metric">
             <span>فناور</span>
             <strong>{selectedHistoryPlan.innovator.name}</strong>
             <small>{selectedHistoryPlan.innovator.organization}</small>
-          </article>
-          <article>
+          </SharedDashboardPanel>
+          <SharedDashboardPanel as="article" variant="subtle" padding="sm" className="reviewer-dashboard__detail-metric">
             <span>نوع فراخوان</span>
             <strong>{getHistoryCallType(selectedHistoryPlan)}</strong>
             <small>سال {getHistoryYear(selectedHistoryPlan)}</small>
-          </article>
-          <article>
+          </SharedDashboardPanel>
+          <SharedDashboardPanel as="article" variant="subtle" padding="sm" className="reviewer-dashboard__detail-metric">
             <span>حوزه</span>
             <strong>{selectedHistoryPlan.field}</strong>
             <small>{selectedHistoryPlan.call}</small>
-          </article>
-          <article>
+          </SharedDashboardPanel>
+          <SharedDashboardPanel as="article" variant="subtle" padding="sm" className="reviewer-dashboard__detail-metric">
             <span>وضعیت</span>
             <ReviewerStatusBadge status={selectedHistoryPlan.status} />
             <small>این طرح مربوط به گذشته است و امکان ثبت بازخورد ندارد.</small>
-          </article>
+          </SharedDashboardPanel>
         </div>
 
-        <a
+        <Button
           href={getDownloadHref(selectedHistoryPlan)}
           download={selectedHistoryPlan.proposalFile}
-          className="reviewer-dashboard__download-link reviewer-dashboard__history-download"
+          variant="outline"
+          size="md"
+          width="content"
+          leadingIcon={<DownloadIcon />}
+          className="reviewer-dashboard__history-download"
         >
-          <DownloadIcon />
           دانلود پروپوزال
-        </a>
+        </Button>
 
-        <div className="reviewer-dashboard__history-feedback-view">
-          <span>بازخورد ثبت‌شده</span>
+        <DashboardNotice
+          tone="success"
+          title="بازخورد ثبت‌شده"
+          className="reviewer-dashboard__history-feedback-view"
+        >
           <p>
             {selectedHistoryPlan.feedback?.text ||
               "برای این طرح بازخورد متنی ثبت نشده است."}
@@ -1304,14 +1197,14 @@ function HistoryPanel({ plans }) {
           {selectedHistoryPlan.feedback?.createdAt && (
             <small>{selectedHistoryPlan.feedback.createdAt}</small>
           )}
-        </div>
-      </section>
+        </DashboardNotice>
+      </SharedDashboardPanel>
     );
   }
 
   return (
-    <section className="reviewer-dashboard__panel reviewer-dashboard__history">
-      <div className="reviewer-dashboard__panel-header">
+    <SharedDashboardPanel className="reviewer-dashboard__history" padding="md">
+      <div className="innovator-dashboard__panel-header">
         <div>
           <span>تاریخچه</span>
           <h3>طرح‌های بررسی‌شده گذشته</h3>
@@ -1321,7 +1214,7 @@ function HistoryPanel({ plans }) {
       <div className="reviewer-dashboard__history-filters">
         <label>
           <span>سال</span>
-          <select
+          <Select
             value={yearFilter}
             onChange={(event) => {
               setYearFilter(event.target.value);
@@ -1334,12 +1227,12 @@ function HistoryPanel({ plans }) {
                 {year}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <label>
           <span>نوع فراخوان</span>
-          <select
+          <Select
             value={callFilter}
             onChange={(event) => {
               setCallFilter(event.target.value);
@@ -1352,12 +1245,12 @@ function HistoryPanel({ plans }) {
                 {callType}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <label>
           <span>تعداد نمایش</span>
-          <select
+          <Select
             value={itemsPerPage}
             onChange={(event) => {
               setItemsPerPage(Number(event.target.value));
@@ -1368,13 +1261,13 @@ function HistoryPanel({ plans }) {
             <option value={20}>۲۰ عدد</option>
             <option value={50}>۵۰ عدد</option>
             <option value={100}>۱۰۰ عدد</option>
-          </select>
+          </Select>
         </label>
       </div>
 
       <div className="reviewer-dashboard__history-list">
         {currentHistoryPlans.map((plan) => (
-          <article key={plan.id}>
+          <SharedDashboardPanel as="article" variant="subtle" padding="sm" key={plan.id}>
             <div>
               <span>{plan.trackingId}</span>
               <h4>{plan.title}</h4>
@@ -1392,864 +1285,31 @@ function HistoryPanel({ plans }) {
                 />
               )}
               <ReviewerStatusBadge status={plan.status} />
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
+                width="content"
                 onClick={() => setSelectedHistoryPlanId(plan.id)}
               >
                 مشاهده
-              </button>
+              </Button>
             </div>
-          </article>
+          </SharedDashboardPanel>
         ))}
       </div>
 
-      <div className="reviewer-dashboard__pagination reviewer-dashboard__history-pagination">
-        <span>
-          نمایش {currentHistoryPlans.length} طرح از{" "}
-          {filteredHistoryPlans.length} مورد
-        </span>
-
-        <div>
-          <button
-            type="button"
-            disabled={safeHistoryPage === 1}
-            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-          >
-            قبلی
-          </button>
-
-          <strong>
-            صفحه {safeHistoryPage} از {totalHistoryPages}
-          </strong>
-
-          <button
-            type="button"
-            disabled={safeHistoryPage === totalHistoryPages}
-            onClick={() =>
-              setCurrentPage((page) => Math.min(totalHistoryPages, page + 1))
-            }
-          >
-            بعدی
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function TicketsPanel() {
-  const supportRoleName = "داور";
-  const [requests, setRequests] = useState(() =>
-    getCurrentUserSupportTickets(supportRoleName),
-  );
-  const [mode, setMode] = useState("list");
-  const [selectedRequestId, setSelectedRequestId] = useState(null);
-  const [requestTitle, setRequestTitle] = useState("");
-  const [requestMessage, setRequestMessage] = useState("");
-
-  const refreshRequests = () => {
-    setRequests(getCurrentUserSupportTickets(supportRoleName));
-  };
-
-  const selectedRequest = requests.find(
-    (request) => String(request.id) === String(selectedRequestId),
-  );
-
-  const openNewRequest = () => {
-    setMode("new");
-    setSelectedRequestId(null);
-    setRequestTitle("");
-    setRequestMessage("");
-    refreshRequests();
-  };
-
-  const openList = () => {
-    setMode("list");
-    setSelectedRequestId(null);
-    setRequestTitle("");
-    setRequestMessage("");
-    refreshRequests();
-  };
-
-  const openRequest = (requestId) => {
-    setSelectedRequestId(requestId);
-    setMode("view");
-    refreshRequests();
-  };
-
-  const deleteRequest = (requestId) => {
-    const targetRequest = requests.find(
-      (request) => String(request.id) === String(requestId),
-    );
-
-    if (!targetRequest || targetRequest.seenBySupport) {
-      return;
-    }
-
-    const confirmed = window.confirm("آیا از حذف این درخواست مطمئن هستید؟");
-
-    if (!confirmed) {
-      return;
-    }
-
-    deleteSupportTicket(requestId);
-    refreshRequests();
-  };
-
-  const submitRequest = (event) => {
-    event.preventDefault();
-
-    if (!requestMessage.trim()) {
-      return;
-    }
-
-    addSupportTicket(
-      {
-        title: requestTitle.trim() || "تیکت جدید",
-        message: requestMessage.trim(),
-      },
-      supportRoleName,
-    );
-
-    openList();
-  };
-
-  if (mode === "new") {
-    return (
-      <section className="support-requests">
-        <div className="support-requests__panel">
-          <div className="support-requests__panel-header">
-            <div>
-              <span>تیکت جدید</span>
-              <h3>ثبت تیکت پشتیبانی</h3>
-              <p>
-                درخواست شما برای کمیته/دبیرخانه ثبت می‌شود و پاسخ آن در همین بخش
-                و در پیام‌ها نمایش داده خواهد شد.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="support-requests__neutral-button"
-              onClick={openList}
-            >
-              بازگشت به درخواست‌ها
-            </button>
-          </div>
-
-          <form className="support-requests__form" onSubmit={submitRequest}>
-            <label>
-              <span>عنوان درخواست</span>
-              <input
-                type="text"
-                value={requestTitle}
-                onChange={(event) => setRequestTitle(event.target.value)}
-                placeholder="مثلاً مشکل در بارگذاری فایل"
-              />
-            </label>
-
-            <label>
-              <span>متن درخواست</span>
-              <textarea
-                value={requestMessage}
-                onChange={(event) => setRequestMessage(event.target.value)}
-                placeholder="متن درخواست خود را وارد کنید..."
-              />
-            </label>
-
-            <div className="support-requests__form-actions">
-              <button
-                type="button"
-                className="support-requests__neutral-button"
-                onClick={openList}
-              >
-                انصراف
-              </button>
-
-              <button type="submit" disabled={!requestMessage.trim()}>
-                ثبت درخواست
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-    );
-  }
-
-  if (mode === "view" && selectedRequest) {
-    const hasReply = Boolean(
-      selectedRequest.supportReply || selectedRequest.reply,
-    );
-    const canDelete = !selectedRequest.seenBySupport;
-
-    return (
-      <section className="support-requests">
-        <div className="support-requests__panel">
-          <div className="support-requests__panel-header">
-            <div>
-              <span>جزئیات درخواست</span>
-              <h3>{selectedRequest.title}</h3>
-              <p>ارسال شده در {selectedRequest.sentAt}</p>
-            </div>
-
-            <button
-              type="button"
-              className="support-requests__neutral-button"
-              onClick={openList}
-            >
-              بازگشت به درخواست‌ها
-            </button>
-          </div>
-
-          <div className="support-requests__detail-grid support-requests__detail-grid--compact">
-            <div>
-              <span>زمان ارسال</span>
-              <strong>{selectedRequest.sentAt}</strong>
-            </div>
-
-            <div>
-              <span>زمان پاسخ</span>
-              <strong>
-                {hasReply ? selectedRequest.repliedAt : "هنوز پاسخ ثبت نشده"}
-              </strong>
-            </div>
-          </div>
-
-          <div className="support-requests__conversation">
-            <article className="support-requests__message support-requests__message--user">
-              <span>پیام شما</span>
-              <p>{selectedRequest.message}</p>
-            </article>
-
-            {hasReply ? (
-              <article className="support-requests__message support-requests__message--support">
-                <span>پاسخ کمیته/دبیرخانه</span>
-                <p>{selectedRequest.supportReply || selectedRequest.reply}</p>
-              </article>
-            ) : (
-              <article className="support-requests__empty-reply">
-                هنوز پاسخی برای این درخواست ثبت نشده است.
-              </article>
-            )}
-          </div>
-
-          {canDelete && (
-            <div className="support-requests__detail-actions">
-              <button
-                type="button"
-                className="support-requests__delete-button"
-                onClick={() => {
-                  deleteRequest(selectedRequest.id);
-                  openList();
-                }}
-              >
-                حذف درخواست
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="support-requests">
-      <div className="support-requests__panel">
-        <div className="support-requests__panel-header">
-          <div>
-            <span>درخواست‌ها</span>
-            <h3>درخواست‌ها و پشتیبانی</h3>
-            <p>
-              درخواست‌های شما، وضعیت پیگیری و پاسخ‌های کمیته/دبیرخانه در این بخش
-              نمایش داده می‌شود.
-            </p>
-          </div>
-
-          <button type="button" onClick={openNewRequest}>
-            ثبت تیکت جدید
-          </button>
-        </div>
-
-        <div className="support-requests__list">
-          {requests.map((request) => {
-            const hasReply = Boolean(request.supportReply || request.reply);
-            const canDelete = !request.seenBySupport;
-
-            return (
-              <article className="support-requests__card" key={request.id}>
-                <div className="support-requests__card-main">
-                  <div className="support-requests__card-title">
-                    <h4>{request.title}</h4>
-                    {hasReply && (
-                      <span className="support-requests__reply-badge">
-                        پاسخ دریافت شده
-                      </span>
-                    )}
-                    {!hasReply && (
-                      <span className="support-requests__waiting-badge">
-                        {request.status || "در انتظار پیگیری"}
-                      </span>
-                    )}
-                  </div>
-
-                  <p>{request.message}</p>
-
-                  <div className="support-requests__meta">
-                    <span>ارسال: {request.sentAt}</span>
-                    <span>
-                      پاسخ: {hasReply ? request.repliedAt : "در انتظار پاسخ"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="support-requests__actions">
-                  <button type="button" onClick={() => openRequest(request.id)}>
-                    مشاهده
-                  </button>
-
-                  {canDelete && (
-                    <button
-                      type="button"
-                      className="support-requests__delete-button"
-                      onClick={() => deleteRequest(request.id)}
-                    >
-                      حذف
-                    </button>
-                  )}
-                </div>
-              </article>
-            );
-          })}
-
-          {requests.length === 0 && (
-            <div className="support-requests__empty-reply">
-              هنوز درخواستی ثبت نشده است.
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function getCurrentPersianDateTime() {
-  const now = new Date();
-  const date = now.toLocaleDateString("fa-IR-u-ca-persian", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const time = now.toLocaleTimeString("fa-IR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  return `${date} - ساعت ${time}`;
-}
-
-function MessagesPanel() {
-  const [messages, setMessages] = useState(() =>
-    getNotificationsForCurrentUser(),
-  );
-  const [filter, setFilter] = useState("all");
-  const [selectedMessageId, setSelectedMessageId] = useState(null);
-
-  const refreshMessages = () => {
-    setMessages(getNotificationsForCurrentUser());
-  };
-
-  const selectedMessage = messages.find(
-    (message) => String(message.id) === String(selectedMessageId),
-  );
-
-  const unreadCount = messages.filter((message) => !message.isRead).length;
-  const importantCount = messages.filter(
-    (message) => message.isImportant,
-  ).length;
-
-  const filteredMessages = messages.filter((message) => {
-    if (filter === "unread") return !message.isRead;
-    if (filter === "important") return message.isImportant;
-    return true;
-  });
-
-  const markAllAsRead = () => {
-    markAllNotificationsAsReadForCurrentUser();
-    refreshMessages();
-  };
-
-  const deleteAllMessages = () => {
-    if (!window.confirm("آیا از حذف همه پیام‌ها مطمئن هستید؟")) return;
-    deleteAllNotificationsForCurrentUser();
-    setSelectedMessageId(null);
-    refreshMessages();
-  };
-
-  const openMessage = (messageId) => {
-    markNotificationAsRead(messageId);
-    setSelectedMessageId(messageId);
-    refreshMessages();
-  };
-
-  const removeMessage = (messageId) => {
-    deleteNotification(messageId);
-    if (String(selectedMessageId) === String(messageId)) {
-      setSelectedMessageId(null);
-    }
-    refreshMessages();
-  };
-
-  if (selectedMessage) {
-    return (
-      <section className="messages-panel">
-        <div className="messages-panel__panel">
-          <div className="messages-panel__panel-header">
-            <div>
-              <span>جزئیات پیام</span>
-              <h3>{selectedMessage.title}</h3>
-              <p>
-                {selectedMessage.category} / {selectedMessage.sentAt}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="messages-panel__back-button"
-              onClick={() => {
-                setSelectedMessageId(null);
-                refreshMessages();
-              }}
-            >
-              بازگشت
-            </button>
-          </div>
-
-          <article className="messages-panel__detail-card">
-            {selectedMessage.isImportant && (
-              <span className="messages-panel__important-badge">مهم</span>
-            )}
-            <p>{selectedMessage.body}</p>
-          </article>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="messages-panel">
-      <div className="messages-panel__panel">
-        <div className="messages-panel__panel-header">
-          <div>
-            <span>پیام‌ها و اعلانات</span>
-            <h3>اعلان‌های سامانه</h3>
-            <p>
-              اعلان‌های مربوط به درخواست‌ها، پاسخ‌ها، وظایف و فعالیت‌های جدید
-              اینجا نمایش داده می‌شود.
-            </p>
-          </div>
-
-          <div className="messages-panel__header-actions">
-            <button type="button" onClick={markAllAsRead}>
-              خواندن همه
-            </button>
-            <button
-              type="button"
-              className="messages-panel__delete-all-button"
-              onClick={deleteAllMessages}
-              disabled={messages.length === 0}
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
-        <div className="messages-panel__filters">
-          <button
-            type="button"
-            className={filter === "all" ? "messages-panel__filter--active" : ""}
-            onClick={() => setFilter("all")}
-          >
-            همه پیام‌ها
-            <span className="messages-panel__filter-count">
-              {messages.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            className={
-              filter === "unread" ? "messages-panel__filter--active" : ""
-            }
-            onClick={() => setFilter("unread")}
-          >
-            خوانده‌نشده
-            <span className="messages-panel__filter-count">{unreadCount}</span>
-          </button>
-
-          <button
-            type="button"
-            className={
-              filter === "important" ? "messages-panel__filter--active" : ""
-            }
-            onClick={() => setFilter("important")}
-          >
-            مهم
-            <span className="messages-panel__filter-count">
-              {importantCount}
-            </span>
-          </button>
-        </div>
-
-        <div className="messages-panel__list">
-          {filteredMessages.map((message) => (
-            <article
-              className={`messages-panel__card ${
-                message.isRead ? "messages-panel__card--read" : ""
-              }`}
-              key={message.id}
-            >
-              <div className="messages-panel__card-main">
-                <div className="messages-panel__title-row">
-                  <h4>{message.title}</h4>
-                  {!message.isRead && (
-                    <span className="messages-panel__unread-badge">جدید</span>
-                  )}
-                  {message.isImportant && (
-                    <span className="messages-panel__important-badge">مهم</span>
-                  )}
-                </div>
-
-                <p>{message.body}</p>
-
-                <div className="messages-panel__meta">
-                  <span>{message.category}</span>
-                  <span>{message.sentAt}</span>
-                </div>
-              </div>
-
-              <div className="messages-panel__card-actions messages-panel__actions">
-                <button
-                  type="button"
-                  className="messages-panel__view-button"
-                  onClick={() => openMessage(message.id)}
-                >
-                  مشاهده
-                </button>
-                <button
-                  type="button"
-                  className="messages-panel__delete-message-button messages-panel__remove-button messages-panel__remove-message"
-                  onClick={() => removeMessage(message.id)}
-                  aria-label="حذف پیام"
-                >
-                  ×
-                </button>
-              </div>
-            </article>
-          ))}
-
-          {filteredMessages.length === 0 && (
-            <div className="messages-panel__empty">
-              پیامی برای نمایش وجود ندارد.
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FaqPanel() {
-  const categories = [
-    "همه",
-    ...new Set(FAQ_ITEMS.map((item) => item.category)),
-  ];
-
-  const [activeCategory, setActiveCategory] = useState("همه");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [openQuestionId, setOpenQuestionId] = useState(
-    FAQ_ITEMS[0]?.id || null,
-  );
-
-  const filteredItems = FAQ_ITEMS.filter((item) => {
-    const matchesCategory =
-      activeCategory === "همه" || item.category === activeCategory;
-    const matchesSearch =
-      item.question.includes(searchTerm) || item.answer.includes(searchTerm);
-
-    return matchesCategory && matchesSearch;
-  });
-
-  return (
-    <section className="faq-panel">
-      <div className="faq-panel__panel">
-        <div className="faq-panel__panel-header">
-          <div>
-            <span>سوالات متداول</span>
-            <h3>راهنمای داوری و استفاده از داشبورد</h3>
-          </div>
-        </div>
-
-        <div className="faq-panel__tools">
-          <label>
-            <span>جست‌وجو در سوالات</span>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="عبارت موردنظر را وارد کنید..."
-            />
-          </label>
-
-          <div className="faq-panel__categories">
-            {categories.map((category) => (
-              <button
-                type="button"
-                key={category}
-                className={
-                  activeCategory === category
-                    ? "faq-panel__category--active"
-                    : ""
-                }
-                onClick={() => setActiveCategory(category)}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="faq-panel__list">
-          {filteredItems.map((item) => {
-            const isOpen = openQuestionId === item.id;
-
-            return (
-              <article
-                className={`faq-panel__item ${
-                  isOpen ? "faq-panel__item--open" : ""
-                }`}
-                key={item.id}
-              >
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpenQuestionId((currentId) =>
-                      currentId === item.id ? null : item.id,
-                    )
-                  }
-                >
-                  <span>{item.category}</span>
-                  <strong>{item.question}</strong>
-                  <i>{isOpen ? "−" : "+"}</i>
-                </button>
-
-                {isOpen && <p>{item.answer}</p>}
-              </article>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProfilePanel({ profile, onEdit }) {
-  return (
-    <section className="reviewer-dashboard__profile-panel">
-      <div className="reviewer-dashboard__profile-card">
-        <button type="button" onClick={onEdit}>
-          ویرایش پروفایل
-        </button>
-
-        <div className="reviewer-dashboard__profile-head">
-          <span>پروفایل کاربری</span>
-          {profile.avatarPreview ? (
-            <img
-              className="reviewer-dashboard__profile-avatar"
-              src={profile.avatarPreview}
-              alt={profile.fullName || "پروفایل کاربر"}
-            />
-          ) : (
-            <div className="reviewer-dashboard__profile-avatar">
-              {profile.avatarLetter}
-            </div>
-          )}
-          <h3>
-            {profile.fullName ||
-              `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
-          </h3>
-          <p>{profile.role}</p>
-        </div>
-
-        <div className="reviewer-dashboard__profile-grid">
-          <article>
-            <span>نام و نام خانوادگی</span>
-            <strong>
-              {profile.fullName ||
-                `${profile.firstName || ""} ${profile.lastName || ""}`.trim()}
-            </strong>
-          </article>
-          <article>
-            <span>ایمیل</span>
-            <strong>{profile.email}</strong>
-          </article>
-          <article>
-            <span>شماره موبایل</span>
-            <strong>{profile.phone}</strong>
-          </article>
-          <article>
-            <span>سطح کاربری</span>
-            <strong>{profile.role}</strong>
-          </article>
-          <article>
-            <span>سابقه عضویت</span>
-            <strong>{profile.memberSince}</strong>
-          </article>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function EditProfilePanel({ profile, onSave, onCancel }) {
-  const [formValues, setFormValues] = useState(profile);
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-  const [message, setMessage] = useState("");
-
-  const updateField = (field, value) => {
-    setFormValues((current) => ({ ...current, [field]: value }));
-  };
-
-  const updatePasswordField = (field, value) => {
-    setPasswordData((current) => ({ ...current, [field]: value }));
-  };
-
-  const submitProfile = () => {
-    try {
-      const savedProfile = onSave(formValues, passwordData);
-      setFormValues(savedProfile || formValues);
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-      setMessage(
-        passwordData.newPassword
-          ? "اطلاعات پروفایل و رمز عبور با موفقیت ذخیره شد."
-          : "تغییرات پروفایل با موفقیت ذخیره شد.",
-      );
-    } catch (error) {
-      setMessage(error?.message || "ذخیره تغییرات با خطا روبه‌رو شد.");
-    }
-  };
-
-  return (
-    <section className="reviewer-dashboard__profile-panel">
-      <div className="reviewer-dashboard__profile-card reviewer-dashboard__profile-card--edit">
-        <div className="reviewer-dashboard__profile-edit-header">
-          <div>
-            <span>ویرایش پروفایل</span>
-            <h3>اطلاعات کاربری</h3>
-          </div>
-
-          <button type="button" onClick={onCancel}>
-            انصراف
-          </button>
-        </div>
-
-        <div className="reviewer-dashboard__profile-form-grid">
-          <label>
-            <span>نام</span>
-            <input
-              type="text"
-              value={formValues.firstName}
-              onChange={(event) => updateField("firstName", event.target.value)}
-            />
-          </label>
-
-          <label>
-            <span>نام خانوادگی</span>
-            <input
-              type="text"
-              value={formValues.lastName}
-              onChange={(event) => updateField("lastName", event.target.value)}
-            />
-          </label>
-
-          <label>
-            <span>شماره موبایل</span>
-            <input
-              type="text"
-              value={formValues.phone}
-              onChange={(event) => updateField("phone", event.target.value)}
-            />
-          </label>
-
-          <label>
-            <span>ایمیل</span>
-            <input
-              type="email"
-              value={formValues.email}
-              onChange={(event) => updateField("email", event.target.value)}
-            />
-          </label>
-        </div>
-
-        <div className="reviewer-dashboard__password-box">
-          <div>
-            <span>تغییر رمز عبور</span>
-            <p>برای تغییر رمز، رمز فعلی و رمز جدید را وارد کنید.</p>
-          </div>
-
-          <div className="reviewer-dashboard__profile-form-grid">
-            <label>
-              <span>رمز عبور فعلی</span>
-              <input
-                type="password"
-                value={passwordData.currentPassword}
-                onChange={(event) =>
-                  updatePasswordField("currentPassword", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>رمز عبور جدید</span>
-              <input
-                type="password"
-                value={passwordData.newPassword}
-                onChange={(event) =>
-                  updatePasswordField("newPassword", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>تکرار رمز عبور جدید</span>
-              <input
-                type="password"
-                value={passwordData.confirmPassword}
-                onChange={(event) =>
-                  updatePasswordField("confirmPassword", event.target.value)
-                }
-              />
-            </label>
-          </div>
-        </div>
-
-        <div className="reviewer-dashboard__profile-actions">
-          <button type="button" onClick={onCancel}>
-            انصراف
-          </button>
-          <button type="button" onClick={submitProfile}>
-            ذخیره تغییرات
-          </button>
-        </div>
-
-        {message && <p className="profile-panel__message">{message}</p>}
-      </div>
-    </section>
+      <DashboardPagination
+        currentPage={safeHistoryPage}
+        totalPages={totalHistoryPages}
+        summary={`نمایش ${currentHistoryPlans.length} طرح از ${filteredHistoryPlans.length} مورد`}
+        onPrevious={() => setCurrentPage((page) => Math.max(1, page - 1))}
+        onNext={() =>
+          setCurrentPage((page) => Math.min(totalHistoryPages, page + 1))
+        }
+        className="reviewer-dashboard__history-pagination"
+      />
+    </SharedDashboardPanel>
   );
 }
 
@@ -2277,7 +1337,6 @@ function ReviewerDashboardPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const notificationMenuRef = useRef(null);
   const [recentMessages, setRecentMessages] = useState(() =>
     getNotificationsForCurrentUser().slice(0, 3),
   );
@@ -2289,27 +1348,6 @@ function ReviewerDashboardPage() {
   const unreadMessagesCount = recentMessages.filter(
     (item) => !item.isRead,
   ).length;
-
-  useEffect(() => {
-    if (!isNotificationOpen) {
-      return undefined;
-    }
-
-    const closeOnOutsideClick = (event) => {
-      if (
-        notificationMenuRef.current &&
-        !notificationMenuRef.current.contains(event.target)
-      ) {
-        setIsNotificationOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", closeOnOutsideClick);
-
-    return () => {
-      document.removeEventListener("mousedown", closeOnOutsideClick);
-    };
-  }, [isNotificationOpen]);
 
   const currentTitle = useMemo(() => {
     if (activeSection === "plan-management") {
@@ -2462,7 +1500,7 @@ function ReviewerDashboardPage() {
   const renderContent = () => {
     if (activeSection === "dashboard") {
       return (
-        <DashboardPanel
+        <ReviewerHomePanel
           key={`dashboard-${contentResetKey}`}
           plans={reviewPlans}
           onOpenFolder={openReviewerFolder}
@@ -2489,20 +1527,20 @@ function ReviewerDashboardPage() {
     }
 
     if (activeSection === "requests") {
-      return <TicketsPanel key={`requests-${contentResetKey}`} />;
+      return <DashboardSupportRequests key={`requests-${contentResetKey}`} supportRoleName="داور" />;
     }
 
     if (activeSection === "messages") {
-      return <MessagesPanel key={`messages-${contentResetKey}`} />;
+      return <DashboardMessages key={`messages-${contentResetKey}`} />;
     }
 
     if (activeSection === "faq") {
-      return <FaqPanel key={`faq-${contentResetKey}`} />;
+      return <DashboardFAQ key={`faq-${contentResetKey}`} items={FAQ_ITEMS} />;
     }
 
     if (activeSection === "profile") {
       return (
-        <ProfilePanel
+        <DashboardProfileView
           key={`profile-${contentResetKey}`}
           profile={reviewerProfile}
           onEdit={openEditProfile}
@@ -2512,7 +1550,7 @@ function ReviewerDashboardPage() {
 
     if (activeSection === "edit-profile") {
       return (
-        <EditProfilePanel
+        <DashboardProfileEdit
           key={`edit-profile-${contentResetKey}`}
           profile={reviewerProfile}
           onSave={saveReviewerProfile}
@@ -2527,290 +1565,46 @@ function ReviewerDashboardPage() {
   };
 
   return (
-    <main
-      className={`innovator-dashboard reviewer-dashboard ${
-        isSidebarCollapsed ? "innovator-dashboard--collapsed" : ""
-      }`}
+    <DashboardShell
+      collapsed={isSidebarCollapsed}
+      onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
+      logoSrc={universityLogo}
+      navItems={NAV_ITEMS}
+      activeSection={activeSection}
+      activeSubItem={activeSubItem}
+      openMenuId={openMenuId}
+      onNavClick={handleNavClick}
+      onSubNavClick={handleSubNavClick}
+      title={currentTitle}
+      className="reviewer-dashboard"
+      topbarActions={
+        <>
+          <DashboardNotificationMenu
+            open={isNotificationOpen}
+            onOpenChange={setIsNotificationOpen}
+            unreadCount={unreadMessagesCount}
+            messages={recentMessages}
+            onOpenMessages={openMessagesCenter}
+            onMarkAllRead={markAllRecentMessagesAsRead}
+            onMarkRead={markMessageAsRead}
+            onOpenMessage={openNotificationTarget}
+            onBeforeOpen={() => setIsProfileMenuOpen(false)}
+          />
+
+          <DashboardProfileMenu
+            profile={reviewerProfile}
+            open={isProfileMenuOpen}
+            onOpenChange={setIsProfileMenuOpen}
+            onOpenProfile={openProfile}
+            onEditProfile={openEditProfile}
+            onLogout={() => navigate("/auth")}
+            onBeforeOpen={() => setIsNotificationOpen(false)}
+          />
+        </>
+      }
     >
-      <aside className="innovator-dashboard__sidebar">
-        <div className="innovator-dashboard__sidebar-top">
-          <div className="innovator-dashboard__sidebar-head">
-            <button
-              type="button"
-              className="innovator-dashboard__menu-button"
-              onClick={() => setIsSidebarCollapsed((current) => !current)}
-              aria-label="باز و بسته کردن منوی داشبورد"
-            >
-              <MenuIcon />
-            </button>
-
-            <Link to="/" className="innovator-dashboard__brand">
-              <img src={universityLogo} alt="لوگوی دانشگاه تهران" />
-
-              <div className="innovator-dashboard__brand-text">
-                <strong>هاتف</strong>
-              </div>
-            </Link>
-          </div>
-
-          <nav className="innovator-dashboard__nav">
-            {NAV_ITEMS.map((item) => {
-              const isActive = activeSection === item.id;
-              const hasSubItems = Boolean(item.subItems?.length);
-              const isOpen = openMenuId === item.id;
-
-              return (
-                <div className="innovator-dashboard__nav-group" key={item.id}>
-                  <button
-                    type="button"
-                    className={`innovator-dashboard__nav-item ${
-                      isActive ? "innovator-dashboard__nav-item--active" : ""
-                    }`}
-                    onClick={() => handleNavClick(item)}
-                    title={isSidebarCollapsed ? item.label : undefined}
-                  >
-                    <span className="innovator-dashboard__nav-icon">
-                      {item.icon}
-                    </span>
-
-                    <span className="innovator-dashboard__nav-text">
-                      {item.label}
-                    </span>
-
-                    {hasSubItems && !isSidebarCollapsed && (
-                      <span className="innovator-dashboard__nav-chevron">
-                        <ChevronIcon isOpen={isOpen} />
-                      </span>
-                    )}
-                  </button>
-
-                  {hasSubItems && !isSidebarCollapsed && (
-                    <div
-                      className={`innovator-dashboard__subnav ${
-                        isOpen ? "innovator-dashboard__subnav--open" : ""
-                      }`}
-                    >
-                      {item.subItems.map((subItem) => (
-                        <button
-                          type="button"
-                          key={subItem.id}
-                          className={`innovator-dashboard__subnav-item ${
-                            activeSubItem === subItem.id
-                              ? "innovator-dashboard__subnav-item--active"
-                              : ""
-                          }`}
-                          onClick={() => handleSubNavClick(item.id, subItem.id)}
-                        >
-                          {subItem.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
-        </div>
-      </aside>
-
-      <section className="innovator-dashboard__main">
-        <header className="innovator-dashboard__topbar">
-          <div className="innovator-dashboard__topbar-title">
-            <DashboardDateTime />
-
-            <h1>{currentTitle}</h1>
-          </div>
-
-          <div className="innovator-dashboard__topbar-actions">
-            <div
-              className="innovator-dashboard__notification-menu"
-              ref={notificationMenuRef}
-            >
-              <button
-                type="button"
-                className="innovator-dashboard__notification-trigger"
-                onClick={() => {
-                  setIsNotificationOpen((current) => !current);
-                  setIsProfileMenuOpen(false);
-                }}
-                aria-label="نمایش پیام‌های اخیر"
-              >
-                <BellIcon />
-
-                {unreadMessagesCount > 0 && <span>{unreadMessagesCount}</span>}
-              </button>
-
-              {isNotificationOpen && (
-                <div className="innovator-dashboard__notification-dropdown">
-                  <div className="innovator-dashboard__notification-header">
-                    <strong>پیام‌های اخیر</strong>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={openMessagesCenter}
-                        title="رفتن به پیام‌ها و اعلانات"
-                        style={{
-                          width: "30px",
-                          height: "30px",
-                          border: "0",
-                          borderRadius: "999px",
-                          background: "#e8f8ff",
-                          cursor: "pointer",
-                        }}
-                      >
-                        📨
-                      </button>
-                      <button
-                        type="button"
-                        onClick={markAllRecentMessagesAsRead}
-                        disabled={unreadMessagesCount === 0}
-                        style={{
-                          height: "30px",
-                          border: "0",
-                          borderRadius: "999px",
-                          padding: "0 10px",
-                          color: unreadMessagesCount ? "#0e7ca8" : "#64748b",
-                          background: unreadMessagesCount
-                            ? "#e8f8ff"
-                            : "#e9edf2",
-                          fontFamily: "inherit",
-                          fontSize: "10px",
-                          fontWeight: 900,
-                          cursor: unreadMessagesCount ? "pointer" : "default",
-                        }}
-                      >
-                        خواندن همه
-                      </button>
-                    </div>
-                    <small>{unreadMessagesCount} خوانده‌نشده</small>
-                  </div>
-
-                  <div className="innovator-dashboard__notification-list">
-                    {recentMessages.map((message) => (
-                      <article
-                        key={message.id}
-                        className={`innovator-dashboard__notification-item ${
-                          message.isRead
-                            ? "innovator-dashboard__notification-item--read"
-                            : ""
-                        }`}
-                        onClick={() => openNotificationTarget(message)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            openNotificationTarget(message);
-                          }
-                        }}
-                        style={{
-                          cursor: "pointer",
-                          border: message.isRead
-                            ? "1px solid #bbf7d0"
-                            : "1px solid transparent",
-                          background: message.isRead ? "#f0fdf4" : undefined,
-                          opacity: message.isRead ? 1 : undefined,
-                        }}
-                      >
-                        <div>
-                          <h4>{message.title}</h4>
-                          <p>{message.sentAt}</p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={(event) =>
-                            markMessageAsRead(message.id, event)
-                          }
-                          disabled={message.isRead}
-                          style={
-                            message.isRead
-                              ? { color: "#166534", background: "#dcfce7" }
-                              : undefined
-                          }
-                        >
-                          {message.isRead ? "خوانده شد" : "خواندن"}
-                        </button>
-                      </article>
-                    ))}
-
-                    {recentMessages.length === 0 && (
-                      <article className="innovator-dashboard__notification-item">
-                        <div>
-                          <h4>اعلان جدیدی ندارید</h4>
-                          <p>همه چیز خوانده شده است.</p>
-                        </div>
-                      </article>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="innovator-dashboard__profile-menu">
-              <button
-                type="button"
-                className="innovator-dashboard__profile-trigger"
-                onClick={() => {
-                  setIsProfileMenuOpen((current) => !current);
-                  setIsNotificationOpen(false);
-                }}
-                aria-expanded={isProfileMenuOpen}
-              >
-                <span className="innovator-dashboard__profile-text">
-                  <strong>
-                    {reviewerProfile.fullName ||
-                      `${reviewerProfile.firstName || ""} ${reviewerProfile.lastName || ""}`.trim()}
-                  </strong>
-                  <small>نوع کاربر: {reviewerProfile.role}</small>
-                </span>
-
-                {reviewerProfile.avatarPreview ? (
-                  <img
-                    className="innovator-dashboard__top-avatar"
-                    src={reviewerProfile.avatarPreview}
-                    alt={reviewerProfile.fullName || "پروفایل کاربر"}
-                  />
-                ) : (
-                  <span className="innovator-dashboard__top-avatar">
-                    {reviewerProfile.avatarLetter ||
-                      reviewerProfile.fullName?.[0] ||
-                      "د"}
-                  </span>
-                )}
-
-                <span className="innovator-dashboard__profile-caret">▾</span>
-              </button>
-
-              {isProfileMenuOpen && (
-                <div className="innovator-dashboard__profile-dropdown">
-                  <button type="button" onClick={openProfile}>
-                    پروفایل
-                  </button>
-                  <button type="button" onClick={openEditProfile}>
-                    ویرایش پروفایل
-                  </button>
-                  <button
-                    type="button"
-                    className="innovator-dashboard__profile-logout"
-                    onClick={() => navigate("/auth")}
-                  >
-                    خروج
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {renderContent()}
-      </section>
-    </main>
+      {renderContent()}
+    </DashboardShell>
   );
 }
 

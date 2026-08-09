@@ -1,4 +1,4 @@
-.ui-select {
+.ui-select.ui-select {
   width: 100%;
   min-width: 0;
   height: 44px;
@@ -19,21 +19,21 @@
     box-shadow var(--duration-normal) var(--ease-standard),
     background-color var(--duration-normal) var(--ease-standard);
 }
-.ui-select:hover:not(:disabled):not(:focus) {
+.ui-select.ui-select:hover:not(:disabled):not(:focus) {
   border-color: var(--interaction-field-hover-border);
 }
 
-.ui-select:focus {
+.ui-select.ui-select:focus {
   border-color: var(--color-action-600);
   box-shadow: var(--focus-ring);
 }
 
-.ui-select--invalid,
-.ui-select[aria-invalid="true"] {
+.ui-select.ui-select--invalid,
+.ui-select.ui-select[aria-invalid="true"] {
   border-color: var(--color-danger);
 }
 
-.ui-select:disabled {
+.ui-select.ui-select:disabled {
   color: var(--text-disabled);
   background-color: var(--color-neutral-100);
   cursor: not-allowed;

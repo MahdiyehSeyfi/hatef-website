@@ -1,0 +1,42 @@
+.dashboard-panel.dashboard-panel {
+  border-color: var(--dashboard-line);
+  border-radius: var(--dashboard-radius-panel);
+  background: var(--dashboard-surface);
+  box-shadow: var(--dashboard-shadow-panel);
+}
+
+.dashboard-panel.dashboard-panel.ui-card--padding-sm {
+  padding: var(--dashboard-panel-padding-sm);
+}
+
+.dashboard-panel.dashboard-panel.ui-card--padding-md {
+  padding: var(--dashboard-panel-padding-md);
+}
+
+.dashboard-panel.dashboard-panel.ui-card--padding-lg {
+  padding: var(--dashboard-panel-padding-lg);
+}
+
+.dashboard-panel.dashboard-panel--subtle {
+  background: var(--dashboard-surface-subtle);
+}
+
+.dashboard-panel.dashboard-panel--muted {
+  background: var(--dashboard-surface-muted);
+}
+
+.dashboard-panel.dashboard-panel--accent {
+  border-color: var(--dashboard-line-accent);
+  background: var(--dashboard-surface-accent);
+}
+
+.dashboard-panel.dashboard-panel--raised {
+  box-shadow: var(--dashboard-shadow-raised);
+}
+
+.dashboard-panel.dashboard-panel.ui-card--interactive:hover {
+  border-color: var(--dashboard-line-accent);
+  background: var(--dashboard-surface-subtle);
+  box-shadow: var(--dashboard-shadow-hover);
+  transform: var(--interaction-card-hover-transform);
+}
